@@ -7,8 +7,9 @@
     @endphp
     <form wire:submit.prevent='{{ $submit }}' class="grid grid-cols-12 gap-4  items-center">
         <div class="md:col-span-6 col-span-12">
-            <label class="form-label">Nama Category</label>
-            <input type="text" class="form-control" required wire:model='category'>
+            {{-- <label class="form-label">Nama Category</label>
+            <input type="text" class="form-control" required wire:model='category'> --}}
+            <x-input wire:model="category" label="Nama Category" required  class="w-full" />
         </div>
         @if ($categoryId)
             <div class="md:col-span-6 col-span-12">
@@ -22,7 +23,6 @@
                 </label>
             </div>
         @endif
-
         <div class="col-span-12">
             <button class="btn btn-primary-600" type="submit">{{ $button }}
                 Category</button>

@@ -17,10 +17,10 @@ class CategoryCreate extends Component
     }
     public function mount($categoryId = null)
     {
-        $this->categoryId = $categoryId;
-        // dd($categoryId);
+        $this->categoryId = base64_decode($categoryId);
+        // dd( $this->categoryId);
         if ($categoryId) {
-            $category = Category::find($categoryId);
+            $category = Category::find($this->categoryId);
             if ($category) {
                 $this->category = $category->nama;
                 $this->is_active = $category->is_active;
@@ -57,7 +57,7 @@ class CategoryCreate extends Component
     }
     public function render()
     {
-        
+
         return view('livewire.category.category-create');
     }
 }

@@ -22,7 +22,13 @@
             <!-- ..::  header area end ::.. -->
 
             {{-- @yield('content') --}}
-            {{ $slot }}
+            <div x-data="{ modalActive: false }">
+                <div :class="{ 'blur-sm scale-[0.99]': modalActive }" class="transition duration-300 ease-in-out">
+                    {{-- Semua konten halaman --}}
+                    {{ $slot }}
+                </div>
+            </div>
+
 
         </div>
         <!-- ..::  footer  start ::.. -->

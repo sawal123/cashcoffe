@@ -27,13 +27,37 @@ function initThemeToggle() {
     }
 }
 
+// function highlightActiveMenu() {
+//     const currentUrl = window.location.href;
+//     const links = document.querySelectorAll("ul#sidebar-menu a");
+
+//     links.forEach(function (link) {
+//         if (link.href === currentUrl) {
+//             link.classList.add("active-page");
+//             let parent = link.parentElement;
+//             parent.classList.add("active-page");
+
+//             while (parent && parent.tagName !== "BODY") {
+//                 if (parent.tagName === "LI") {
+//                     parent.classList.add("show", "open");
+//                 }
+//                 parent = parent.parentElement;
+//             }
+//         }
+//     });
+// }
+
 function highlightActiveMenu() {
-    const currentUrl = window.location.href;
+    const currentUrl = window.location.pathname; // ambil hanya path tanpa domain
     const links = document.querySelectorAll("ul#sidebar-menu a");
 
     links.forEach(function (link) {
-        if (link.href === currentUrl) {
+        const linkPath = new URL(link.href).pathname;
+
+        // kalau currentUrl persis sama atau currentUrl masih dalam linkPath (contoh: /menu & /menu/create)
+        if (currentUrl === linkPath || currentUrl.startsWith(linkPath + "/")) {
             link.classList.add("active-page");
+
             let parent = link.parentElement;
             parent.classList.add("active-page");
 
@@ -109,7 +133,7 @@ function initSidebarDropdown() {
     }
 }
 document.addEventListener("livewire:navigated", function () {
-    console.log("appjs");
+    // console.log("appjs");
 
     initSidebarDropdown();
     initSidebarToggle();

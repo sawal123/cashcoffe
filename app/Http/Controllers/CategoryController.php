@@ -9,9 +9,10 @@ class CategoryController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public $url = "category";
     public function index()
     {
-        return view('dashboard.category');
+        return view('dashboard.category', ['title'=> 'Category', 'url'=> $this->url]);
     }
 
     /**
@@ -19,7 +20,7 @@ class CategoryController extends Controller
      */
     public function create()
     {
-        return view('dashboard.category.create', ['categoryId' => null]);
+        return view('dashboard.category.create', ['categoryId' => null, 'title'=> 'Category / Create', 'url'=> $this->url]);
     }
 
     /**
@@ -45,7 +46,7 @@ class CategoryController extends Controller
     {
         //
 
-        return view('dashboard.category.create', ['categoryId' => $id]);
+        return view('dashboard.category.create', ['categoryId' => $id, 'title'=> 'Category / Edit', 'url'=> $this->url]);
     }
 
     /**

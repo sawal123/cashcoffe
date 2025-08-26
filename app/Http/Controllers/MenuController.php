@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\View\Components\Breadcrumb;
 use Illuminate\Http\Request;
 
 class MenuController extends Controller
@@ -9,9 +10,10 @@ class MenuController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public $url = "menu";
     public function index()
     {
-        return view('dashboard/menu');
+        return view('dashboard.menu', ['title' => 'Menu', 'url' => $this->url]);
     }
 
     /**
@@ -19,7 +21,15 @@ class MenuController extends Controller
      */
     public function create()
     {
-        return view('dashboard/menu/create');
+        return view(
+            'dashboard.menu.create',
+            [
+                'menuId' => null,
+                'title' => 'Menu / Create',
+                'url' => $this->url,
+                'submit' => 'simpan'
+            ]
+        );
     }
 
     /**
@@ -43,7 +53,13 @@ class MenuController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        // dd($id);
+        return view('dashboard.menu.create',
+        ['menuId' => $id,
+        'title' => 'Menu / Edit',
+        'url' => $this->url
+        ,'submit' => 'update']
+    );
     }
 
     /**

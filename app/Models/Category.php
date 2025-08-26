@@ -8,4 +8,8 @@ class Category extends Model
 {
     //
      protected $guarded =[];
+
+     public function menus(){
+        return $this->hasMany(Menu::class, 'categories_id', 'id');
+     }
 }

@@ -4,7 +4,9 @@
     <title>Wowdash - Tailwind CSS Admin Dashboard Laravel-11 Template</title>
     <link rel="icon" type="image/png') }}" href="{{ asset('assets/images/favicon.png') }}" sizes="16x16">
     <!-- google fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+        rel="stylesheet">
     <!-- remix icon font css  -->
     <link rel="stylesheet" href="{{ asset('assets/css/remixicon.css') }}">
     <!-- Apex Chart css -->
@@ -31,12 +33,8 @@
     <link rel="stylesheet" href="{{ asset('assets/css/lib/file-upload.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/lib/audioplayer.css') }}">
     <!-- main css -->
+    @vite(['resources/css/app.css'])
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-
-      {{-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css" /> --}}
-    {{-- @vite(['resources/css/app.css']) --}}
     @vite(['resources/js/app.js'])
-
-    {{-- @vite([]) --}}
-     @livewireStyles
+    @livewireStyles
 </head>
