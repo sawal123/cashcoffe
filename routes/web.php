@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\CategoryController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 
 Route::view('/', 'welcome');
@@ -17,6 +18,7 @@ Route::controller(DashboardController::class)->group(function () {
 });
 Route::resource('menu', MenuController::class);
 Route::resource('category', CategoryController::class);
+Route::resource('order', OrderController::class);
 
 Route::post('/logout', function () {
     Auth::logout();

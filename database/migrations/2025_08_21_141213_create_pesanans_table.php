@@ -20,7 +20,6 @@ return new class extends Migration
             $table->enum('metode_pembayaran', ['tunai', 'qris', 'kartu'])->default('tunai');
             $table->decimal('total', 12, 2)->default(0);
             $table->text('catatan')->nullable();
-
             $table->timestamps();
         });
     }

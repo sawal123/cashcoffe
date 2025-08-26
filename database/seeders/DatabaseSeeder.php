@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call(
             [
+                MejaSeeder::class,
                 RoleSeeder::class,
                 UserSeeder::class
             ]

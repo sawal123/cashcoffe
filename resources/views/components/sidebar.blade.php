@@ -18,6 +18,12 @@
                 </a>
             </li>
             <li>
+                <a href="/order" wire:navigate>
+                    <iconify-icon icon="solar:document-text-outline" class="menu-icon"></iconify-icon>
+                    <span>Order</span>
+                </a>
+            </li>
+            <li>
                 <a href="/menu" wire:navigate>
                     <iconify-icon icon="solar:document-text-outline" class="menu-icon"></iconify-icon>
                     <span>Menu</span>

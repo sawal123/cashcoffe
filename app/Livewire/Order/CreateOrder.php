@@ -1,0 +1,163 @@
+<?php
+
+namespace App\Livewire\Order;
+
+use App\Models\Meja;
+use App\Models\Menu;
+use App\Models\Pesanan;
+use Livewire\Component;
+use App\Models\PesananItem;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Livewire\WithPagination;
+
+class CreateOrder extends Component
+{
+    use WithPagination;
+
+    public $url = "order";
+    public $orderId = null;
+    public $title = 'Order / Create';
+    public $submit = 'simpan';
+    public $search = '';
+
+    public $mejas = [];
+    public $pesanan = [];
+
+    public $mejas_id, $perPage = 4; // default 10
+    public $metode_pembayaran = 'tunai'; // default
+
+    protected $paginationTheme = 'tailwind'; // bisa juga 'bootstrap' sesuai css framework
+
+    public function saveOrder()
+    {
+        if (empty($this->pesanan)) {
+            $this->dispatch('showToast', message: 'Pesanan Masih Kosong', type: 'success', title: 'Success');
+            return;
+        }
+        if(! $this->mejas_id) {
+            $this->dispatch('showToast', message: 'Meja harus dipilih', type: 'error', title: 'Error');
+            return;
+        }
+
+        DB::beginTransaction();
+        try {
+            $totalBaru = collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
+
+            $pesanan = Pesanan::where('mejas_id', $this->mejas_id)
+                ->where('status', '!=', 'selesai')
+                ->first();
+
+            if (!$pesanan) {
+                $pesanan = Pesanan::create([
+                    'kode'              => strtoupper(Str::random(8)),
+                    'mejas_id'          => $this->mejas_id,
+                    'status'            => 'pending',
+                    'metode_pembayaran' => $this->metode_pembayaran,
+                    'total'             => 0,
+                    'catatan'           => null,
+                ]);
+            }
+
+            foreach ($this->pesanan as $p) {
+                $existingItem = $pesanan->items()->where('menus_id', $p['id'])->first();
+
+                if ($existingItem) {
+                    $existingItem->update([
+                        'qty'      => $existingItem->qty + $p['qty'],
+                        'subtotal' => ($existingItem->qty + $p['qty']) * $existingItem->harga_satuan,
+                    ]);
+                } else {
+                    $pesanan->items()->create([
+                        'menus_id'     => $p['id'],
+                        'qty'          => $p['qty'],
+                        'harga_satuan' => $p['harga'],
+                        'subtotal'     => $p['harga'] * $p['qty'],
+                        'catatan_item' => null,
+                    ]);
+                }
+            }
+
+            $pesanan->update([
+                'total' => $pesanan->items()->sum('subtotal'),
+            ]);
+
+            DB::commit();
+
+            $this->pesanan = [];
+            $this->mejas_id = null;
+
+            $this->dispatch('showToast', message: 'Menu Berhasil dipesan', type: 'success', title: 'Success');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
+        }
+    }
+
+    public function mount()
+    {
+        $this->mejas = Meja::all();
+    }
+
+    // reset halaman setiap kali search berubah
+    public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function addPesanan($id)
+    {
+        $item = Menu::find($id); // ambil langsung dari DB karena menu sekarang dipaginate
+        if (! $item) return;
+
+        if (isset($this->pesanan[$id])) {
+            $this->pesanan[$id]['qty']++;
+        } else {
+            $this->pesanan[$id] = [
+                'id'        => $item->id,
+                'nama_menu' => $item->nama_menu,
+                'harga'     => (int) $item->harga,
+                'gambar'    => $item->gambar,
+                'qty'       => 1,
+            ];
+        }
+    }
+
+    public function increment($id)
+    {
+        $this->updateQty($id, 1);
+    }
+    public function decrement($id)
+    {
+        $this->updateQty($id, -1);
+    }
+
+    private function updateQty($id, $delta)
+    {
+        if (! isset($this->pesanan[$id])) return;
+
+        $newQty = $this->pesanan[$id]['qty'] + $delta;
+
+        if ($newQty > 0) {
+            $this->pesanan[$id]['qty'] = $newQty;
+        } else {
+            unset($this->pesanan[$id]);
+        }
+    }
+
+    public function getTotalProperty()
+    {
+        return collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
+    }
+
+    public function render()
+    {
+        $menus = Menu::where('is_active', 1)
+            ->where('nama_menu', 'like', '%' . $this->search . '%')
+            ->paginate($this->perPage); // misal 8 item per halaman
+
+        return view('livewire.order.create-order', [
+            'menus' => $menus
+        ]);
+    }
+}

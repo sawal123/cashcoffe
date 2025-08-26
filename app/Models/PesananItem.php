@@ -8,4 +8,9 @@ class PesananItem extends Model
 {
     //
      protected $guarded =[];
+
+      public function pesanan()
+    {
+        return $this->belongsTo(Pesanan::class, 'pesanans_id');
+    }
 }

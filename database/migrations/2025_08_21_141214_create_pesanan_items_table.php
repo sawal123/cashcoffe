@@ -20,7 +20,6 @@ return new class extends Migration
             $table->decimal('harga_satuan', 10, 2)->default(0);
             $table->decimal('subtotal', 12, 2)->default(0);
             $table->text('catatan_item')->nullable();
-
             $table->timestamps();
         });
     }
