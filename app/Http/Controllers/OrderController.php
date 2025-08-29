@@ -22,11 +22,11 @@ class OrderController extends Controller
     public function create()
     {
         return view('dashboard.order.order-create', [
-                'orderId' => null,
-                'title' => 'Order / Create',
-                'url' => $this->url,
-                'submit' => 'simpan'
-            ]);
+            'orderId' => null,
+            'title' => 'Order / Create',
+            'url' => $this->url,
+            'submit' => 'simpan'
+        ]);
     }
 
     /**
@@ -50,7 +50,12 @@ class OrderController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        return view('dashboard.order.order-create', [
+            'orderId' => $id,
+            'title' => 'Order / Edit',
+            'url' => $this->url,
+            'submit' => 'update'
+        ]);
     }
 
     /**

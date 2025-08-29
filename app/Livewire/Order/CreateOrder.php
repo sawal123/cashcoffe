@@ -18,16 +18,79 @@ class CreateOrder extends Component
     public $url = "order";
     public $orderId = null;
     public $title = 'Order / Create';
-    public $submit = 'simpan';
+    public $submit = 'saveOrder';
     public $search = '';
-
+    public $teks = 'Proses';
     public $mejas = [];
     public $pesanan = [];
-
+    public $pembayaran = ['tunai', 'qris', 'kartu'];
     public $mejas_id, $perPage = 4; // default 10
     public $metode_pembayaran = 'tunai'; // default
+    public $status = 'diproses'; // default
 
     protected $paginationTheme = 'tailwind'; // bisa juga 'bootstrap' sesuai css framework
+
+    public function editOrder($id)
+    {
+        $this->orderId = $id;
+
+
+        $pesanan = Pesanan::with('items')->findOrFail($id);
+        $this->mejas_id = $pesanan->mejas_id;
+        $this->metode_pembayaran = $pesanan->metode_pembayaran;
+        $this->status = $pesanan->status;
+
+        $this->pesanan = $pesanan->items->mapWithKeys(function ($item) {
+            return [
+                $item->menus_id => [
+                    'id'        => $item->menus_id,
+                    'nama_menu' => $item->menu->nama_menu ?? '',
+                    'harga'     => (int) $item->harga_satuan,
+                    'gambar'    => $item->menu->gambar ?? '',
+                    'qty'       => $item->qty,
+                    'catatan'   => $item->catatan_item,
+                    'status'    => $item->status,
+                ]
+            ];
+        })->toArray();
+        // dd($pesanan);
+    }
+
+    public function updateOrder()
+    {
+        if (! $this->orderId) return;
+// dd( $this->metode_pembayaran);
+        DB::beginTransaction();
+        try {
+            $pesanan = Pesanan::findOrFail($this->orderId);
+            // dd($pesanan);
+            $pesanan->items()->delete();
+
+            foreach ($this->pesanan as $p) {
+                $pesanan->items()->create([
+                    'menus_id'     => $p['id'],
+                    'qty'          => $p['qty'],
+                    'harga_satuan' => $p['harga'],
+                    'subtotal'     => $p['harga'] * $p['qty'],
+                    'catatan_item' => $p['catatan'] ?? null,
+                ]);
+            }
+
+            $pesanan->update([
+                'mejas_id'          => $this->mejas_id,
+                'metode_pembayaran' => $this->metode_pembayaran ?? null,
+                'status'            => $this->metode_pembayaran ? 'selesai' : 'diproses',
+                'total'             => $pesanan->items()->sum('subtotal'),
+            ]);
+
+            DB::commit();
+
+            $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: ' . $e->getMessage());
+        }
+    }
 
     public function saveOrder()
     {
@@ -35,7 +98,7 @@ class CreateOrder extends Component
             $this->dispatch('showToast', message: 'Pesanan Masih Kosong', type: 'success', title: 'Success');
             return;
         }
-        if(! $this->mejas_id) {
+        if (! $this->mejas_id) {
             $this->dispatch('showToast', message: 'Meja harus dipilih', type: 'error', title: 'Error');
             return;
         }
@@ -52,8 +115,7 @@ class CreateOrder extends Component
                 $pesanan = Pesanan::create([
                     'kode'              => strtoupper(Str::random(8)),
                     'mejas_id'          => $this->mejas_id,
-                    'status'            => 'pending',
-                    'metode_pembayaran' => $this->metode_pembayaran,
+                    'metode_pembayaran' => null,
                     'total'             => 0,
                     'catatan'           => null,
                 ]);
@@ -93,9 +155,13 @@ class CreateOrder extends Component
             $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
         }
     }
-
     public function mount()
     {
+        if ($this->orderId) {
+            $this->submit = 'updateOrder';
+            $this->teks = 'Update';
+            $this->editOrder(base64_decode($this->orderId));
+        }
         $this->mejas = Meja::all();
     }
 

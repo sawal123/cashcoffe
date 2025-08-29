@@ -24,7 +24,8 @@ class DatabaseSeeder extends Seeder
             [
                 MejaSeeder::class,
                 RoleSeeder::class,
-                UserSeeder::class
+                UserSeeder::class,
+                CategorySeeder::class,
             ]
         );
     }

@@ -16,7 +16,6 @@ return new class extends Migration
             $table->string('nama');
             $table->integer('urutan')->nullable();
             $table->boolean('is_active')->default(true);
-
             $table->timestamps();
         });
     }

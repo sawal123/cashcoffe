@@ -8,4 +8,7 @@ class Meja extends Model
 {
     //
      protected $guarded =[];
+     public function pesanan(){
+        return $this->hasMany(Pesanan::class, 'mejas_id');
+     }
 }

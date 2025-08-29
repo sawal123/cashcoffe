@@ -71,8 +71,8 @@
                     <input id="upload-file" wire:model="gambar" type="file" hidden>
                 </label>
 
-                <div wire:ignore.self  {{ !$gambarUrl ? 'hidden' : '' }}
-                    class="uploaded-img  relative h-[120px] w-[120px] border input-form-light rounded-lg overflow-hidden border-dashed bg-neutral-50 dark:bg-neutral-600">
+                <div  wire:ignore.self
+                    class="uploaded-img  hidden relative h-[120px] w-[120px] border input-form-light rounded-lg overflow-hidden border-dashed bg-neutral-50 dark:bg-neutral-600">
                     <button type="button"
                         class="uploaded-img__remove absolute top-0 end-0 z-1 text-2xxl line-height-1 me-1 mt-2 flex">
                         <iconify-icon icon="radix-icons:cross-2" class="text-xl text-danger-600"></iconify-icon>

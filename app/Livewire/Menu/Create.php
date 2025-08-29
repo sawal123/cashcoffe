@@ -22,7 +22,7 @@ class Create extends Component
             'deskripsi' => 'nullable|string',
             'gambar' => 'nullable|image|max:1024',
         ]);
-
+        // dd($this->gambar);
         try {
             $gambarPath = null;
             if ($this->gambar) {
@@ -84,8 +84,11 @@ class Create extends Component
             session()->flash('error', 'Terjadi kesalahan saat mengupdate menu.');
         }
     }
+    public $hidden = 'hidden';
     public function mount($menuId = null)
     {
+        // dd($this->gambarUrl);
+       $this->hidden =  !$this->gambarUrl ? 'hidden' : '';
         if ($menuId) {
             $menu = Menu::find(base64_decode($menuId));
             if ($menu) {
