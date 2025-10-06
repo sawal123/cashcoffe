@@ -116,7 +116,7 @@ class CreateOrder extends Component
                 $pesanan = Pesanan::create([
                     'kode'              => strtoupper(Str::random(8)),
                     'mejas_id'          => $this->mejas_id,
-                    'metode_pembayaran' => null,
+                    'metode_pembayaran' => $this->metode_pembayaran ?? null,
                     'total'             => 0,
                     'catatan'           => null,
                 ]);

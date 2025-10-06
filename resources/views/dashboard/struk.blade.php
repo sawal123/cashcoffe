@@ -94,7 +94,7 @@
 <body onload="window.print(); window.close();">
 
     <div class="center">
-        <img src="{{ asset('logo.png') }}" style="max-width:40px;"><br>
+        <img src="{{ asset('logo/logo.png') }}" style="max-width:80px;"><br>
         <div class="bold">Temuan Space</div>
         <div>{{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}</div>
     </div>

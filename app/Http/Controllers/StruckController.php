@@ -12,6 +12,7 @@ class StruckController extends Controller
      */
     public function index($id)
     {
+        // dd($id);
         $pesanan = Pesanan::with('items.menu', 'meja')->findOrFail($id);
         return view('dashboard.struk', compact('pesanan'));
     }
