@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-app-layout  :data="$data" :categories="$categories">
     @php
         $title = 'Dashboard';
         $subTitle = 'eCommerce';
@@ -12,24 +12,40 @@
                 <div class="card-body p-5">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
-                            <p class="font-medium text-neutral-900 dark:text-white mb-1">{{$item['title']}}</p>
+                            <p class="font-medium text-neutral-900 dark:text-white mb-1">{{ $item['title'] }}</p>
                             <h6 class="mb-0 dark:text-white">{{ $item['value'] }}</h6>
                         </div>
-                        <div class="w-[50px] h-[50px] {{ $item['color'] }} rounded-full flex justify-center items-center">
-                            <iconify-icon icon="gridicons:multiple-users" class="text-white text-2xl mb-0"></iconify-icon>
+                        <div
+                            class="w-[50px] h-[50px] {{ $item['color'] }} rounded-full flex justify-center items-center">
+                            <iconify-icon icon="{{ $item['icon'] }}" class="text-white text-2xl mb-0"></iconify-icon>
                         </div>
                     </div>
-                    <p class="font-medium text-sm text-neutral-600 dark:text-white mt-3 mb-0 flex items-center gap-2">
-                        <span
-                            class="inline-flex items-center gap-1 text-success-600 dark:text-success-400"><iconify-icon
-                                icon="bxs:up-arrow" class="text-xs"></iconify-icon> +4000</span>
-                        Last 30 days users
-                    </p>
                 </div>
             </div><!-- card end -->
         @endforeach
 
     </div>
+    {{-- {{ Auth::user()->name }} --}}
+
+     <div class="grid grid-cols-1 gap-6 mt-6 xl:grid-cols-6 2xl:grid-cols-6">
+        <div class="xl:col-span-12 2xl:col-span-6">
+            <div class="card h-full rounded-lg border-0">
+                <div class="card-body">
+                    <div class="flex flex-wrap items-center justify-between">
+                        <h6 class="text-lg mb-0">Statik Penjualan</h6>
+                        <select class="form-select bg-white dark:bg-neutral-700 form-select-sm w-auto">
+                            <option>Yearly</option>
+                            <option>Monthly</option>
+                            <option>Weekly</option>
+                            <option>Today</option>
+                        </select>
+                    </div>
+
+                    <div id="chart" class="pt-[28px] apexcharts-tooltip-style-1"></div>
+                </div>
+            </div>
+        </div>
+     </div>
 
 
 

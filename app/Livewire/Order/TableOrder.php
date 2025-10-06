@@ -2,27 +2,39 @@
 
 namespace App\Livewire\Order;
 
+use Carbon\Carbon;
 use App\Models\Pesanan;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class TableOrder extends Component
 {
-
+    use WithPagination;
     public $perPage = 10;
     public $search = '';
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
-
+    protected $paginationTheme = 'tailwind';
     public function resetSearch()
     {
         $this->reset('search');
+    }
+
+    public function saji($id)
+    {
+
+        $pesanan = Pesanan::findOrFail(base64_decode($id));
+        $pesanan->status =  $pesanan->status == 'diproses' ? 'siap_saji' : $this->status;
+        $pesanan->save();
+
+        $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
     }
 
     public function delPesanan($id)
     {
         $order = Pesanan::find(base64_decode($id));
         if ($order) {
-            if($order->status == 'selesai') {
+            if ($order->status == 'selesai') {
                 $this->dispatch('showToast', message: 'Pesanan Selesai Tidak Bisa Dihapus', type: 'warning', title: 'Warning');
                 return;
             }
@@ -35,11 +47,15 @@ class TableOrder extends Component
     public function render()
     {
         $order = Pesanan::query()
-            ->where('kode', 'like', '%' . $this->search . '%')
-            ->orWhere('status', 'like', '%' . $this->search . '%')
-            ->orWhere('metode_pembayaran', 'like', '%' . $this->search . '%')
+            ->whereDate('created_at', Carbon::today())
+            ->where(function ($query) {
+                $query->where('kode', 'like', '%' . $this->search . '%')
+                    ->orWhere('status', 'like', '%' . $this->search . '%')
+                    ->orWhere('metode_pembayaran', 'like', '%' . $this->search . '%');
+            })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate($this->perPage);
+
         return view('livewire.order.table-order', [
             'orders' => $order
         ]);

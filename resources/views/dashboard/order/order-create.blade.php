@@ -12,16 +12,8 @@
             <div class="card rounded-lg border-0">
                 <div class="grid grid-cols-1 2xl:grid-cols-12">
                     <div class="xl:col-span-12 2xl:col-span-12">
-                        <div class="card-body p-2">
-                            <div class="grid grid-cols-12 gap-5">
-                                <div class="col-span-12">
-                                    <div class="card border-0">
-                                        <div class="card-body">
-                                            <livewire:order.create-order :order-id="$orderId" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        <div class="card-body">
+                            <livewire:order.create-order :order-id="$orderId" />
                         </div>
                     </div>
                 </div>

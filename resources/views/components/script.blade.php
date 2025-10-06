@@ -2,10 +2,11 @@
     <script src="{{ asset('assets/js/lib/jquery-3.7.1.min.js') }}" data-navigate-once></script>
     <!-- Apex Chart js -->
     <script src="{{ asset('assets/js/lib/apexcharts.min.js') }}" data-navigate-once></script>
-    <script src="{{ asset('assets/js/widgets.js') }}" data-navigate-once ></script>
-    <script src="{{ asset('assets/js/homeThreeChart.js') }}" data-navigate-once></script>
+
+    {{-- <script src="{{ asset('assets/js/widgets.js') }}" data-navigate-once ></script> --}}
+    {{-- <script src="{{ asset('assets/js/homeThreeChart.js') }}" data-navigate-once></script> --}}
     <!-- Data Table js -->
-    <script src="{{ asset('assets/js/lib/simple-datatables.min.js') }}" data-navigate-once></script>
+    {{-- <script src="{{ asset('assets/js/lib/simple-datatables.min.js') }}" data-navigate-once></script> --}}
     <!-- Iconify Font js -->
     <script src="{{ asset('assets/js/lib/iconify-icon.min.js') }}" data-navigate-once></script>
     <!-- jQuery UI js -->

@@ -27,32 +27,33 @@
                             <span>{{ ($orders->currentPage() - 1) * $orders->perPage() + $loop->iteration }}</span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                                <h6 class="text-base mb-0 font-normal">{{ $item->kode }}</h6>
-
-                            </div>
+                            <h6 class="text-base mb-0 font-normal">{{ $item->kode }}</h6>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span class="">{{ $item->meja ? $item->meja->nama : '-' }}</span>
                         </td>
-
-
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span
                                 class=" bg-danger-100 dark:bg-blue-600/25 text-danger-600 dark:text-danger-400 px-8 py-1.5 rounded-full font-medium text-sm">
-                                {{ $item->status }}</span>
+                                {{ ucwords(str_replace('_', ' ', $item->status)) }}</span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span
-                                class="">{{ $item->metode_pembayaran ?? '-'}}</span>
+                                class="">{{ $item->metode_pembayaran ? ucwords($item->metode_pembayaran) : 'Belum Bayar' }}</span>
                         </td>
-                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span class="">Rp {{ number_format($item->total, 0, ',', '.') }}</span>
                         </td>
-                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class="">{{ date('d m Y - H:i') }}</span>
-                        </td>
-
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            <span class="">{{ $item->created_at->format('d M Y | H:i') }}</span>
+                        </td>
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            @if ($item->status == 'diproses')
+                                <button wire:click="saji('{{ base64_encode($item->id) }}')" type="button"
+                                    class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
+                                    <iconify-icon icon="mingcute:check-line"></iconify-icon>
+                                </button>
+                            @endif
                             <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
                                 class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
                                 <iconify-icon icon="lucide:edit"></iconify-icon>
@@ -62,7 +63,6 @@
                                 class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
                                 <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
                             </button>
-
                         </td>
                     </tr>
                 @empty
@@ -73,7 +73,6 @@
             </tbody>
         </table>
         {{ $orders->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}
-
     </div>
     <x-mdl>
         <div class="px-6 py-2 text-center ">

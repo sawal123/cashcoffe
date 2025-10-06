@@ -25,7 +25,7 @@ class CreateOrder extends Component
     public $pesanan = [];
     public $pembayaran = ['tunai', 'qris', 'kartu'];
     public $mejas_id, $perPage = 4; // default 10
-    public $metode_pembayaran = 'tunai'; // default
+    public $metode_pembayaran = null; // default
     public $status = 'diproses'; // default
 
     protected $paginationTheme = 'tailwind'; // bisa juga 'bootstrap' sesuai css framework
@@ -59,7 +59,6 @@ class CreateOrder extends Component
     public function updateOrder()
     {
         if (! $this->orderId) return;
-// dd( $this->metode_pembayaran);
         DB::beginTransaction();
         try {
             $pesanan = Pesanan::findOrFail($this->orderId);
@@ -75,13 +74,14 @@ class CreateOrder extends Component
                     'catatan_item' => $p['catatan'] ?? null,
                 ]);
             }
-
+            // dd($this->status);
             $pesanan->update([
                 'mejas_id'          => $this->mejas_id,
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
-                'status'            => $this->metode_pembayaran ? 'selesai' : 'diproses',
+                'status'            => $this->status == 'diproses' ? 'selesai' : $this->status,
                 'total'             => $pesanan->items()->sum('subtotal'),
             ]);
+            $this->status = $pesanan->status;
 
             DB::commit();
 
@@ -109,6 +109,7 @@ class CreateOrder extends Component
 
             $pesanan = Pesanan::where('mejas_id', $this->mejas_id)
                 ->where('status', '!=', 'selesai')
+                ->where('status', '!=', 'dibatalkan')
                 ->first();
 
             if (!$pesanan) {
@@ -145,11 +146,11 @@ class CreateOrder extends Component
             ]);
 
             DB::commit();
-
             $this->pesanan = [];
             $this->mejas_id = null;
-
-            $this->dispatch('showToast', message: 'Menu Berhasil dipesan', type: 'success', title: 'Success');
+            $this->dispatch('showToast', message: 'Menu berhasil dipesan', type: 'success', title: 'Success');
+            // dd($pesanan->id);
+            return redirect()->route('struk.print', $pesanan->id);
         } catch (\Exception $e) {
             DB::rollBack();
             $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
@@ -223,7 +224,9 @@ class CreateOrder extends Component
             ->paginate($this->perPage); // misal 8 item per halaman
 
         return view('livewire.order.create-order', [
-            'menus' => $menus
+            'menus' => $menus,
+            'orderId' => $this->orderId,
+            'status' => $this->status,
         ]);
     }
 }

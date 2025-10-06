@@ -1,3 +1,4 @@
+@props(['data' => [], 'categories' => []])
 <!-- meta tags and other links -->
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
@@ -41,7 +42,13 @@
     {{-- <x-script script='{!! isset($script) ? $script : '' !!}' /> --}}
     <x-script :script="$script ?? ''" />
 
-
+    <script>
+        window.chartData = {
+            data: @json($data ?? []),
+            categories: @json($categories ?? []),
+        };
+    </script>
+    <script src="{{ asset('assets/js/chartDashboard.js') }}" data-navigate-once></script>
     <!-- ..::  scripts  end ::.. -->
 
     @livewireScripts
