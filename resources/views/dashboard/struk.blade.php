@@ -39,6 +39,9 @@
             padding: 2px 0;
             vertical-align: top;
         }
+        .center{
+            margin-top:50px;
+        }
 
         .separator {
             border-top: 1px dashed #000;
@@ -58,6 +61,7 @@
             }
 
             .center {
+                margin-top:50px;
                 text-align: center;
             }
 
@@ -92,8 +96,8 @@
 </head>
 
 <body onload="window.print(); window.close();">
-
-    <div class="center">
+    <br>
+    <div class="center" style="">
         <img src="{{ asset('logo/logo.png') }}" style="max-width:80px;"><br>
         <div class="bold">Temuan Space</div>
         <div>{{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}</div>
