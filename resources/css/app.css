@@ -4,10 +4,3 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-/*
-   body{
-    @apply text-gray-900 dark:text-gray-700;
-   } */
-}
-

@@ -33,8 +33,13 @@
     <link rel="stylesheet" href="{{ asset('assets/css/lib/file-upload.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/lib/audioplayer.css') }}">
     <!-- main css -->
-    @vite(['resources/css/app.css'])
+    {{-- @vite(['resources/css/app.css']) --}}
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    @vite(['resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/app-DCSQk4Vx.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/app-DTC5qZmI.js') }}">
+    {{-- @vite(['resources/js/app.js']) --}}
+
     @livewireStyles
 </head>
