@@ -88,35 +88,35 @@
         </ul>
         <hr class="border-slate-200 dark:border-slate-700 mb-3">
         {{-- @if ($orderId) --}}
-            <div class="flex justify-between gap-4 items-center">
-                <span class="text-sm dark:text-slate-200 text-slate-900">Pembayaran: </span>
-                <select id="metode_pembayaran" wire:model="metode_pembayaran"
+        <div class="flex justify-between gap-4 items-center">
+            <span class="text-sm dark:text-slate-200 text-slate-900">Pembayaran: </span>
+            <select id="metode_pembayaran" wire:model="metode_pembayaran"
+                class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
+                required>
+                <option value="" class="text-neutral-500">..Pembayaran..</option>
+                @foreach ($pembayaran as $pay)
+                    <option value="{{ $pay }}" class="text-neutral-800 dark:text-neutral-200">
+                        {{ $pay }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        @if ($status == 'selesai')
+            <div class="flex justify-between gap-4 items-center mt-2">
+                <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
+                <select id="status" wire:model="status"
                     class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
                     required>
-                    <option value="" class="text-neutral-500">..Pembayaran..</option>
-                    @foreach ($pembayaran as $pay)
-                        <option value="{{ $pay }}" class="text-neutral-800 dark:text-neutral-200">
-                            {{ $pay }}
-                        </option>
-                    @endforeach
+                    <option value="selesai" class="text-neutral-800 dark:text-neutral-200">
+                        Selesai
+                    </option>
+                    <option value="dibatalkan" class="text-neutral-800 dark:text-neutral-200">
+                        Dibatalkan
+                    </option>
+
                 </select>
             </div>
-            @if ($status == 'selesai')
-                <div class="flex justify-between gap-4 items-center mt-2">
-                    <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
-                    <select id="status" wire:model="status"
-                        class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
-                        required>
-                        <option value="selesai" class="text-neutral-800 dark:text-neutral-200">
-                            Selesai
-                        </option>
-                        <option value="dibatalkan" class="text-neutral-800 dark:text-neutral-200">
-                            Dibatalkan
-                        </option>
-
-                    </select>
-                </div>
-            @endif
+        @endif
         {{-- @endif --}}
 
         <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
@@ -136,6 +136,12 @@
                     class="w-full bg-blue-600 mt-2 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
                     {{ $teks }} Pesanan
                 </button>
+                @if ($teks == 'Update')
+                    <a href="{{ route('struk.print', base64_encode($orderId)) }}"
+                        class="w-full bg-slate-600 text-center mt-2 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                        Cetak Struk
+                    </a>
+                @endif
             @endif
 
         </div>

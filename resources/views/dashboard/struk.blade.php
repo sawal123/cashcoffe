@@ -100,13 +100,15 @@
     <div class="center" style="">
         <img src="{{ asset('logo/logo.png') }}" style="max-width:80px;"><br>
         <div class="bold">Temuan Space</div>
+         <span>Alamat : Jl. Halat (Tsix)</span>
         <div>{{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}</div>
+
     </div>
 
     <div class="separator"></div>
 
     <div>
-        Kode : {{ $pesanan->kode }} <br>
+        Invo : {{ $pesanan->kode }} <br>
         Meja : {{ $pesanan->meja->nama ?? '-' }}
     </div>
 
@@ -136,6 +138,7 @@
     </table>
 
     <div class="separator"></div>
+
 
     <div class="center">*** Terima Kasih ***</div>
 

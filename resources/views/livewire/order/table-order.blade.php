@@ -54,6 +54,10 @@
                                     <iconify-icon icon="mingcute:check-line"></iconify-icon>
                                 </button>
                             @endif
+                            <a href="{{ route('struk.print', base64_encode($item->id))}}"
+                                class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
+                                <iconify-icon icon="lucide:printer"></iconify-icon>
+                            </a>
                             <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
                                 class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
                                 <iconify-icon icon="lucide:edit"></iconify-icon>

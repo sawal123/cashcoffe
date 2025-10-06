@@ -150,7 +150,7 @@ class CreateOrder extends Component
             $this->mejas_id = null;
             $this->dispatch('showToast', message: 'Menu berhasil dipesan', type: 'success', title: 'Success');
             // dd($pesanan->id);
-            return redirect()->route('struk.print', $pesanan->id);
+            return redirect()->route('struk.print', base64_encode($pesanan->id));
         } catch (\Exception $e) {
             DB::rollBack();
             $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());

@@ -24,7 +24,7 @@ class TableOrder extends Component
     {
 
         $pesanan = Pesanan::findOrFail(base64_decode($id));
-        $pesanan->status =  $pesanan->status == 'diproses' ? 'siap_saji' : $this->status;
+        $pesanan->status =  $pesanan->status == 'diproses' ? 'selesai' : $this->status;
         $pesanan->save();
 
         $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
