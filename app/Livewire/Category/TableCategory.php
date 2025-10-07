@@ -25,6 +25,7 @@ class TableCategory extends Component
         $this->dispatch('showToast', message: 'Category Berhasil Dihapus.', type: 'success', title: 'Success');
         // dd($category);
     }
+    // public function
     public function render()
     {
         $category = Category::query()

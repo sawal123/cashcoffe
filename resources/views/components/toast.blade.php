@@ -19,8 +19,7 @@
                         close: true,
                         style: {
                             background: type === 'success' ?
-                                "linear-gradient(to right, #00b09b, #96c93d)" :
-                                type === 'error' ?
+                                "linear-gradient(to right, #00b09b, #96c93d)" : type === 'error' ?
                                 "linear-gradient(to right, #e74c3c, #c0392b)" :
                                 "linear-gradient(to right, #3498db, #2ecc71)"
                         }

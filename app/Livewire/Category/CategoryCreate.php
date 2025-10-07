@@ -39,7 +39,7 @@ class CategoryCreate extends Component
                 'is_active' => $this->is_active,
             ]);
         }
-         $this->dispatch('showToast', message: 'Category Berhasil Diupdate', type: 'success', title: 'Success');
+        $this->dispatch('showToast', message: 'Category Berhasil Diupdate', type: 'success', title: 'Success');
     }
     public function simpan()
     {

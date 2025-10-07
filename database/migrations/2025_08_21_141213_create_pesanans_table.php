@@ -14,9 +14,9 @@ return new class extends Migration
         Schema::create('pesanans', function (Blueprint $table) {
             $table->id();
             $table->string('kode')->unique();
+            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('mejas_id')->nullable()->constrained('mejas')->onDelete('set null');
             $table->foreignId('diskons_id')->nullable()->constrained('diskons')->onDelete('set null');
-            // $table->enum('status', ['diproses', 'selesai', 'dibatalkan'])->default('diproses');
             $table->enum('status', ['diproses', 'selesai', 'dibatalkan'])->default('diproses');
             $table->string('metode_pembayaran')->nullable();
             $table->decimal('total', 12, 2)->default(0);

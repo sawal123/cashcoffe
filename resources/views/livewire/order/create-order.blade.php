@@ -101,7 +101,7 @@
                 @endforeach
             </select>
         </div>
-        @if ($status == 'selesai')
+        @if ($status != null)
             <div class="flex justify-between gap-4 items-center mt-2">
                 <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
                 <select id="status" wire:model="status"

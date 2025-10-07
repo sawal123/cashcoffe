@@ -16,6 +16,7 @@
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Status</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Pembayaran</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Total</th>
+                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">kasir</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Create</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Action</th>
                 </tr>
@@ -43,6 +44,9 @@
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span class="">Rp {{ number_format($item->total, 0, ',', '.') }}</span>
+                        </td>
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            <span class=""> {{ $item->user->name }}</span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span class="">{{ $item->created_at->format('d M Y | H:i') }}</span>

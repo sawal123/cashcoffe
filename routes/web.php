@@ -17,10 +17,14 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::resource('menu', MenuController::class);
-    Route::resource('category', CategoryController::class);
+
     Route::resource('order', OrderController::class);
     Route::resource('meja', MejaController::class);
+    Route::resource('category', CategoryController::class);
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
+
+    Route::middleware(['role:admin'])->group(function () {
+    });
 });
 
 // routes/web.php
@@ -31,4 +35,4 @@ Route::post('/logout', function () {
     return redirect('/login');
 })->name('logout');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

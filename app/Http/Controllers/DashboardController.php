@@ -23,7 +23,7 @@ class DashboardController extends Controller
             ->sum('qty');
 
         $totalOrder = Pesanan::where('status', 'selesai')->whereDate('created_at', Carbon::today())->count();
-        $proses = Pesanan::where('status', '!=', 'selesai')->whereDate('created_at', Carbon::today())->count();
+        $proses = Pesanan::where('status', '!=', 'selesai')->where('status', '!=', 'dibatalkan')->whereDate('created_at', Carbon::today())->count();
         $cards = [
             [
                 'title' => 'Total Orders',

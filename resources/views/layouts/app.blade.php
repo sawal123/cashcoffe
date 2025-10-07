@@ -38,8 +38,6 @@
 
     </main>
 
-    <!-- ..::  scripts  start ::.. -->
-    {{-- <x-script script='{!! isset($script) ? $script : '' !!}' /> --}}
     <x-script :script="$script ?? ''" />
 
     <script>
@@ -49,7 +47,6 @@
         };
     </script>
     <script src="{{ asset('assets/js/chartDashboard.js') }}" data-navigate-once></script>
-    <!-- ..::  scripts  end ::.. -->
 
     @livewireScripts
 </body>

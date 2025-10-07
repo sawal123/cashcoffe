@@ -4,9 +4,9 @@
     </button>
     <div>
         <a href="{{ route('dashboard.index') }}" class="sidebar-logo">
-            <img src="{{ asset('assets/images/logo.png') }}" alt="site logo" class="light-logo">
-            <img src="{{ asset('assets/images/logo-light.png') }}" alt="site logo" class="dark-logo">
-            <img src="{{ asset('assets/images/logo-icon.png') }}" alt="site logo" class="logo-icon">
+            <img src="{{ asset('logo/logo.png') }}" alt="site logo" class="light-logo">
+            <img src="{{ asset('logo/logo.png') }}" alt="site logo" class="dark-logo">
+            <img src="{{ asset('logo/logo.png') }}" alt="site logo" class="logo-icon">
         </a>
     </div>
     <div class="sidebar-menu-area">
@@ -19,7 +19,7 @@
             </li>
             <li>
                 <a href="/order" wire:navigate>
-                    <iconify-icon icon="solar:document-text-outline" class="menu-icon"></iconify-icon>
+                    <iconify-icon icon="solar:cart-5-outline" class="menu-icon"></iconify-icon>
                     <span>Order</span>
                 </a>
             </li>
@@ -35,6 +35,15 @@
                     <span>Category</span>
                 </a>
             </li>
+            @unlessrole('kasir')
+                <li>
+                    <a href="/gudang" wire:navigate>
+                        <iconify-icon icon="solar:dollar-linear" class="menu-icon"></iconify-icon>
+                        <span>Omset</span>
+                    </a>
+                </li>
+            @endunlessrole
+
             <li>
                 <a href="/gudang" wire:navigate>
                     <iconify-icon icon="solar:documents-minimalistic-outline" class="menu-icon"></iconify-icon>
@@ -43,7 +52,7 @@
             </li>
             <li>
                 <a href="/meja" wire:navigate>
-                    <iconify-icon icon="solar:cart-outline" class="menu-icon"></iconify-icon>
+                    <iconify-icon icon="solar:bedside-table-3-broken" class="menu-icon"></iconify-icon>
                     <span>Meja</span>
                 </a>
             </li>

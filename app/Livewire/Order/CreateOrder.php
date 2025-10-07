@@ -2,14 +2,16 @@
 
 namespace App\Livewire\Order;
 
+use Carbon\Carbon;
 use App\Models\Meja;
 use App\Models\Menu;
 use App\Models\Pesanan;
 use Livewire\Component;
 use App\Models\PesananItem;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\DB;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class CreateOrder extends Component
 {
@@ -26,7 +28,7 @@ class CreateOrder extends Component
     public $pembayaran = ['tunai', 'qris', 'kartu'];
     public $mejas_id, $perPage = 4; // default 10
     public $metode_pembayaran = null; // default
-    public $status = 'diproses'; // default
+    public $status = null; // default
 
     protected $paginationTheme = 'tailwind'; // bisa juga 'bootstrap' sesuai css framework
 
@@ -78,7 +80,7 @@ class CreateOrder extends Component
             $pesanan->update([
                 'mejas_id'          => $this->mejas_id,
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
-                'status'            => $this->status == 'diproses' ? 'selesai' : $this->status,
+                'status'            => $this->status == 'diproses' ? 'selesai' : 'diproses',
                 'total'             => $pesanan->items()->sum('subtotal'),
             ]);
             $this->status = $pesanan->status;
@@ -110,12 +112,14 @@ class CreateOrder extends Component
             $pesanan = Pesanan::where('mejas_id', $this->mejas_id)
                 ->where('status', '!=', 'selesai')
                 ->where('status', '!=', 'dibatalkan')
+                ->whereDate('created_at', Carbon::today())
                 ->first();
 
             if (!$pesanan) {
                 $pesanan = Pesanan::create([
                     'kode'              => strtoupper(Str::random(8)),
                     'mejas_id'          => $this->mejas_id,
+                    'user_id'          => Auth::user()->id,
                     'metode_pembayaran' => $this->metode_pembayaran ?? null,
                     'total'             => 0,
                     'catatan'           => null,

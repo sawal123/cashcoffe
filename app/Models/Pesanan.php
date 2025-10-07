@@ -16,4 +16,8 @@ class Pesanan extends Model
     {
         return $this->belongsTo(Meja::class, 'mejas_id');
     }
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 }
