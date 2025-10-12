@@ -11,6 +11,7 @@ class Create extends Component
 {
     use WithFileUploads;
     public $nama_menu, $categories_id, $harga, $is_active, $deskripsi, $gambar;
+    public $h_pokok, $h_promo = 0;
     public $menuId = null, $gambarUrl = null;
     public function simpan()
     {
@@ -32,7 +33,9 @@ class Create extends Component
             Menu::create([
                 'nama_menu'    => $this->nama_menu,
                 'categories_id' => $this->categories_id,
+                'h_pokok'        => $this->h_pokok,
                 'harga'        => $this->harga,
+                'h_promo'        => $this->h_promo,
                 'is_active'    => $this->is_active ?? false,
                 'deskripsi'    => $this->deskripsi,
                 'gambar'       => $gambarPath,
@@ -73,7 +76,9 @@ class Create extends Component
             $menu->update([
                 'nama_menu'    => $this->nama_menu,
                 'categories_id' => $this->categories_id,
+                'h_pokok'        => $this->h_pokok,
                 'harga'        => $this->harga,
+                'h_promo'        => $this->h_promo,
                 'is_active'    => $this->is_active ?? false,
                 'deskripsi'    => $this->deskripsi,
             ]);
@@ -87,7 +92,7 @@ class Create extends Component
     public $hidden = 'hidden';
     public function mount($menuId = null)
     {
-        // dd($this->gambarUrl);
+        // dd($menuId);
        $this->hidden =  !$this->gambarUrl ? 'hidden' : '';
         if ($menuId) {
             $menu = Menu::find(base64_decode($menuId));
@@ -95,7 +100,9 @@ class Create extends Component
                 $this->menuId = $menu->id;
                 $this->nama_menu = $menu->nama_menu;
                 $this->categories_id = $menu->categories_id;
+                $this->h_pokok = $menu->h_pokok;
                 $this->harga = $menu->harga;
+                $this->h_promo = $menu->h_promo;
                 $this->is_active = $menu->is_active;
                 $this->deskripsi = $menu->deskripsi;
                 // Note: Gambar is not set here as it's a file upload

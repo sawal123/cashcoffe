@@ -20,4 +20,8 @@ class Pesanan extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class, 'discount_id');
+    }
 }

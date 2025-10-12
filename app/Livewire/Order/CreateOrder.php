@@ -2,32 +2,47 @@
 
 namespace App\Livewire\Order;
 
-use Carbon\Carbon;
+use App\Models\Discount;
 use App\Models\Meja;
 use App\Models\Menu;
 use App\Models\Pesanan;
-use Livewire\Component;
-use App\Models\PesananItem;
-use Illuminate\Support\Str;
-use Livewire\WithPagination;
-use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class CreateOrder extends Component
 {
     use WithPagination;
 
-    public $url = "order";
+    public $url = 'order';
+
     public $orderId = null;
+
     public $title = 'Order / Create';
+
     public $submit = 'saveOrder';
+
     public $search = '';
+
+    public $discount = '';
+
     public $teks = 'Proses';
+
     public $mejas = [];
+
     public $pesanan = [];
+
     public $pembayaran = ['tunai', 'qris', 'kartu'];
-    public $mejas_id, $perPage = 4; // default 10
+
+    public $mejas_id;
+
+    public $perPage = 4; // default 10
+
     public $metode_pembayaran = null; // default
+
     public $status = null; // default
 
     protected $paginationTheme = 'tailwind'; // bisa juga 'bootstrap' sesuai css framework
@@ -35,7 +50,6 @@ class CreateOrder extends Component
     public function editOrder($id)
     {
         $this->orderId = $id;
-
 
         $pesanan = Pesanan::with('items')->findOrFail($id);
         $this->mejas_id = $pesanan->mejas_id;
@@ -45,14 +59,14 @@ class CreateOrder extends Component
         $this->pesanan = $pesanan->items->mapWithKeys(function ($item) {
             return [
                 $item->menus_id => [
-                    'id'        => $item->menus_id,
+                    'id' => $item->menus_id,
                     'nama_menu' => $item->menu->nama_menu ?? '',
-                    'harga'     => (int) $item->harga_satuan,
-                    'gambar'    => $item->menu->gambar ?? '',
-                    'qty'       => $item->qty,
-                    'catatan'   => $item->catatan_item,
-                    'status'    => $item->status,
-                ]
+                    'harga' => (int) $item->harga_satuan,
+                    'gambar' => $item->menu->gambar ?? '',
+                    'qty' => $item->qty,
+                    'catatan' => $item->catatan_item,
+                    'status' => $item->status,
+                ],
             ];
         })->toArray();
         // dd($pesanan);
@@ -60,7 +74,9 @@ class CreateOrder extends Component
 
     public function updateOrder()
     {
-        if (! $this->orderId) return;
+        if (! $this->orderId) {
+            return;
+        }
         DB::beginTransaction();
         try {
             $pesanan = Pesanan::findOrFail($this->orderId);
@@ -69,19 +85,19 @@ class CreateOrder extends Component
 
             foreach ($this->pesanan as $p) {
                 $pesanan->items()->create([
-                    'menus_id'     => $p['id'],
-                    'qty'          => $p['qty'],
+                    'menus_id' => $p['id'],
+                    'qty' => $p['qty'],
                     'harga_satuan' => $p['harga'],
-                    'subtotal'     => $p['harga'] * $p['qty'],
+                    'subtotal' => $p['harga'] * $p['qty'],
                     'catatan_item' => $p['catatan'] ?? null,
                 ]);
             }
             // dd($this->status);
             $pesanan->update([
-                'mejas_id'          => $this->mejas_id,
+                'mejas_id' => $this->mejas_id,
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
-                'status'            => $this->status == 'diproses' ? 'selesai' : 'diproses',
-                'total'             => $pesanan->items()->sum('subtotal'),
+                'status' => $this->status == 'diproses' ? 'selesai' : 'diproses',
+                'total' => $pesanan->items()->sum('subtotal'),
             ]);
             $this->status = $pesanan->status;
 
@@ -90,7 +106,7 @@ class CreateOrder extends Component
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: ' . $e->getMessage());
+            $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: '.$e->getMessage());
         }
     }
 
@@ -98,16 +114,18 @@ class CreateOrder extends Component
     {
         if (empty($this->pesanan)) {
             $this->dispatch('showToast', message: 'Pesanan Masih Kosong', type: 'success', title: 'Success');
+
             return;
         }
         if (! $this->mejas_id) {
             $this->dispatch('showToast', message: 'Meja harus dipilih', type: 'error', title: 'Error');
+
             return;
         }
 
         DB::beginTransaction();
         try {
-            $totalBaru = collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
+            $totalBaru = collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
 
             $pesanan = Pesanan::where('mejas_id', $this->mejas_id)
                 ->where('status', '!=', 'selesai')
@@ -115,14 +133,15 @@ class CreateOrder extends Component
                 ->whereDate('created_at', Carbon::today())
                 ->first();
 
-            if (!$pesanan) {
+            if (! $pesanan) {
                 $pesanan = Pesanan::create([
-                    'kode'              => strtoupper(Str::random(8)),
-                    'mejas_id'          => $this->mejas_id,
-                    'user_id'          => Auth::user()->id,
+                    'kode' => strtoupper(Str::random(8)),
+                    'mejas_id' => $this->mejas_id,
+                    'user_id' => Auth::user()->id,
                     'metode_pembayaran' => $this->metode_pembayaran ?? null,
-                    'total'             => 0,
-                    'catatan'           => null,
+                    'total' => 0,
+                    'total_profit' => 0,
+                    'catatan' => null,
                 ]);
             }
 
@@ -131,15 +150,15 @@ class CreateOrder extends Component
 
                 if ($existingItem) {
                     $existingItem->update([
-                        'qty'      => $existingItem->qty + $p['qty'],
+                        'qty' => $existingItem->qty + $p['qty'],
                         'subtotal' => ($existingItem->qty + $p['qty']) * $existingItem->harga_satuan,
                     ]);
                 } else {
                     $pesanan->items()->create([
-                        'menus_id'     => $p['id'],
-                        'qty'          => $p['qty'],
+                        'menus_id' => $p['id'],
+                        'qty' => $p['qty'],
                         'harga_satuan' => $p['harga'],
-                        'subtotal'     => $p['harga'] * $p['qty'],
+                        'subtotal' => $p['harga'] * $p['qty'],
                         'catatan_item' => null,
                     ]);
                 }
@@ -153,13 +172,15 @@ class CreateOrder extends Component
             $this->pesanan = [];
             $this->mejas_id = null;
             $this->dispatch('showToast', message: 'Menu berhasil dipesan', type: 'success', title: 'Success');
+
             // dd($pesanan->id);
             return redirect()->route('struk.print', base64_encode($pesanan->id));
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
+            $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: '.$e->getMessage());
         }
     }
+
     public function mount()
     {
         if ($this->orderId) {
@@ -179,17 +200,20 @@ class CreateOrder extends Component
     public function addPesanan($id)
     {
         $item = Menu::find($id); // ambil langsung dari DB karena menu sekarang dipaginate
-        if (! $item) return;
+        $harga = $item->h_promo == '0' ? $item->harga : $item->h_promo;
+        if (! $item) {
+            return;
+        }
 
         if (isset($this->pesanan[$id])) {
             $this->pesanan[$id]['qty']++;
         } else {
             $this->pesanan[$id] = [
-                'id'        => $item->id,
+                'id' => $item->id,
                 'nama_menu' => $item->nama_menu,
-                'harga'     => (int) $item->harga,
-                'gambar'    => $item->gambar,
-                'qty'       => 1,
+                'harga' => (int) $harga,
+                'gambar' => $item->gambar,
+                'qty' => 1,
             ];
         }
     }
@@ -198,6 +222,7 @@ class CreateOrder extends Component
     {
         $this->updateQty($id, 1);
     }
+
     public function decrement($id)
     {
         $this->updateQty($id, -1);
@@ -205,7 +230,9 @@ class CreateOrder extends Component
 
     private function updateQty($id, $delta)
     {
-        if (! isset($this->pesanan[$id])) return;
+        if (! isset($this->pesanan[$id])) {
+            return;
+        }
 
         $newQty = $this->pesanan[$id]['qty'] + $delta;
 
@@ -218,19 +245,47 @@ class CreateOrder extends Component
 
     public function getTotalProperty()
     {
-        return collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
+        return collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
     }
 
     public function render()
     {
         $menus = Menu::where('is_active', 1)
-            ->where('nama_menu', 'like', '%' . $this->search . '%')
+            ->where('nama_menu', 'like', '%'.$this->search.'%')
             ->paginate($this->perPage); // misal 8 item per halaman
+
+        $result = null;
+        $discMessage = null;
+        if (! empty($this->discount)) {
+            $disc = Discount::where('kode_diskon', $this->discount)
+                ->where('is_active', true)
+                ->whereDate('tanggal_mulai', '<=', now())
+                ->whereDate('tanggal_akhir', '>=', now())
+                ->first();
+
+            if (! $disc) {
+                $discMessage = 'Kode diskon tidak valid atau sudah tidak aktif.';
+            } elseif (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+                $discMessage = 'Diskon sudah mencapai batas penggunaan.';
+            } else {
+                // Jika lolos semua, ambil data yang dibutuhkan
+                $result = [
+                    'nama' => $disc->nama_diskon,
+                    'type' => $disc->jenis_diskon,
+                    'nilai' => $disc->nilai_diskon,
+                    'min' => $disc->minimum_transaksi,
+                    'max' => $disc->maksimum_diskon,
+                    'kode' => $disc->kode_diskon,
+                ];
+            }
+        }
 
         return view('livewire.order.create-order', [
             'menus' => $menus,
             'orderId' => $this->orderId,
             'status' => $this->status,
+            'disc' => $result,
+            'discMessage' => $discMessage,
         ]);
     }
 }

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('varian_id')->nullable()->constrained('menu_varians')->onDelete('set null');
             $table->integer('qty')->default(1);
             $table->decimal('harga_satuan', 10, 2)->default(0);
+            $table->decimal('profit', 10, 2)->default(0);
             $table->decimal('subtotal', 12, 2)->default(0);
             $table->text('catatan_item')->nullable();
             $table->timestamps();

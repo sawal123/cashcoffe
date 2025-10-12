@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('nama_menu');
             $table->foreignId('categories_id')->constrained('categories')->onDelete('cascade');
+            $table->decimal('h_pokok', 10, 2)->default(0);
             $table->decimal('harga', 10, 2)->default(0);
+            $table->decimal('h_promo', 10, 2)->default(0);
             $table->boolean('is_active')->default(true);
             $table->text('deskripsi')->nullable();
             $table->string('gambar')->nullable();

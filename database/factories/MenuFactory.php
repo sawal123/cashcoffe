@@ -25,6 +25,7 @@ class MenuFactory extends Factory
         return [
            'nama_menu' => $this->faker->unique()->words(2, true), 
             'categories_id' => $this->faker->randomElement($categoryIds),
+            'h_pokok' => $this->faker->numberBetween(10000, 100000),
             'harga' => $this->faker->numberBetween(10000, 100000),
             'is_active' => $this->faker->boolean(90),
             'deskripsi' => $this->faker->sentence(6),

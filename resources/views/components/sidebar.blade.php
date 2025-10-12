@@ -45,6 +45,12 @@
             @endunlessrole
 
             <li>
+                <a href="/discount" wire:navigate>
+                    <iconify-icon icon="solar:documents-minimalistic-outline" class="menu-icon"></iconify-icon>
+                    <span>Discount</span>
+                </a>
+            </li>
+            <li>
                 <a href="/gudang" wire:navigate>
                     <iconify-icon icon="solar:documents-minimalistic-outline" class="menu-icon"></iconify-icon>
                     <span>Gudang</span>

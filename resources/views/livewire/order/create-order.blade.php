@@ -13,6 +13,10 @@
         </div>
         <div class="grid w-full grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             @foreach ($menus as $item)
+                @php
+                    // echo $item;
+                    $harga = $item->h_promo == '0' ? $item->harga : $item->h_promo;
+                @endphp
                 <article wire:click="addPesanan({{ $item->id }})"
                     class="hover:shadow-xl   cursor-pointer group flex flex-col rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
                     <div class="h-40 md:h-52  overflow-hidden">
@@ -25,7 +29,7 @@
                             {{ $item->nama_menu }}
                         </p>
                         <p class="text-base font-bold text-slate-900 dark:text-white">
-                            Rp{{ number_format($item->harga, 0, ',', '.') }}
+                            Rp{{ number_format($harga, 0, ',', '.') }}
                         </p>
                     </div>
                 </article>
@@ -101,6 +105,18 @@
                 @endforeach
             </select>
         </div>
+        <div class="flex justify-between mt-2 gap-4 items-center">
+            <div class="md:col-span-6 col-span-12">
+                <label class="text-sm dark:text-slate-200 text-slate-900">Voucher : </label>
+                <div class=" w-ful">
+
+                    <x-input wire:model.live="discount" place="Masukan Code Voucher" />
+                    @if ($disc)
+                        <p>Diskon {{ $disc['nama'] }} dapat digunakan!</p>
+                    @endif
+                </div>
+            </div>
+        </div>
         @if ($status != null)
             <div class="flex justify-between gap-4 items-center mt-2">
                 <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
@@ -121,9 +137,15 @@
 
         <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <div class="flex justify-between mb-1">
+                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Discount</span>
+                <span class="text-sm font-bold text-slate-900 dark:text-white">
+                    Rp 0
+                </span>
+            </div>
+            <div class="flex justify-between mb-1">
                 <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Total</span>
                 <span class="text-sm font-bold text-slate-900 dark:text-white">
-                    Rp{{ number_format(collect($pesanan)->sum(fn($p) => $p['harga'] * $p['qty']), 0, ',', '.') }}
+                    Rp {{ number_format(collect($pesanan)->sum(fn($p) => $p['harga'] * $p['qty']), 0, ',', '.') }}
                 </span>
             </div>
             @if ($status == 'dibatalkan')

@@ -30,7 +30,18 @@
 
         {{-- Harga --}}
         <div class="md:col-span-6 col-span-12">
-            <label class="form-label">Harga</label>
+            <label class="form-label">Harga Pokok</label>
+            <div class="flex">
+                <span
+                    class="inline-flex items-center px-3 border rounded-e-0 border-e-0 rounded-s-md border-neutral-200 dark:border-neutral-600">
+                    Rp
+                </span>
+                <input type="number" step="0.01" wire:model="h_pokok"
+                    class="form-control grow rounded-ss-none rounded-es-none" placeholder="0.00" required>
+            </div>
+        </div>
+        <div class="md:col-span-6 col-span-12">
+            <label class="form-label">Harga Jual</label>
             <div class="flex">
                 <span
                     class="inline-flex items-center px-3 border rounded-e-0 border-e-0 rounded-s-md border-neutral-200 dark:border-neutral-600">
@@ -38,6 +49,17 @@
                 </span>
                 <input type="number" step="0.01" wire:model="harga"
                     class="form-control grow rounded-ss-none rounded-es-none" placeholder="0.00" required>
+            </div>
+        </div>
+        <div class="md:col-span-6 col-span-12">
+            <label class="form-label">Harga Promo</label>
+            <div class="flex">
+                <span
+                    class="inline-flex items-center px-3 border rounded-e-0 border-e-0 rounded-s-md border-neutral-200 dark:border-neutral-600">
+                    Rp
+                </span>
+                <input type="number" step="0.01" wire:model="h_promo"
+                    class="form-control grow rounded-ss-none rounded-es-none" placeholder="0.00">
             </div>
         </div>
 
