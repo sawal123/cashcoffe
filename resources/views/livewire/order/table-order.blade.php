@@ -31,7 +31,7 @@
                             <h6 class="text-base mb-0 font-normal">{{ $item->kode }}</h6>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class="">{{ $item->meja ? $item->meja->nama : '-' }}</span>
+                            <span class="">{{ $item->nama ? $item->nama : '-' }}</span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span
@@ -43,7 +43,7 @@
                                 class="">{{ $item->metode_pembayaran ? ucwords($item->metode_pembayaran) : 'Belum Bayar' }}</span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class="">Rp {{ number_format($item->total, 0, ',', '.') }}</span>
+                            <span class="">Rp {{ number_format($item->total-$item->discount_value, 0, ',', '.') }}</span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span class=""> {{ $item->user->name }}</span>

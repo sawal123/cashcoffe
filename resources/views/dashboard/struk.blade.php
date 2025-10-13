@@ -100,21 +100,17 @@
     <div class="center" style="">
         <img src="{{ asset('logo/logo.png') }}" style="max-width:80px;"><br>
         <div class="bold">Temuan Space</div>
-         <span>Alamat : Jl. Halat (Tsix)</span>
+         <span>Jl. Tenis No.30, Ps. Merah Bar., Kec. Medan Kota</span>
         <div>{{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}</div>
 
     </div>
-
     <div class="separator"></div>
-
     <div>
-        Invo  : {{ $pesanan->kode }} <br>
+        Invoice  : {{ $pesanan->kode }} <br>
         kasir : {{ $pesanan->user->name }} <br>
-        Meja  : {{ $pesanan->meja->nama ?? '-' }}
+        Meja  : {{ $pesanan->nama ?? '-' }}
     </div>
-
     <div class="separator"></div>
-
     <table>
         @foreach ($pesanan->items as $item)
             <tr>
@@ -128,10 +124,21 @@
     <div class="separator"></div>
 
     <table>
-        <tr>
-            <td class="bold">TOTAL</td>
+         <tr>
+            <td class="bold">Sub Total</td>
             <td class="right bold">{{ number_format($pesanan->total) }}</td>
         </tr>
+         <tr>
+            <td class="bold">Discount</td>
+            <td class="right bold">-{{ number_format($pesanan->discount_value) }}</td>
+
+        </tr>
+
+        <tr>
+            <td class="bold">TOTAL</td>
+            <td class="right bold">{{ number_format($pesanan->total - $pesanan->discount_value) }}</td>
+        </tr>
+
         <tr>
             <td>Bayar</td>
             <td class="right">{{ $pesanan->metode_pembayaran ?? '-' }}</td>

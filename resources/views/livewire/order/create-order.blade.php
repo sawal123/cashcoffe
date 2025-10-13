@@ -49,10 +49,18 @@
                     {{ ucfirst(strtolower($status)) }}
                 </span>
             @endif
-
         </div>
         <hr class="border-slate-200 dark:border-slate-700 mb-3">
-        <select id="mejas_id" wire:model="mejas_id"
+        <div class="flex justify-between mt-2 gap-4 items-center">
+            <div class="md:col-span-6 col-span-12">
+                <div class=" w-ful">
+
+                    <x-input wire:model="nama_costumer" place="Nama Costumer" />
+
+                </div>
+            </div>
+        </div>
+        {{-- <select id="mejas_id" wire:model="mejas_id"
             class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
             required>
             <option value="" class="text-neutral-500">-- Pilih Meja --</option>
@@ -61,7 +69,7 @@
                     {{ $meja->nama }}
                 </option>
             @endforeach
-        </select>
+        </select> --}}
         <ul class="space-y-3 my-3">
             @forelse ($pesanan as $index=>$p)
                 <li class="flex items-center justify-between gap-2">
@@ -91,7 +99,6 @@
             @endforelse
         </ul>
         <hr class="border-slate-200 dark:border-slate-700 mb-3">
-        {{-- @if ($orderId) --}}
         <div class="flex justify-between gap-4 items-center">
             <span class="text-sm dark:text-slate-200 text-slate-900">Pembayaran: </span>
             <select id="metode_pembayaran" wire:model="metode_pembayaran"
@@ -105,18 +112,7 @@
                 @endforeach
             </select>
         </div>
-        <div class="flex justify-between mt-2 gap-4 items-center">
-            <div class="md:col-span-6 col-span-12">
-                <label class="text-sm dark:text-slate-200 text-slate-900">Voucher : </label>
-                <div class=" w-ful">
 
-                    <x-input wire:model.live="discount" place="Masukan Code Voucher" />
-                    @if ($disc)
-                        <p>Diskon {{ $disc['nama'] }} dapat digunakan!</p>
-                    @endif
-                </div>
-            </div>
-        </div>
         @if ($status != null)
             <div class="flex justify-between gap-4 items-center mt-2">
                 <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
@@ -133,21 +129,46 @@
                 </select>
             </div>
         @endif
+        <div class="flex justify-between mt-2 gap-4 items-center">
+            <div class="md:col-span-6 col-span-12">
+                <label class="text-sm dark:text-slate-200 text-slate-900">Voucher : </label>
+                <div class=" w-ful">
+
+                    <x-input wire:model.live="discount" place="Masukan Code Voucher" />
+                    @if ($discMessage)
+                        <p class="text-xs text-slate-500 italic mt-1">{{ $discMessage }}</p>
+                    @endif
+                </div>
+            </div>
+        </div>
         {{-- @endif --}}
 
         <div class="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
             <div class="flex justify-between mb-1">
-                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Discount</span>
-                <span class="text-sm font-bold text-slate-900 dark:text-white">
-                    Rp 0
+                <span class="text-sm font-medium text-slate-700">Subtotal</span>
+                <span class="text-sm font-bold text-slate-900">
+                    Rp {{ number_format($total, 0, ',', '.') }}
                 </span>
             </div>
+
             <div class="flex justify-between mb-1">
-                <span class="text-sm font-medium text-slate-700 dark:text-slate-200">Total</span>
-                <span class="text-sm font-bold text-slate-900 dark:text-white">
-                    Rp {{ number_format(collect($pesanan)->sum(fn($p) => $p['harga'] * $p['qty']), 0, ',', '.') }}
+                <span class="text-sm font-medium text-slate-700">Discount</span>
+                <span class="text-sm font-bold text-green-700">
+                    - Rp {{ number_format($discountValue, 0, ',', '.') }}
                 </span>
             </div>
+
+            <hr class="my-1">
+
+            <div class="flex justify-between mb-1">
+                <span class="text-sm font-medium text-slate-700">Total</span>
+                <span class="text-lg font-bold text-slate-900">
+                    Rp {{ number_format($totalAfterDiscount, 0, ',', '.') }}
+                </span>
+            </div>
+
+
+
             @if ($status == 'dibatalkan')
                 <button disabled
                     class="w-full bg-gray-600 mt-2 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
