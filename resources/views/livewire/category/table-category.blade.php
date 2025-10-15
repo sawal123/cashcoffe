@@ -5,9 +5,6 @@
         <div class="sm:w-[300px] w-ful">
             <x-input wire:model.live="search" place="Cari..." />
         </div>
-
-
-
     </div>
 
     <div class="table-responsive mt-2">

@@ -37,7 +37,7 @@
             </li>
             @unlessrole('kasir')
                 <li>
-                    <a href="/gudang" wire:navigate>
+                    <a href="/omset" wire:navigate>
                         <iconify-icon icon="solar:dollar-linear" class="menu-icon"></iconify-icon>
                         <span>Omset</span>
                     </a>
