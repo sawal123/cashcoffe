@@ -11,7 +11,9 @@
                 </button>
 
             </div>
+            
         </div>
+        {{-- <p>Anda Login Sebagai Kasir!</p> --}}
         <div class="col-auto">
             <div class="flex flex-wrap items-center gap-3">
                 <button type="button" id="theme-toggle"
@@ -24,14 +26,14 @@
                     </span>
                 </button>
 
-
+                
 
 
 
 
                 <button data-dropdown-toggle="dropdownProfile" class="flex justify-center items-center rounded-full"
                     type="button">
-                    <img src="{{ asset('assets/images/user.png') }}" alt="image"
+                    <img src="{{ asset('logo/user.jpg') }}" alt="image"
                         class="w-10 h-10 object-fit-cover rounded-full">
                 </button>
                 <div id="dropdownProfile"

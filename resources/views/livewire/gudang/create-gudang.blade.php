@@ -8,17 +8,26 @@
 
         {{-- Nama Bahan --}}
         <div class="md:col-span-6 col-span-12">
-            <div x-data="{ open: false, query: '', results: @entangle('daftarBahan'), selected: '' }" class="relative">
+            <div x-data="{
+                open: false,
+                query: @entangle('nama_bahan').defer,
+                results: @entangle('daftarBahan'),
+                selected: ''
+            }" x-init="query = $wire.nama_bahan" class="relative">
                 <label class="form-label">Nama Bahan</label>
+
                 <input type="text" x-model="query" @input.debounce.300ms="$wire.searchBahan(query); open = true"
                     @click="open = true" @keydown.escape="open = false" @blur="setTimeout(() => open = false, 150)"
                     wire:model.defer="nama_bahan"
-                    class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
-                    placeholder="Contoh: Gula, Sirup, Kopi" required>
+                    class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 
+               bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
+                    placeholder="Contoh: Gula, Sirup, Kopi" :disabled="$wire.gudangId !== null" {{-- <-- inilah bagian penting --}}
+                    required>
 
-                <template x-if="open && results.length > 0">
+                <template x-if="open && results.length > 0 && $wire.gudangId === null">
                     <ul
-                        class="absolute z-50 w-full bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
+                        class="absolute z-50 w-full bg-white dark:bg-neutral-700 border border-neutral-300 dark:border-neutral-600 
+                   rounded-lg shadow-lg mt-1 max-h-48 overflow-y-auto">
                         <template x-for="item in results" :key="item">
                             <li @click="query = item; $wire.set('nama_bahan', item); open = false"
                                 class="px-3 py-2 cursor-pointer hover:bg-neutral-100 dark:hover:bg-neutral-600"
@@ -27,6 +36,8 @@
                     </ul>
                 </template>
             </div>
+
+
 
         </div>
 

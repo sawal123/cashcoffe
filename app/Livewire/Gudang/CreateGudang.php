@@ -20,7 +20,26 @@ class CreateGudang extends Component
     public function mount()
     {
         $this->daftarBahan = Gudang::pluck('nama_bahan')->toArray();
+        $gudang = GudangRiwayat::find(\base64_decode($this->gudangId));
+
+        // dd($gudang->gudang->nama_bahan);
+        if (!$gudang) {
+            $this->dispatch('showToast', [
+                'type' => 'error',
+                'message' => 'Data bahan tidak ditemukan.'
+            ]);
+            return;
+        }
+        $this->gudangId = $gudang->id;
+        $this->nama_bahan = $gudang->gudang->nama_bahan;
+        $this->jumlah_masuk = $gudang->jumlah;
+        $this->satuan = $gudang->gudang->satuan;
+        $this->harga_satuan = $gudang->harga_satuan;
+        $this->minimum_stok = $gudang->minimum_stok;
+        $this->keterangan = $gudang->keterangan;
+        $this->tipe = $gudang->tipe;
     }
+
 
     public function searchBahan($query)
     {
@@ -108,6 +127,80 @@ class CreateGudang extends Component
             $this->dispatch('showToast', type: 'error', message: 'Gagal menyimpan: ' . $e->getMessage());
         }
     }
+
+    public function update()
+    {
+        $this->validate([
+            'nama_bahan' => 'required|string|max:255',
+            'jumlah_masuk' => 'required|numeric|min:1',
+            'satuan' => 'required|string',
+            'harga_satuan' => 'nullable|numeric|min:0',
+            'minimum_stok' => 'nullable|numeric|min:0',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $riwayat = GudangRiwayat::findOrFail($this->gudangId);
+            $gudang = $riwayat->gudang;
+
+            // Ambil stok awal sebelum ada perubahan
+            $stokSebelum = $gudang->stok;
+
+            // Ambil jumlah lama dari riwayat sebelum diubah
+            $jumlahLama = $riwayat->jumlah;
+            $jumlahBaru = $this->jumlah_masuk;
+
+            // Hitung selisih jumlah
+            $selisih = $jumlahBaru - $jumlahLama;
+
+            if ($riwayat->tipe === 'masuk') {
+                // Update stok gudang: tambah atau kurangi berdasarkan selisih
+                $gudang->stok += $selisih;
+
+                // Update harga rata-rata baru kalau harga berubah
+                if ($this->harga_satuan !== null) {
+                    $total_nilai_lama = $gudang->stok * $gudang->harga_satuan;
+                    $total_nilai_baru = $jumlahBaru * $this->harga_satuan;
+                    $stokTotal = $gudang->stok + $jumlahBaru;
+
+                    $harga_rata2 = $stokTotal > 0
+                        ? ($total_nilai_lama + $total_nilai_baru) / $stokTotal
+                        : $gudang->harga_satuan;
+
+                    $gudang->harga_satuan = $harga_rata2;
+                }
+            } else {
+                // tipe keluar
+                $gudang->stok -= $selisih; // selisih negatif artinya stok bertambah (revisi)
+                if ($gudang->stok < 0) {
+                    $gudang->stok = 0;
+                }
+            }
+
+            // Update Gudang
+            $gudang->save();
+
+            // Update Riwayat
+            $riwayat->update([
+                'jumlah' => $jumlahBaru,
+                'stok_sebelum' => $stokSebelum,
+                'stok_sesudah' => $gudang->stok,
+                'harga_satuan' => $this->harga_satuan,
+                'total_harga' => $jumlahBaru * $this->harga_satuan,
+                'keterangan' => $this->keterangan ?? ucfirst($riwayat->tipe) . ' stok',
+            ]);
+
+            DB::commit();
+
+            $this->dispatch('showToast', type: 'success', message: 'Data gudang berhasil diperbarui!');
+            $this->reset(['gudangId', 'nama_bahan', 'jumlah_masuk', 'satuan', 'harga_satuan', 'minimum_stok', 'keterangan', 'tipe']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('showToast', type: 'error', message: 'Gagal memperbarui: ' . $e->getMessage());
+        }
+    }
+
 
     public function render()
     {

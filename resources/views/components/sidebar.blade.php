@@ -57,6 +57,12 @@
                 </a>
             </li>
             <li>
+                <a href="/riwayat-gudang" wire:navigate>
+                    <iconify-icon icon="solar:documents-minimalistic-outline" class="menu-icon"></iconify-icon>
+                    <span>Riwayat Gudang</span>
+                </a>
+            </li>
+            <li>
                 <a href="/meja" wire:navigate>
                     <iconify-icon icon="solar:bedside-table-3-broken" class="menu-icon"></iconify-icon>
                     <span>Meja</span>

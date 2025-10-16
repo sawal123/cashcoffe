@@ -12,7 +12,7 @@ class GudangController extends Controller
      public $url = "gudang";
     public function index()
     {
-        return view('dashboard.gudang', ['title' => 'gudang', 'url' => $this->url]);
+        return view('dashboard.gudang', ['title' => 'Gudang', 'url' => $this->url]);
     }
 
     /**
@@ -52,7 +52,15 @@ class GudangController extends Controller
      */
     public function edit(string $id)
     {
-        //
+         return view(
+            'dashboard.gudang.create',
+            [
+               'gudangId' => $id,
+                'title' => 'Gudang / Edit',
+                'url' => $this->url,
+                'submit' => 'update'
+            ]
+        );
     }
 
     /**

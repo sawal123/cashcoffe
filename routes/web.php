@@ -7,6 +7,7 @@ use App\Http\Controllers\GudangController;
 use App\Http\Controllers\MejaController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\RiwayatGudangController;
 use App\Http\Controllers\StruckController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -25,6 +26,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('category', CategoryController::class);
     Route::resource('discount', DiscountController::class);
     Route::resource('gudang', GudangController::class);
+    Route::resource('riwayat-gudang', RiwayatGudangController::class);
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 
     Route::middleware(['role:admin'])->group(function () {
