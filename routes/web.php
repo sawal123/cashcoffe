@@ -1,16 +1,17 @@
 <?php
 
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DiscountController;
-use App\Http\Controllers\GudangController;
-use App\Http\Controllers\MejaController;
-use App\Http\Controllers\MenuController;
-use App\Http\Controllers\OrderController;
-use App\Http\Controllers\RiwayatGudangController;
-use App\Http\Controllers\StruckController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MejaController;
+use App\Http\Controllers\MenuController;
+use App\Http\Controllers\OmsetController;
+use App\Http\Controllers\OrderController;
+use App\Http\Controllers\GudangController;
+use App\Http\Controllers\StruckController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DiscountController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\RiwayatGudangController;
 
 Route::view('/', 'welcome');
 
@@ -26,6 +27,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('category', CategoryController::class);
     Route::resource('discount', DiscountController::class);
     Route::resource('gudang', GudangController::class);
+    Route::resource('omset', OmsetController::class);
     Route::resource('riwayat-gudang', RiwayatGudangController::class);
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 

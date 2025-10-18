@@ -62,12 +62,21 @@
                     <span>Riwayat Gudang</span>
                 </a>
             </li>
-            <li>
+            @unlessrole('kasir')
+                <li>
+                    <a href="/user" wire:navigate>
+                        <iconify-icon icon="solar:bedside-table-3-broken" class="menu-icon"></iconify-icon>
+                        <span>User</span>
+                    </a>
+                </li>
+            @endunlessrole
+
+            {{-- <li>
                 <a href="/meja" wire:navigate>
                     <iconify-icon icon="solar:bedside-table-3-broken" class="menu-icon"></iconify-icon>
                     <span>Meja</span>
                 </a>
-            </li>
+            </li> --}}
 
         </ul>
     </div>

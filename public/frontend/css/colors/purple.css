@@ -1,0 +1,48 @@
+.color-primary, .single-blog a {
+    color: #8470FF;
+}
+.buttons {
+    border-top: 1px solid #8470FF;
+    border-bottom: 1px solid #8470FF;
+}
+.buttons:hover {
+	background:#8470FF;
+	color:#ffffff;
+}
+.preloader-top-cup{
+	color:#8470FF
+}
+.logo {
+	color: #8470FF;
+}
+.logo:hover {
+    color: #8470FF;
+}
+.header .navbar-nav li.active a,
+.header .navbar-nav li a:hover {
+    color: #8470FF;
+}
+.mobile_menu_btn {
+    border: 1px solid #8470FF
+}
+.mobile_menu_btn span {
+    background: #8470FF;
+}
+.grid-item .item-icon {
+	color: #8470FF;
+}
+.single-offer h3:after{
+	background: #8470FF;
+}
+.testimonial-body blockquote i {
+    color: #8470FF;
+}
+.testimonial-body a {
+    color: #8470FF;
+}
+.owl-page.active {
+    background: #8470FF;
+}
+.footer-area {
+    border-top: 1px solid #8470FF;
+}

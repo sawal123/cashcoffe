@@ -108,7 +108,7 @@
     <div>
         Invoice  : {{ $pesanan->kode }} <br>
         kasir : {{ $pesanan->user->name }} <br>
-        Meja  : {{ $pesanan->nama ?? '-' }}
+        Costumer  : {{ $pesanan->nama ?? '-' }}
     </div>
     <div class="separator"></div>
     <table>

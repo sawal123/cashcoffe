@@ -1,0 +1,48 @@
+.color-primary, .single-blog a {
+    color: #03A9F4;
+}
+.buttons {
+    border-top: 1px solid #03A9F4;
+    border-bottom: 1px solid #03A9F4;
+}
+.buttons:hover {
+	background:#03A9F4;
+	color:#ffffff;
+}
+.preloader-top-cup{
+	color:#03A9F4
+}
+.logo {
+	color: #03A9F4;
+}
+.logo:hover {
+    color: #03A9F4;
+}
+.header .navbar-nav li.active a,
+.header .navbar-nav li a:hover {
+    color: #03A9F4;
+}
+.mobile_menu_btn {
+    border: 1px solid #03A9F4
+}
+.mobile_menu_btn span {
+    background: #03A9F4;
+}
+.grid-item .item-icon {
+	color: #03A9F4;
+}
+.single-offer h3:after{
+	background: #03A9F4;
+}
+.testimonial-body blockquote i {
+    color: #03A9F4;
+}
+.testimonial-body a {
+    color: #03A9F4;
+}
+.owl-page.active {
+    background: #03A9F4;
+}
+.footer-area {
+    border-top: 1px solid #03A9F4;
+}

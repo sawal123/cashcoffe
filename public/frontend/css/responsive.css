@@ -1,0 +1,305 @@
+/* Medium Layout: 1200px. */
+@media only screen and (min-width: 991px) and (max-width: 1199px) {
+h3{
+	font-size:28px;
+}
+/* SPECIAL MENU */
+.sp-menu-content{
+	padding:15px;
+}
+/* TESTIMONIAL */
+.testimonial-image{
+	padding-left:15px;
+	padding-right:0px;
+}
+.testimonial-body h3{
+	margin-bottom:0px;
+}
+.testimonial-body blockquote{
+	margin-bottom:0px;
+	padding:15px 0px;
+}
+/* CONTACT */
+.single-contact-widget{
+	padding:30px 30px 30px 70px;
+}
+.contact-widget-icon {
+  font-size: 45px;
+  left: 15px;
+  top: 35px;
+}
+}
+
+/* Tablet Layout: 768px. */
+@media only screen and (min-width: 768px) and (max-width: 990px) {
+/* HERO SECTION */
+.hero-logo{
+	margin-bottom:20px;
+}
+.hero-logo img {
+  max-width: 120px;
+}
+.intro{
+	font-size:30px;
+}
+.hero .buttons {
+  margin-top: 25px;
+}
+
+.fullscreen-slider.owl-theme .owl-controls{
+	position:absolute;
+	top:60%;
+}
+/* SPECIAL OFFER */
+.single-offer{
+	padding-left:0px;
+	padding-right:0px;
+}
+.single-offer h3{
+	font-size:25px;
+}
+/* SPECIAL MENU */
+.sp-menu-thumb{
+	max-width:100px;
+}
+.sp-menu-content{
+	padding:15px;
+}
+.sp-menu-content h3{
+	width:100%;
+	font-size:26px;
+}
+.sp-menu-name-price span{
+	font-size:26px;
+	float:left;
+}
+/* CHEF */
+.chef-content h3{
+	font-size:22px;
+	margin-bottom:0px;
+}
+.social-icons ul li a{
+	margin-left:4px;
+	margin-right:4px;
+}
+/* CONTACT */
+.single-contact-widget {
+  padding: 20px 20px 20px 50px;
+  position: relative;
+}
+.contact-widget-icon {
+  font-size: 35px;
+  left: 10px;
+  top: 20px;
+}
+.single-contact-widget h3 {
+  font-size: 22px;
+  margin-bottom: 20px;
+}
+/* PAGE HEADER */
+.page-header{
+	padding-top:130px;
+	padding-bottom:100px;
+}
+
+}
+
+/* Mobile Layout: 320px. */
+@media only screen and (max-width: 767px) {
+/* GENERAL */
+h1{
+	font-size:40px;
+}
+h2{
+	font-size: 30px;
+}
+h3{
+	font-size: 26px;
+}
+h4{
+	font-size: 20px;
+}
+h5{
+	font-size: 18px;
+}
+h6{
+	font-size: 16px;
+}
+p {
+	font-size: 14px;
+}
+.text-center-xs {
+	text-align: center;
+}
+.text-left-xs {
+	text-align: left;
+}
+.text-right-xs {
+	text-align: right;
+}
+/* padding */
+.pt100{
+	padding-top:50px;
+}
+.pb100{
+	padding-bottom:50px;
+}
+/* buttons */
+.buttons{
+	font-size:14px;
+	padding:10px 25px;
+}
+/* section title */
+.section-title.mb90{
+	margin-bottom:60px;
+}
+.section-title h2{
+	font-size:30px;
+	padding-bottom:15px;
+}
+/* HEADER */
+.navbar-collapse{
+	background:#232323;
+}
+.header .navbar-nav li a{
+	padding-top:10px;
+	padding-bottom:10px;
+}
+/* PRELOADER */
+.preloader-top-cup {
+	font-size:40px;
+}
+/* HERO SECTIONS */
+.hero-logo{
+	margin-bottom:25px;
+}
+.hero-logo img{
+	max-width:120px;
+}
+.intro{
+	font-size:35px
+}
+.hero .buttons{
+	margin-top:30px;
+}
+.fullscreen-slider.owl-theme .owl-controls{
+	position:absolute;
+	top:60%;
+}
+/* SPECIAL OFFER */
+.single-offer{
+	margin-top:20px;
+	margin-bottom:20px;
+}
+/* SPECIAL MENU */
+.sp-menu-thumb{
+	max-width:100%;
+}
+.sp-menu-content{
+	padding:15px;
+}
+.sp-menu-name-price span{
+	font-size:26px;
+}
+/* BLOG */
+.post-title h3{
+	font-size:20px;
+}
+/* Blog horizontal */
+.horizontal-blog .pl-0{
+	padding-right:0px;
+}
+.post-format{
+	font-size:22px;
+	padding:10px;
+}
+.horizontal-blog h2{
+	font-size:22px;
+}
+.blog-list-content{
+	padding-left:15px;
+	padding-right:15px;
+}
+/* CHEF */
+.single-chef{
+	margin-bottom:35px;
+}
+.chef-content{
+	padding: 35px 15px;
+}
+.chef-content p{
+	margin-bottom:15px;
+}
+/* TESTIMONIAL */
+.testimonial-carousel .owl-item {
+  padding-left: 0px;
+}
+.testimonial-carousel .owl-item:first-child {
+  padding-right:0px;
+}
+.testimonial-image{
+	padding-left:15px;
+	text-align:center;
+	padding-bottom:15px;
+	width:100%;
+}
+.testimonial-body{
+	padding-right:15px;
+}
+.testimonial-body h3{
+	text-align:center;
+	margin-bottom:0px;
+}
+.testimonial-body p{
+	text-align:center;
+	margin-bottom:0px;
+}
+.testimonial-body blockquote{
+	margin-bottom:0px;
+}
+/* CONTACT */
+.single-contact-widget{
+	margin-bottom:20px;
+	padding:30px 30px 30px 70px;
+}
+.contact-widget-icon{
+	font-size: 45px;
+	left: 15px;
+	top: 30px;
+}
+/* PAGE HEADER */
+.page-header{
+	padding-top:130px;
+	padding-bottom:100px;
+}
+/* SINGLE BLOG */
+.blog-comments, .comment-post{
+	padding:40px 15px;
+}
+.comment-post button{
+	margin-top:0px;
+}
+.in-reply{
+	padding-left:25px;
+}
+.in-reply.in-reply-2{
+	padding-left:35px;
+}
+.single-sidebar{
+	margin-top:50px;
+	margin-bottom:0px;
+}
+}
+/* Wide Mobile Layout: 480px. */
+@media only screen and (min-width: 480px) and (max-width: 767px) {
+/* SPECIAL MENU */
+.sp-menu-thumb{
+	max-width:100px;
+}
+.sp-menu-content{
+	padding:15px;
+}
+.sp-menu-name-price span{
+	font-size:26px;
+}
+}
