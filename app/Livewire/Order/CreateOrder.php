@@ -37,7 +37,7 @@ class CreateOrder extends Component
 
     public $pesanan = [];
 
-    public $pembayaran = ['tunai', 'qris', 'kartu'];
+    public $pembayaran = ['tunai', 'qris', 'kartu','shopeefood','gofood','grabfood','transfer'];
 
     public $mejas_id;
 
