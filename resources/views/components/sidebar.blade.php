@@ -4,9 +4,9 @@
     </button>
     <div>
         <a href="{{ route('dashboard.index') }}" class="sidebar-logo">
-            <img src="{{ asset('logo/logo.png') }}" alt="site logo" class="light-logo">
-            <img src="{{ asset('logo/logo.png') }}" alt="site logo" class="dark-logo">
-            <img src="{{ asset('logo/logo.png') }}" alt="site logo" class="logo-icon">
+            {{-- <img src="{{ asset('logo/logow.png') }}" alt="site logo" class="light-logo"> --}}
+            <img src="{{ asset('logo/logow.png') }}" style="width: 50ppx" alt="site logo" class="dark-logo">
+            <img src="{{ asset('logo/logow.png') }}" alt="site logo" class="logo-icon">
         </a>
     </div>
     <div class="sidebar-menu-area">

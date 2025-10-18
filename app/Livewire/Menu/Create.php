@@ -100,9 +100,9 @@ class Create extends Component
                 $this->menuId = $menu->id;
                 $this->nama_menu = $menu->nama_menu;
                 $this->categories_id = $menu->categories_id;
-                $this->h_pokok = $menu->h_pokok;
-                $this->harga = $menu->harga;
-                $this->h_promo = $menu->h_promo;
+                $this->h_pokok = (int) $menu->h_pokok;
+                $this->harga = (int) $menu->harga;
+                $this->h_promo =  (int) $menu->h_promo;
                 $this->is_active = $menu->is_active;
                 $this->deskripsi = $menu->deskripsi;
                 // Note: Gambar is not set here as it's a file upload
