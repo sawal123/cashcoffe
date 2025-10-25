@@ -12,7 +12,7 @@
                 <tr>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">#</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Kode</th>
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Meja</th>
+                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Nama</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Status</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Pembayaran</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Total</th>

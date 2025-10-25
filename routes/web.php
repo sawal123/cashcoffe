@@ -11,6 +11,7 @@ use App\Http\Controllers\StruckController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DiscountController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PengeluaranController;
 use App\Http\Controllers\RiwayatGudangController;
 
 Route::view('/', 'welcome');
@@ -28,6 +29,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('discount', DiscountController::class);
     Route::resource('gudang', GudangController::class);
     Route::resource('omset', OmsetController::class);
+    Route::resource('pengeluaran', PengeluaranController::class);
     Route::resource('riwayat-gudang', RiwayatGudangController::class);
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 

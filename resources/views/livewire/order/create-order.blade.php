@@ -2,7 +2,7 @@
     <x-toast />
     {{-- Kiri: Produk --}}
 
-    <div class="flex-1 min-w-0 order-1 lg:order-1">
+    <div class="flex-1 min-w-0 order-1 lg:order-1" id="menu">
         <div class="sm:w-[300px] w-ful mb-2">
             <div class="flex gap-2">
                 <x-droppage perPage="{{ $perPage }}" />
@@ -39,7 +39,7 @@
     </div>
 
     {{-- Kanan: Pesanan --}}
-    <div
+    <div id="pesan"
         class="sm:w-[300px] w-ful shrink-0 border border-slate-200 mt-2 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-sm p-2 h-fit order-2 lg:order-2">
         <div class="flex items-center justify-between mb-3">
             <p class="font-bold text-lg mb-2 text-slate-800 dark:text-white">Pesanan Item</p>
@@ -60,16 +60,6 @@
                 </div>
             </div>
         </div>
-        {{-- <select id="mejas_id" wire:model="mejas_id"
-            class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
-            required>
-            <option value="" class="text-neutral-500">-- Pilih Meja --</option>
-            @foreach ($mejas as $meja)
-                <option value="{{ $meja->id }}" class="text-neutral-800 dark:text-neutral-200">
-                    {{ $meja->nama }}
-                </option>
-            @endforeach
-        </select> --}}
         <ul class="space-y-3 my-3">
             @forelse ($pesanan as $index=>$p)
                 <li class="flex items-center justify-between gap-2">
@@ -188,5 +178,76 @@
             @endif
 
         </div>
+
+        <button id="scrollButton"
+            class=" lg:hidden fixed bottom-6 right-6 w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg transition-all duration-300 hover:bg-blue-700 z-50">
+            <iconify-icon id="scrollIcon" icon="solar:round-arrow-down-broken" class="text-2xl"></iconify-icon>
+        </button>
+        <style>
+            /* Tombol selalu muncul di mobile */
+            #scrollButton {
+                display: flex;
+            }
+
+            /* Hilang otomatis di desktop (layar >= 1024px) */
+            @media (min-width: 700px) {
+                #scrollButton {
+                    display: none !important;
+                }
+            }
+        </style>
+        <script>
+            document.addEventListener("livewire:navigated", function() {
+                const scrollButton = document.getElementById('scrollButton');
+                const scrollIcon = document.getElementById('scrollIcon');
+                const menuSection = document.getElementById('menu');
+                const pesanSection = document.getElementById('pesan');
+                const navbarOffset = 80; // 🔧 ubah sesuai tinggi navbar kamu
+
+                // Fungsi scroll dengan offset
+                function scrollToWithOffset(element) {
+                    const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                    const offsetPosition = elementPosition - navbarOffset;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+                }
+
+                // Fungsi deteksi posisi scroll
+                function checkScrollPosition() {
+                    const menuRect = menuSection.getBoundingClientRect();
+                    const pesanRect = pesanSection.getBoundingClientRect();
+
+                    if (pesanRect.top < window.innerHeight / 2) {
+                        scrollIcon.setAttribute('icon', 'solar:round-arrow-up-broken');
+                        scrollButton.dataset.target = 'menu';
+                    } else {
+                        scrollIcon.setAttribute('icon', 'solar:round-arrow-down-broken');
+                        scrollButton.dataset.target = 'pesan';
+                    }
+                }
+
+                // Klik tombol
+                scrollButton.addEventListener('click', function() {
+                    const target = scrollButton.dataset.target;
+                    if (target === 'pesan') {
+                        scrollToWithOffset(pesanSection);
+                    } else {
+                        scrollToWithOffset(menuSection);
+                    }
+                });
+
+                // Jalankan saat scroll & load awal
+                window.addEventListener('scroll', checkScrollPosition);
+                checkScrollPosition();
+            });
+            // document.addEventListener('DOMContentLoaded', function() {
+
+            // });
+        </script>
+
+
 
     </div>

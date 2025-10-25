@@ -4,7 +4,7 @@
     </button>
     <div>
         <a href="{{ route('dashboard.index') }}" class="sidebar-logo">
-            {{-- <img src="{{ asset('logo/logow.png') }}" alt="site logo" class="light-logo"> --}}
+            <img src="{{ asset('logo/logow.png') }}" alt="site logo" class="light-logo">
             <img src="{{ asset('logo/logow.png') }}" style="width: 50ppx" alt="site logo" class="dark-logo">
             <img src="{{ asset('logo/logow.png') }}" alt="site logo" class="logo-icon">
         </a>
@@ -19,7 +19,7 @@
             </li>
             <li>
                 <a href="/order" wire:navigate>
-                    <iconify-icon icon="solar:cart-5-outline" class="menu-icon"></iconify-icon>
+                    <iconify-icon icon="solar:cart-plus-bold" class="menu-icon"></iconify-icon>
                     <span>Order</span>
                 </a>
             </li>
@@ -35,6 +35,7 @@
                     <span>Category</span>
                 </a>
             </li>
+
             @unlessrole('kasir')
                 <li>
                     <a href="/omset" wire:navigate>
@@ -43,29 +44,34 @@
                     </a>
                 </li>
             @endunlessrole
-
+            <li>
+                <a href="/pengeluaran" wire:navigate>
+                    <iconify-icon icon="solar:inbox-out-bold" class="menu-icon"></iconify-icon>
+                    <span>Pengeluaran</span>
+                </a>
+            </li>
             <li>
                 <a href="/discount" wire:navigate>
-                    <iconify-icon icon="solar:documents-minimalistic-outline" class="menu-icon"></iconify-icon>
+                    <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
                     <span>Discount</span>
                 </a>
             </li>
             <li>
                 <a href="/gudang" wire:navigate>
-                    <iconify-icon icon="solar:documents-minimalistic-outline" class="menu-icon"></iconify-icon>
+                    <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
                     <span>Gudang</span>
                 </a>
             </li>
             <li>
                 <a href="/riwayat-gudang" wire:navigate>
-                    <iconify-icon icon="solar:documents-minimalistic-outline" class="menu-icon"></iconify-icon>
+                    <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
                     <span>Riwayat Gudang</span>
                 </a>
             </li>
             @unlessrole('kasir')
                 <li>
                     <a href="/user" wire:navigate>
-                        <iconify-icon icon="solar:bedside-table-3-broken" class="menu-icon"></iconify-icon>
+                        <iconify-icon icon="solar:user-id-broken" class="menu-icon"></iconify-icon>
                         <span>User</span>
                     </a>
                 </li>

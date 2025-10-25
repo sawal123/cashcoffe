@@ -9,15 +9,15 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
         <div class="md:col-span-12 2xl:col-span-12">
-            {{-- <div class="card rounded-lg border-0"> --}}
-                {{-- <div class="grid grid-cols-1 2xl:grid-cols-12">
+            <div class="card rounded-lg border-0">
+                <div class="grid grid-cols-1 2xl:grid-cols-12">
                     <div class="xl:col-span-12 2xl:col-span-12">
-                        <div class="card-body"> --}}
-                            <livewire:order.create-order :order-id="$orderId" />
-                        {{-- </div>
+                        <div class="card-body">
+                            <livewire:pengeluaran.create :order-id="$pengeluaranId" />
+                        </div>
                     </div>
-                </div> --}}
-            {{-- </div> --}}
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

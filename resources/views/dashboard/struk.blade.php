@@ -95,7 +95,7 @@
     </style>
 </head>
 
-<body onload="window.print(); window.close();">
+<body onload="window.print();">
     <br>
     <div class="center" style="">
         <img src="{{ asset('logo/logo.png') }}" style="max-width:80px;"><br>

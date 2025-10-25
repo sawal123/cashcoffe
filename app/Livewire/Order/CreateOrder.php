@@ -37,13 +37,13 @@ class CreateOrder extends Component
 
     public $pesanan = [];
 
-    public $pembayaran = ['tunai', 'qris', 'kartu','shopeefood','gofood','grabfood','transfer'];
+    public $pembayaran = ['tunai', 'qris', 'transfer', 'kartu', 'shopeefood', 'gofood', 'grabfood', 'komplemen'];
 
     public $mejas_id;
 
     public $discountId;
 
-    public $perPage = 4; // default 10
+    public $perPage = 12; // default 10
 
     public $metode_pembayaran = null; // default
 
@@ -113,7 +113,7 @@ class CreateOrder extends Component
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: '.$e->getMessage());
+            $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: ' . $e->getMessage());
         }
     }
 
@@ -133,17 +133,7 @@ class CreateOrder extends Component
 
         DB::beginTransaction();
         try {
-            // Cek apakah ada pesanan aktif hari ini
-            // $pesanan = Pesanan::where('mejas_id', $this->mejas_id)
-            //     ->whereNotIn('status', ['selesai', 'dibatalkan'])
-            //     ->whereDate('created_at', Carbon::today())
-            //     ->first();
-            // $pesanan = Pesanan::whereNotIn('status', ['selesai', 'dibatalkan'])
-            //     ->whereDate('created_at', Carbon::today())
-            //     ->first();
 
-            // Buat baru jika belum ada
-            // if (! $pesanan) {
             $pesanan = Pesanan::create([
                 'kode' => strtoupper(Str::random(8)),
                 'mejas_id' => $this->mejas_id,
@@ -156,9 +146,7 @@ class CreateOrder extends Component
                 'total_profit' => 0,
                 'catatan' => null,
             ]);
-            // }
 
-            // Simpan item pesanan
             foreach ($this->pesanan as $p) {
                 $menu = Menu::find($p['id']);
                 if (! $menu) {
@@ -198,9 +186,11 @@ class CreateOrder extends Component
             if ($this->discountId) {
                 $disc = Discount::find($this->discountId);
 
-                if ($disc && $disc->is_active &&
+                if (
+                    $disc && $disc->is_active &&
                     (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
-                    (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())) {
+                    (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
+                ) {
 
                     if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
                         // Limit habis
@@ -236,13 +226,15 @@ class CreateOrder extends Component
 
             $this->pesanan = [];
             $this->mejas_id = null;
+            $this->nama_costumer = '';
 
             $this->dispatch('showToast', message: 'Pesanan berhasil disimpan.', type: 'success', title: 'Success');
-
-            return redirect()->route('struk.print', base64_encode($pesanan->id));
+            if ($this->metode_pembayaran) {
+                return redirect()->route('struk.print', base64_encode($pesanan->id));
+            }
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: '.$e->getMessage());
+            $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
         }
     }
 
@@ -310,20 +302,20 @@ class CreateOrder extends Component
 
     public function getTotalProperty()
     {
-        return collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
+        return collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
     }
 
     public function render()
     {
         $menus = Menu::where('is_active', 1)
-            ->where('nama_menu', 'like', '%'.$this->search.'%')
+            ->where('nama_menu', 'like', '%' . $this->search . '%')
             ->paginate($this->perPage);
 
         $discMessage = null;
         $discountValue = 0;
 
         // Hitung total awal
-        $total = collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
+        $total = collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
 
         // Ambil data diskon berdasarkan kode
         $disc = Discount::where('kode_diskon', $this->discount)
@@ -339,7 +331,7 @@ class CreateOrder extends Component
             }
             // Cek apakah total memenuhi minimum transaksi
             elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
-                $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp '.number_format($disc->minimum_transaksi, 0, ',', '.');
+                $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp ' . number_format($disc->minimum_transaksi, 0, ',', '.');
             } else {
                 // ✅ Terapkan diskon
                 if ($disc->jenis_diskon === 'persentase') {

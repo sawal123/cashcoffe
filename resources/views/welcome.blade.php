@@ -4,14 +4,14 @@
 <head>
     <!-- ========== Meta Tags ========== -->
     <meta charset="UTF-8">
-    <meta name="description" content="Koffie One Page HTML Landing Page">
-    <meta name="keywords" content="koffie, Bootstrap, Landing page, Template, Business, One page ">
-    <meta name="author" content="ThemeAtelier">
+    <meta name="description" content="Temuan Space">
+    <meta name="keywords" content="koffie, coffee, temuan">
+    <meta name="author" content="Temuan Space">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <!-- ========== Title ========== -->
-    <title>Koffie-Multi-purpose One Page HTML Template</title>
-    <!-- ========== Favicon Ico ========== -->
-    <link rel="icon" href="fav.ico">
+    <title>Temuan Space</title>
+    <link rel="icon" type="image/png') }}" href="{{ asset('logo/logow.png') }}" sizes="16x16">
+
     <!-- ========== STYLESHEETS ========== -->
     <!-- Bootstrap CSS -->
     <link href="{{ asset('frontend/css/bootstrap.min.css') }}" rel="stylesheet">

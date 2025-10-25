@@ -12,7 +12,7 @@ class TableMenu extends Component
 {
     use WithPagination;
     public $search = '';
-    public $perPage = 5; // default
+    public $perPage = 20; // default
     protected $paginationTheme = 'tailwind';
     public function updatingSearch()
     {
