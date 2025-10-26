@@ -48,7 +48,7 @@ class Create extends Component
         if ($this->bukti) {
             $buktiPath = $this->bukti->store('bukti_pengeluaran', 'public');
         }
-        
+
 
         // Simpan data ke database
         Pengeluaran::create([

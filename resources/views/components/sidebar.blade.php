@@ -35,15 +35,14 @@
                     <span>Category</span>
                 </a>
             </li>
-
-            @unlessrole('kasir')
+            {{-- @unlessrole('kasir') --}}
                 <li>
                     <a href="/omset" wire:navigate>
                         <iconify-icon icon="solar:dollar-linear" class="menu-icon"></iconify-icon>
                         <span>Omset</span>
                     </a>
                 </li>
-            @endunlessrole
+            {{-- @endunlessrole --}}
             <li>
                 <a href="/pengeluaran" wire:navigate>
                     <iconify-icon icon="solar:inbox-out-bold" class="menu-icon"></iconify-icon>

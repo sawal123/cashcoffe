@@ -1,4 +1,4 @@
-<x-app-layout >
+<x-app-layout>
     <div class="flex justify-between items-center mb-3">
         <span class="font-bold text-2xl h-9">{{ $title }}</span>
         <x-breadcrumb title="{{ $title }}" />

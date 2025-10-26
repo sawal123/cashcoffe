@@ -2,14 +2,15 @@
 
 namespace App\Livewire\Omset;
 
-use App\Models\Pesanan;
-use Livewire\Component;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
 class TableOmset extends Component
 {
     public $bulan;
+
     public $tahun;
+    public $merged = []; // ← tambahkan ini
     public $dataOmset = [];
 
     public function mount()
@@ -32,21 +33,39 @@ class TableOmset extends Component
     public function hitungOmsetBulanan()
     {
         $this->dataOmset = DB::table('pesanans')
-            ->join('pesanan_items', 'pesanan_items.pesanans_id', '=', 'pesanans.id')
+            ->select(
+                DB::raw('DATE(created_at) as tanggal'),
+                DB::raw('COUNT(id) as jumlah_pesanan'),
+                DB::raw('SUM(total) as total_omset'),
+                DB::raw('SUM(total_profit) as total_profit')
+            )
+            ->where('status', 'selesai')
+            ->whereMonth('created_at', $this->bulan)
+            ->whereYear('created_at', $this->tahun)
+            ->groupBy('tanggal')
+            ->orderBy('tanggal', 'asc')
+            ->get();
+
+        $this->dataQty = DB::table('pesanan_items')
+            ->join('pesanans', 'pesanans.id', '=', 'pesanan_items.pesanans_id')
             ->select(
                 DB::raw('DATE(pesanans.created_at) as tanggal'),
-                DB::raw('COUNT(DISTINCT pesanans.id) as jumlah_pesanan'),
-                DB::raw('SUM(pesanan_items.qty) as jumlah_menu'),
-                DB::raw('SUM(pesanans.total) as total_omset'),
-                DB::raw('SUM(pesanans.total_profit) as total_profit')
+                DB::raw('SUM(pesanan_items.qty) as jumlah_menu')
             )
             ->where('pesanans.status', 'selesai')
             ->whereMonth('pesanans.created_at', $this->bulan)
             ->whereYear('pesanans.created_at', $this->tahun)
             ->groupBy('tanggal')
-            ->orderBy('tanggal', 'asc')
             ->get();
+
+        // Gabungkan hasil berdasarkan tanggal
+        $this->merged = $this->dataOmset->map(function ($item) {
+            $qty = $this->dataQty->firstWhere('tanggal', $item->tanggal);
+            $item->jumlah_menu = $qty->jumlah_menu ?? 0;
+            return $item;
+        });
     }
+
 
     public function render()
     {
@@ -54,7 +73,7 @@ class TableOmset extends Component
         $totalProfit = $this->dataOmset->sum('total_profit');
 
         return view('livewire.omset.table-omset', [
-            'dataOmset' => $this->dataOmset,
+            'dataOmset' => $this->merged, // hasil gabungan
             'totalOmset' => $totalOmset,
             'totalProfit' => $totalProfit,
         ]);
