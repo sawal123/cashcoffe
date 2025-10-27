@@ -37,6 +37,12 @@
             </li>
             {{-- @unlessrole('kasir') --}}
                 <li>
+                    <a href="/transaksi" wire:navigate>
+                        <iconify-icon icon="solar:hand-money-bold" class="menu-icon"></iconify-icon>
+                        <span>Transaksi</span>
+                    </a>
+                </li>
+                <li>
                     <a href="/omset" wire:navigate>
                         <iconify-icon icon="solar:dollar-linear" class="menu-icon"></iconify-icon>
                         <span>Omset</span>
