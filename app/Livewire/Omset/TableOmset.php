@@ -43,7 +43,7 @@ class TableOmset extends Component
             ->whereMonth('created_at', $this->bulan)
             ->whereYear('created_at', $this->tahun)
             ->groupBy('tanggal')
-            ->orderBy('tanggal', 'asc')
+            ->orderBy('tanggal', 'desc')
             ->get();
 
         $this->dataQty = DB::table('pesanan_items')
@@ -56,6 +56,7 @@ class TableOmset extends Component
             ->whereMonth('pesanans.created_at', $this->bulan)
             ->whereYear('pesanans.created_at', $this->tahun)
             ->groupBy('tanggal')
+
             ->get();
 
         // Gabungkan hasil berdasarkan tanggal

@@ -2,16 +2,17 @@
 
 namespace App\Livewire\Order;
 
-use App\Models\Discount;
+use Carbon\Carbon;
 use App\Models\Meja;
 use App\Models\Menu;
 use App\Models\Pesanan;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Livewire\Component;
+use App\Models\Category;
+use App\Models\Discount;
+use Illuminate\Support\Str;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class CreateOrder extends Component
 {
@@ -133,9 +134,14 @@ class CreateOrder extends Component
 
         DB::beginTransaction();
         try {
+            $randomString = strtoupper(Str::random(8));
+            $tanggal = date('dm'); // Format tanggal: ddmm
+            $kodeFinal = $randomString . $tanggal;
+
+
 
             $pesanan = Pesanan::create([
-                'kode' => strtoupper(Str::random(8)),
+                'kode' => $kodeFinal,
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
                 'user_id' => Auth::id(),
@@ -305,6 +311,14 @@ class CreateOrder extends Component
         return collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
     }
 
+    public $selectedCategoryId = null;
+
+    public function filterByCategory($categoryId)
+    {
+        // dd($categoryId);
+        $this->selectedCategoryId = $categoryId;
+    }
+
     public function render()
     {
         $menus = Menu::where('is_active', 1)
@@ -368,6 +382,9 @@ class CreateOrder extends Component
 
         $totalAfterDiscount = max(0, $total - $discountValue);
 
+        $categories = Category::with(['menus' => function ($query) {
+            $query->where('is_active', true);
+        }])->get();
         return view('livewire.order.create-order', [
             'menus' => $menus,
             'orderId' => $this->orderId,
@@ -375,6 +392,7 @@ class CreateOrder extends Component
             'disc' => $result,
             'discMessage' => $discMessage,
             'total' => $total,
+            'categories' => $categories,
             'discountValue' => $discountValue,
             'totalAfterDiscount' => $totalAfterDiscount,
         ]);

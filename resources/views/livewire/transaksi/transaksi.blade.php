@@ -28,6 +28,9 @@
             bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 w-40 min-w-[140px]">
         </div>
     </div>
+
+    {{-- print --}}
+
     @if (!empty($totalPerMetode))
         <div class="mb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 flex flex-wrap items-center gap-4">
             @foreach ($totalPerMetode as $metode => $total)

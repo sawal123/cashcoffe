@@ -14,17 +14,25 @@
             margin: auto;
         }
 
-        .center {
-            text-align: center;
-        }
-
-        .right {
-            text-align: right;
-        }
-
-        .left {
+        td.left {
+            width: 60%;
             text-align: left;
+            padding-right: 6px;
+            word-break: break-word;
         }
+
+        td.center {
+            width: 10%;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        td.right {
+            width: 30%;
+            text-align: right;
+            white-space: nowrap;
+        }
+
 
         .bold {
             font-weight: bold;
@@ -39,8 +47,10 @@
             padding: 2px 0;
             vertical-align: top;
         }
-        .center{
-            margin-top:50px;
+
+        .center {
+            margin-top: 50px;
+            text-align: center;
         }
 
         .separator {
@@ -61,7 +71,7 @@
             }
 
             .center {
-                margin-top:50px;
+                margin-top: 50px;
                 text-align: center;
             }
 
@@ -100,35 +110,44 @@
     <div class="center" style="">
         <img src="{{ asset('logo/logo.png') }}" style="max-width:80px;"><br>
         <div class="bold">Temuan Space</div>
-         <span>Jl. Tenis No.30, Ps. Merah Bar., Kec. Medan Kota</span>
+        <span>Jl. Tenis No.30, Ps. Merah Bar., Kec. Medan Kota</span>
         <div>{{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}</div>
 
     </div>
     <div class="separator"></div>
-    <div>
-        Invoice  : {{ $pesanan->kode }} <br>
-        kasir : {{ $pesanan->user->name }} <br>
-        Costumer  : {{ $pesanan->nama ?? '-' }}
-    </div>
+    <table class="w-full mb-4 text-sm">
+        <tr>
+            <td class="font-bold w-24">Invoice</td>
+            <td>: {{ $pesanan->kode }}</td>
+        </tr>
+        <tr>
+            <td class="font-bold">Kasir</td>
+            <td>: {{ $pesanan->user->name }}</td>
+        </tr>
+        <tr>
+            <td class="font-bold">Customer</td>
+            <td>: {{ $pesanan->nama ?? '-' }}</td>
+        </tr>
+    </table>
     <div class="separator"></div>
     <table>
         @foreach ($pesanan->items as $item)
-            <tr>
-                <td class="left">{{ $item->menu->nama_menu }}</td>
-                <td class="center">{{ $item->qty }}</td>
-                <td class="right">{{ number_format($item->subtotal) }}</td>
-            </tr>
+        <tr>
+            <td class="left">{{ $item->menu->nama_menu }}</td>
+            <td class="center">{{ $item->qty }}</td>
+            <td class="right">{{ number_format($item->subtotal) }}</td>
+        </tr>
         @endforeach
     </table>
 
     <div class="separator"></div>
 
     <table>
-         <tr>
+        <tr>
             <td class="bold">Sub Total</td>
             <td class="right bold">{{ number_format($pesanan->total) }}</td>
         </tr>
-         <tr>
+        <tr>
             <td class="bold">Discount</td>
             <td class="right bold">-{{ number_format($pesanan->discount_value) }}</td>
 
