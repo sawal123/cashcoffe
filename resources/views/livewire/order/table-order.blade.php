@@ -6,6 +6,21 @@
             <x-input wire:model.live="search" place="Cari..." />
         </div>
     </div>
+    @if (!empty($totalPerMetode))
+    <div class="mb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 flex flex-wrap items-center gap-4">
+        @foreach ($totalPerMetode as $metode => $total)
+        <span>{{ ucfirst($metode ?? 'Belum Bayar') }}:
+            <span class="font-semibold text-green-600 dark:text-green-400">
+                Rp{{ number_format($total, 0, ',', '.') }}
+            </span>
+        </span>
+        @endforeach
+        <span class="ml-auto font-semibold text-blue-600 dark:text-blue-400">
+            Total Omset: Rp{{ number_format($totalOmset, 0, ',', '.') }}
+        </span>
+    </div>
+    {{-- <div class="fs">Hanya pesanan selesai yang dihitung.</div> --}}
+    @endif
     <div class="table-responsive ">
         <table class="table basic-border-table mb-2">
             <thead>
@@ -23,60 +38,60 @@
             </thead>
             <tbody>
                 @forelse ($orders as $item)
-                    <tr>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span>{{ ($orders->currentPage() - 1) * $orders->perPage() + $loop->iteration }}</span>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <h6 class="text-base mb-0 font-normal">{{ $item->kode }}</h6>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class="">{{ $item->nama ? $item->nama : '-' }}</span>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span
-                                class=" bg-danger-100 dark:bg-blue-600/25 text-danger-600 dark:text-danger-400 px-8 py-1.5 rounded-full font-medium text-sm">
-                                {{ ucwords(str_replace('_', ' ', $item->status)) }}</span>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span
-                                class="">{{ $item->metode_pembayaran ? ucwords($item->metode_pembayaran) : 'Belum Bayar' }}</span>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class="">Rp {{ number_format($item->total-$item->discount_value, 0, ',', '.') }}</span>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class=""> {{ $item->user->name }}</span>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class="">{{ $item->created_at->format('d M Y | H:i') }}</span>
-                        </td>
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            @if ($item->status == 'diproses')
-                                <button wire:click="saji('{{ base64_encode($item->id) }}')" type="button"
-                                    class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
-                                    <iconify-icon icon="mingcute:check-line"></iconify-icon>
-                                </button>
-                            @endif
-                            <a href="{{ route('struk.print', base64_encode($item->id))}}"
-                                class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
-                                <iconify-icon icon="lucide:printer"></iconify-icon>
-                            </a>
-                            <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
-                                class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
-                                <iconify-icon icon="lucide:edit"></iconify-icon>
-                            </a>
-                            <button
-                                @click="$dispatch('open-modal', {  name: 'confirm-delete',  id: {{ json_encode(base64_encode($item->id)) }} })"
-                                class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
-                                <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
-                            </button>
-                        </td>
-                    </tr>
+                <tr>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <span>{{ ($orders->currentPage() - 1) * $orders->perPage() + $loop->iteration }}</span>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <h6 class="text-base mb-0 font-normal">{{ $item->kode }}</h6>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <span class="">{{ $item->nama ? $item->nama : '-' }}</span>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <span
+                            class=" bg-danger-100 dark:bg-blue-600/25 text-danger-600 dark:text-danger-400 px-8 py-1.5 rounded-full font-medium text-sm">
+                            {{ ucwords(str_replace('_', ' ', $item->status)) }}</span>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <span class="">{{ $item->metode_pembayaran ? ucwords($item->metode_pembayaran) : 'Belum Bayar'
+                            }}</span>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <span class="">Rp {{ number_format($item->total-$item->discount_value, 0, ',', '.') }}</span>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <span class=""> {{ $item->user->name }}</span>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <span class="">{{ $item->created_at->format('d M Y | H:i') }}</span>
+                    </td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        @if ($item->status == 'diproses')
+                        <button wire:click="saji('{{ base64_encode($item->id) }}')" type="button"
+                            class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
+                            <iconify-icon icon="mingcute:check-line"></iconify-icon>
+                        </button>
+                        @endif
+                        <a href="{{ route('struk.print', base64_encode($item->id))}}"
+                            class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
+                            <iconify-icon icon="lucide:printer"></iconify-icon>
+                        </a>
+                        <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
+                            class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
+                            <iconify-icon icon="lucide:edit"></iconify-icon>
+                        </a>
+                        <button
+                            @click="$dispatch('open-modal', {  name: 'confirm-delete',  id: {{ json_encode(base64_encode($item->id)) }} })"
+                            class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
+                            <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
+                        </button>
+                    </td>
+                </tr>
                 @empty
-                    <tr>
-                        <td colspan="5" class="text-center py-4">No Menu found.</td>
-                    </tr>
+                <tr>
+                    <td colspan="5" class="text-center py-4">No Menu found.</td>
+                </tr>
                 @endforelse
             </tbody>
         </table>

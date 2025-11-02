@@ -13,16 +13,18 @@ class DashboardController extends Controller
     public function index()
     {
         $omset = Pesanan::where('status', 'selesai')
+            ->where('metode_pembayaran','!=', 'komplemen')
             ->whereDate('created_at', Carbon::today())
             ->sum('total');
 
         $sellMenu = PesananItem::whereHas('pesanan', function ($query) {
             $query->where('status', 'selesai')
+            ->where('metode_pembayaran','!=', 'komplemen')
                 ->whereDate('created_at', Carbon::today());
         })->where('qty', '>', 0)
             ->sum('qty');
 
-        $totalOrder = Pesanan::where('status', 'selesai')->whereDate('created_at', Carbon::today())->count();
+        $totalOrder = Pesanan::where('status', 'selesai')->where('metode_pembayaran','!=', 'komplemen')->whereDate('created_at', Carbon::today())->count();
         $proses = Pesanan::where('status', '!=', 'selesai')->where('status', '!=', 'dibatalkan')->whereDate('created_at', Carbon::today())->count();
         $cards = [
             [
@@ -53,6 +55,7 @@ class DashboardController extends Controller
 
         $omsetPerTanggal = DB::table('pesanans')
             ->where('status', 'selesai')
+            ->where('metode_pembayaran','!=', 'komplemen')
             ->selectRaw('DATE(created_at) as tanggal, SUM(total) as omset')
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'desc')   // urutkan dari terbaru

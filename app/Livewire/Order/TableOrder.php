@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Order;
 
+use DB;
 use Carbon\Carbon;
 use App\Models\Pesanan;
 use Livewire\Component;
@@ -44,8 +45,24 @@ class TableOrder extends Component
             $this->dispatch('showToast', message: 'Pesanan Gagal Dihapus', type: 'warning', title: 'Warning');
         }
     }
+    public $totalPerMetode = [];
+    public $totalOmset;
     public function render()
     {
+        $this->totalPerMetode = Pesanan::where('status', 'selesai')
+            ->whereNotNull('metode_pembayaran')
+            ->whereDate('created_at', Carbon::today())
+            ->selectRaw('metode_pembayaran, SUM(total - discount_value) as total')
+            ->groupBy('metode_pembayaran')
+            ->pluck('total', 'metode_pembayaran')
+            ->toArray();
+
+        $this->totalOmset = Pesanan::where('status', 'selesai')
+            ->where('metode_pembayaran', '!=', 'komplemen')
+            ->whereNotNull('metode_pembayaran')
+            ->whereDate('created_at', Carbon::today())
+            ->sum(DB::raw('total - discount_value'));
+        // $orders = $query->latest()->paginate($this->perPage);
         $order = Pesanan::query()
             ->whereDate('created_at', Carbon::today())
             ->where(function ($query) {

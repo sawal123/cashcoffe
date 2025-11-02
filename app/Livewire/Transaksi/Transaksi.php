@@ -71,6 +71,7 @@ class Transaksi extends Component
         // Hitung total omset keseluruhan
         $this->totalOmset = $query->clone()
             ->where('status', 'selesai')
+            ->where('metode_pembayaran', 'komplemen')
             ->whereNotNull('metode_pembayaran')
             ->sum(\DB::raw('total - discount_value'));
         $orders = $query->latest()->paginate($this->perPage);

@@ -44,7 +44,7 @@
                 Total Omset: Rp{{ number_format($totalOmset, 0, ',', '.') }}
             </span>
         </div>
-        <div class="fs">Hanya pesanan selesai yang dihitung.</div>
+        <div class="fs" style="font-size: 11px">Hanya pesanan selesai yang dihitung | Kompelemen tidak ditotalkan di omset</div>
     @endif
 
     {{-- Tabel --}}
@@ -72,7 +72,7 @@
                             <span
                                 class="px-3 py-1 rounded-full text-xs font-medium
                             @if ($item->status === 'selesai') bg-danger-100 dark:bg-blue-600/25 text-green-700
-                            @elseif($item->status === 'diproses') bg-danger-100 dark:bg-blue-600/25 
+                            @elseif($item->status === 'diproses') bg-danger-100 dark:bg-blue-600/25
                             @else bg-danger-100 dark:bg-blue-600/25 @endif">
                                 {{ ucfirst($item->status) }}
                             </span>
