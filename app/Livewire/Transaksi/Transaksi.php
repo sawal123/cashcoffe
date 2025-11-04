@@ -74,7 +74,7 @@ class Transaksi extends Component
             ->where('metode_pembayaran', '!=', 'komplemen')
             ->whereNotNull('metode_pembayaran')
             ->sum(\DB::raw('total - discount_value'));
-        $orders = $query->latest()->paginate($this->perPage)->limit(20);
+        $orders = $query->latest()->paginate($this->perPage);
 
         return view('livewire.transaksi.transaksi', [
             'orders' => $orders
