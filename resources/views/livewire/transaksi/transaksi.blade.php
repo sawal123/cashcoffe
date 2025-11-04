@@ -33,8 +33,10 @@
     <x-b-blue onclick="printSection('print-area')">
         🖨️ Print
     </x-b-blue>
-     <x-a url="{{ route('orders.export') }}" active='secondary' wire:navigate>📊 Export Excel</x-a>
-
+<x-a url="{{ route('orders.export') }}" active='secondary'>📊 Export Excel</x-a>
+    {{-- <a href="{{ route('orders.export') }}" class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded">
+        📊 Export Excel
+    </a> --}}
     <div class="" id="print-area">
         @if (!empty($totalPerMetode))
         <div class="mb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 flex flex-wrap items-center gap-4">

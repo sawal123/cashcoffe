@@ -19,9 +19,6 @@ use App\Http\Controllers\RiwayatGudangController;
 
 Route::view('/', 'welcome');
 
-Route::get('/orders/export', function () {
-    return Excel::download(new OrdersExport, 'laporan-orders.xlsx');
-})->name('orders.export');
 Route::middleware(['auth'])->group(function () {
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard.index');
@@ -40,6 +37,9 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('riwayat-gudang', RiwayatGudangController::class);
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 
+    Route::get('/orders/export', function () {
+        return Excel::download(new OrdersExport, 'laporan-orders.xlsx');
+    })->name('orders.export');
     Route::middleware(['role:admin'])->group(function () {});
 });
 
