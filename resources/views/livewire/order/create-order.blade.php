@@ -81,7 +81,7 @@
             @endforeach
         </div>
         @endforeach
-        {{ $menus->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}
+        {{-- {{ $menus->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }} --}}
     </div>
 
     {{-- Kanan: Pesanan --}}

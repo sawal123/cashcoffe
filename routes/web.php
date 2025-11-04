@@ -1,6 +1,8 @@
 <?php
 
+use App\Exports\OrdersExport;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MejaController;
 use App\Http\Controllers\MenuController;
@@ -11,9 +13,9 @@ use App\Http\Controllers\StruckController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DiscountController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\PengeluaranController;
 use App\Http\Controllers\RiwayatGudangController;
-use App\Http\Controllers\TransaksiController;
 
 Route::view('/', 'welcome');
 
@@ -35,8 +37,10 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('riwayat-gudang', RiwayatGudangController::class);
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 
-    Route::middleware(['role:admin'])->group(function () {
-    });
+    Route::get('/orders/export', function () {
+        return Excel::download(new OrdersExport, 'laporan-orders.xlsx');
+    })->name('orders.export');
+    Route::middleware(['role:admin'])->group(function () {});
 });
 
 // routes/web.php
