@@ -26,15 +26,15 @@
             bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 w-40 min-w-[140px]">
         </div>
     </div>
-
     {{-- print --}}
 
     {{-- Tombol Print --}}
     <x-b-blue onclick="printSection('print-area')">
         🖨️ Print
     </x-b-blue>
-<x-a url="{{ route('orders.export') }}" active='secondary'>📊 Export Excel</x-a>
-    {{-- <a href="{{ route('orders.export') }}" class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded">
+    <x-a url="{{ route('orders.export') }}" active='secondary'>📊 Export Excel</x-a>
+    {{-- <a href="{{ route('orders.export') }}"
+        class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded">
         📊 Export Excel
     </a> --}}
     <div class="" id="print-area">
