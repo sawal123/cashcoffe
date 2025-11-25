@@ -32,15 +32,23 @@ class TableMenu extends Component
             $this->dispatch('showToast', message: 'Menu tidak ditemukan.', type: 'error', title: 'Error');
         }
     }
+    public $category = ''; // filter kategori
+
     public function render()
     {
         $menu = Menu::query()
+            ->when($this->category !== '', function ($query) {
+                $query->where('categories_id', $this->category);
+            })
             ->when(!empty($this->search), function ($query) {
                 $query->where('nama_menu', 'like', '%' . $this->search . '%');
             })
             ->orderBy('created_at', 'desc')
             ->paginate($this->perPage);
 
-        return view('livewire.menu.table-menu', ['menu' => $menu]);
+        return view('livewire.menu.table-menu', [
+            'menu' => $menu,
+            'categories' => Category::all()
+        ]);
     }
 }

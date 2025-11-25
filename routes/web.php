@@ -13,9 +13,13 @@ use App\Http\Controllers\StruckController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DiscountController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MemberController;
+use App\Http\Controllers\MenuIngredientController;
 use App\Http\Controllers\TransaksiController;
 use App\Http\Controllers\PengeluaranController;
 use App\Http\Controllers\RiwayatGudangController;
+use App\Http\Controllers\RiwayatStockController;
+use App\Http\Controllers\StockDapurController;
 
 Route::view('/', 'welcome');
 
@@ -31,10 +35,15 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('category', CategoryController::class);
     Route::resource('discount', DiscountController::class);
     Route::resource('gudang', GudangController::class);
+    Route::resource('member', MemberController::class);
     Route::resource('omset', OmsetController::class);
     Route::resource('pengeluaran', PengeluaranController::class);
     Route::resource('transaksi', TransaksiController::class);
     Route::resource('riwayat-gudang', RiwayatGudangController::class);
+    Route::resource('stock-dapur', StockDapurController::class);
+    Route::resource('riwayat-stock', RiwayatStockController::class);
+    Route::resource('menu-ingredient', MenuIngredientController::class);
+    // Route::get('stock-dapur/add', [StockDapurController::class, 'add'])->name('stock-dapur.add');
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 
     Route::get('/orders/export', function () {

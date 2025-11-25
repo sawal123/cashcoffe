@@ -5,12 +5,16 @@ namespace App\Livewire\Order;
 use Carbon\Carbon;
 use App\Models\Meja;
 use App\Models\Menu;
+use App\Models\Member;
 use App\Models\Pesanan;
 use Livewire\Component;
 use App\Models\Category;
 use App\Models\Discount;
+use App\Models\Ingredients;
 use Illuminate\Support\Str;
+use App\Models\RiwayatStock;
 use Livewire\WithPagination;
+use App\Models\MenuIngredients;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,6 +33,7 @@ class CreateOrder extends Component
     public $search = '';
 
     public $discount = '';
+    public $member = '';
 
     public $teks = 'Proses';
 
@@ -43,6 +48,7 @@ class CreateOrder extends Component
     public $mejas_id;
 
     public $discountId;
+    // public $memMessage;
 
     public $perPage = 12; // default 10
 
@@ -81,15 +87,23 @@ class CreateOrder extends Component
 
     public function updateOrder()
     {
-        if (! $this->orderId) {
-            return;
-        }
+        if (!$this->orderId) return;
+
         DB::beginTransaction();
+
         try {
-            $pesanan = Pesanan::findOrFail($this->orderId);
-            // dd($pesanan);
+            $pesanan = Pesanan::with('items')->findOrFail($this->orderId);
+            $statusLama = $pesanan->status;
+
+            // ❗ Jika statusLama = selesai → kembalikan stok dulu sebelum update item
+            if ($statusLama === 'selesai') {
+                $this->restoreStock($pesanan);
+            }
+
+            // Hapus item lama
             $pesanan->items()->delete();
 
+            // Tambah item baru
             foreach ($this->pesanan as $p) {
                 $pesanan->items()->create([
                     'menus_id' => $p['id'],
@@ -99,17 +113,24 @@ class CreateOrder extends Component
                     'catatan_item' => $p['catatan'] ?? null,
                 ]);
             }
-            // dd($this->status);
+
+            // Update pesanan
             $pesanan->update([
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
-                'status' => $this->status == 'diproses' ? 'selesai' : 'diproses',
+                'status' => $this->status,
                 'total' => $pesanan->items()->sum('subtotal'),
             ]);
-            $this->status = $pesanan->status;
+
+            // ❗ Jika statusBaru = selesai → kurangi stok berdasarkan item BARU
+            if ($this->status === 'selesai') {
+                $this->reduceStock($pesanan);
+            }
 
             DB::commit();
+
+            $this->status = $pesanan->status;
 
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
         } catch (\Exception $e) {
@@ -117,6 +138,68 @@ class CreateOrder extends Component
             $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: ' . $e->getMessage());
         }
     }
+
+
+    private function reduceStock(Pesanan $pesanan)
+    {
+        foreach ($pesanan->items as $item) {
+
+            $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
+
+            foreach ($komposisi as $k) {
+                $ingredient = Ingredients::find($k->ingredient_id);
+                if (!$ingredient) continue;
+
+                $totalOut = $k->qty * $item->qty;
+                $before = $ingredient->stok;
+                $after = $before - $totalOut;
+
+                $ingredient->update(['stok' => max(0, $after)]);
+
+                RiwayatStock::create([
+                    'ingredient_id' => $ingredient->id,
+                    'qty' => $totalOut,
+                    'qty_before' => $before,
+                    'qty_after' => $after,
+                    'tipe' => 'out',
+                    'keterangan' => 'Pengurangan stok dari pesanan ' . $pesanan->kode,
+                ]);
+            }
+        }
+    }
+
+    private function restoreStock(Pesanan $pesanan)
+    {
+        foreach ($pesanan->items as $item) {
+
+            $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
+
+            foreach ($komposisi as $k) {
+
+                $ingredient = Ingredients::find($k->ingredient_id);
+                if (!$ingredient) continue;
+
+                $totalIn = $k->qty * $item->qty;
+                $before = $ingredient->stok;
+                $after = $before + $totalIn;
+
+                // Kembalikan stok
+                $ingredient->update(['stok' => $after]);
+
+                // Simpan riwayat masuk
+                RiwayatStock::create([
+                    'ingredient_id' => $ingredient->id,
+                    'qty' => $totalIn,
+                    'qty_before' => $before,
+                    'qty_after' => $after,
+                    'tipe' => 'in',
+                    'keterangan' => 'Pengembalian stok dari pembatalan pesanan ' . $pesanan->kode,
+                ]);
+            }
+        }
+    }
+
+
 
     public function saveOrder()
     {
@@ -217,6 +300,8 @@ class CreateOrder extends Component
                 }
             }
 
+
+
             $totalAfterDiscount = max(0, $total);
 
             // Update total pesanan di database
@@ -283,11 +368,13 @@ class CreateOrder extends Component
 
     public function increment($id)
     {
+        if ($this->status === 'selesai') return;
         $this->updateQty($id, 1);
     }
 
     public function decrement($id)
     {
+        if ($this->status === 'selesai') return;
         $this->updateQty($id, -1);
     }
 
@@ -338,6 +425,8 @@ class CreateOrder extends Component
             ->whereDate('tanggal_akhir', '>=', now())
             ->first();
 
+
+
         if ($disc) {
             // Cek apakah limit penggunaan sudah habis
             if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
@@ -380,6 +469,18 @@ class CreateOrder extends Component
             }
         }
 
+        $cekMember = Member::where('phone', $this->member)->first();
+        if ($cekMember) {
+            $memMessage = "Member Tersedia " . "(" . $cekMember->user->name . ")";
+            $this->dispatch('showToast', message: "Member Tersedia " . "(" . $cekMember->user->name . ")", type: 'success', title: 'Success');
+        } else {
+            if ($this->member) {
+                $memMessage = "Member Tidak Tersedia ";
+            } else {
+                $memMessage = "";
+            }
+        }
+        // 08222323232
         $totalAfterDiscount = max(0, $total - $discountValue);
 
         $categories = Category::with(['menus' => function ($query) {
@@ -395,6 +496,7 @@ class CreateOrder extends Component
             'categories' => $categories,
             'discountValue' => $discountValue,
             'totalAfterDiscount' => $totalAfterDiscount,
+            'memMessage' => $memMessage ?? null
         ]);
     }
 }

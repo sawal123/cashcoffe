@@ -37,7 +37,7 @@ class TransaksiController extends Controller
      */
     public function show(string $id)
     {
-        //
+        return view('dashboard.transaksi.view-transaksi', ['title' => 'View Transaksi', 'url' => $this->url]);
     }
 
     /**

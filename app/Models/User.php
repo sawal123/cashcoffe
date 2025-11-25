@@ -33,7 +33,10 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
-
+    public function member()
+    {
+        return $this->hasOne(Member::class);
+    }
     /**
      * Get the attributes that should be cast.
      *

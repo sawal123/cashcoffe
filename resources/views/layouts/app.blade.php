@@ -46,6 +46,40 @@
             categories: @json($categories ?? []),
         };
     </script>
+
+    <script>
+        function initTomSelect(id, eventName) {
+            const el = document.getElementById(id);
+            if (!el) return; // kalau elemen belum ada, jangan init
+
+            // Hindari double init
+            if (el.tomSelect) return;
+
+            const select = new TomSelect(el, {
+                placeholder: 'Cari...',
+                allowEmptyOption: true,
+                allowClear: true,
+            });
+
+            select.on('change', function(value) {
+                Livewire.dispatch(eventName, {
+                    value
+                });
+            });
+        }
+
+        document.addEventListener('livewire:navigated', () => {
+            initTomSelect('menuSelect', 'setMenu');
+            initTomSelect('ingredientSelect', 'setIngredient');
+        });
+
+        document.addEventListener('livewire:update', () => {
+            // Saat DOM berubah (misal menu dipilih, ingredient muncul)
+            initTomSelect('ingredientSelect', 'setIngredient');
+        });
+    </script>
+
+
     <script src="{{ asset('assets/js/chartDashboard.js') }}" data-navigate-once></script>
 
     @livewireScripts

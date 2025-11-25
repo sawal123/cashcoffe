@@ -2,18 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use App\View\Components\Breadcrumb;
 use Illuminate\Http\Request;
 
-class MenuController extends Controller
+class MemberController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public $url = "menu";
+    public $url = "member";
     public function index()
     {
-        return view('dashboard.menu', ['title' => 'Menu', 'url' => $this->url]);
+        return view('dashboard.member', ['title' => 'Member', 'url' => $this->url]);
     }
 
     /**
@@ -21,10 +20,10 @@ class MenuController extends Controller
      */
     public function create()
     {
-        return view('dashboard.menu.create',
+        return view('dashboard.member.create-member',
             [
-                'menuId' => null,
-                'title' => 'Menu / Create',
+                'memberId' => null,
+                'title' => 'Member / Create',
                 'url' => $this->url,
                 'submit' => 'simpan'
             ]
@@ -52,14 +51,12 @@ class MenuController extends Controller
      */
     public function edit(string $id)
     {
-        // dd($id);
-
-        return view('dashboard.menu.create',
+        return view('dashboard.member.create-member',
             [
-                'menuId' => $id,
-                'title' => 'Menu / Edit',
+                'memberId' => $id,
+                'title' => 'Member / Edit',
                 'url' => $this->url,
-                'submit' => 'update'
+                'submit' => 'simpan'
             ]
         );
     }

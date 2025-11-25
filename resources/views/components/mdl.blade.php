@@ -5,6 +5,9 @@ if ($event.detail.name === 'confirm-delete')
 modalIsOpen = true;
 selectedId = $event.detail.id
  }
+  if ($event.detail.name === 'detail-order') {
+        modalIsOpen = true;
+    }
 ">
     <!-- Modal Overlay -->
     <div x-cloak x-show="modalIsOpen" x-transition.opacity.duration.200ms x-trap.inert.noscroll="modalIsOpen"

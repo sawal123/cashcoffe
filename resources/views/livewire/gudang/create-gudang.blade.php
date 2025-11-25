@@ -37,8 +37,6 @@
                 </template>
             </div>
 
-
-
         </div>
 
         {{-- Tipe Transaksi --}}

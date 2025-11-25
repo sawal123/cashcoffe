@@ -43,6 +43,121 @@
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
+    <!-- TomSelect CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
+
+    <!-- TomSelect JS -->
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
+    <style>
+        /* ======================= */
+        /*    CONTROL (INPUT)      */
+        /* ======================= */
+
+        .ts-control {
+            width: 100% !important;
+            padding: 0.5rem 0.75rem !important;
+            border-radius: 0.5rem !important;
+            border: 1px solid #d1d5db !important;
+            background-color: #ffffff !important;
+            color: #1f2937 !important;
+            font-size: 14px !important;
+            font-weight: 500;
+            height: 42px !important;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Fokus ala Tailwind */
+        .ts-control:focus,
+        .ts-control.dropdown-active {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3) !important;
+        }
+
+        /* Placeholder */
+        .ts-control .ts-placeholder {
+            color: #9ca3af !important;
+        }
+
+        /* DARK MODE */
+        .dark .ts-control {
+            background-color: #1f2937 !important;
+            border-color: #4b5563 !important;
+            color: #e5e7eb !important;
+        }
+
+        /* ======================= */
+        /*      DROPDOWN BOX       */
+        /* ======================= */
+
+        .ts-dropdown {
+            background-color: #ffffff !important;
+            border: 1px solid #d1d5db !important;
+            color: #1f2937 !important;
+            border-radius: 0.5rem !important;
+            padding-top: 0.25rem;
+            padding-bottom: 0.25rem;
+            max-height: 220px !important;
+            overflow-y: auto !important;
+        }
+
+        /* DARK MODE DROPDOWN */
+        .dark .ts-dropdown {
+            background-color: #1f2937 !important;
+            border-color: #4b5563 !important;
+            color: #e5e7eb !important;
+        }
+
+        /* ======================= */
+        /*       ITEM STYLE        */
+        /* ======================= */
+
+        .ts-dropdown .ts-option {
+            padding: 8px 12px !important;
+            cursor: pointer;
+            border-radius: 0.375rem;
+        }
+
+        /* Hover item */
+        .ts-dropdown .ts-option:hover {
+            background-color: #e5e7eb !important;
+            /* gray-200 */
+            color: #111827 !important;
+        }
+
+        /* Hover in dark mode */
+        .dark .ts-dropdown .ts-option:hover {
+            background-color: #374151 !important;
+            /* gray-700 */
+            color: white !important;
+        }
+
+        /* Selected item */
+        .ts-dropdown .ts-option.selected {
+            background-color: #3b82f6 !important;
+            /* blue-500 */
+            color: white !important;
+        }
+
+        /* ======================= */
+        /* SELECTED VALUE (TAG)    */
+        /* ======================= */
+
+        .ts-wrapper.single .ts-control .item {
+            color: #1f2937 !important;
+        }
+
+        .dark .ts-wrapper.single .ts-control .item {
+            color: #e5e7eb !important;
+        }
+
+        /* DARK MODE */
+        .dark .ts-control input {
+            color: #e5e7eb !important;
+            /* text-neutral-200 */
+        }
+    </style>
 
     @livewireStyles
 </head>

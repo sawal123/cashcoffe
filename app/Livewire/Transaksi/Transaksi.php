@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Pesanan;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
 
 class Transaksi extends Component
 {
@@ -32,6 +33,22 @@ class Transaksi extends Component
             $this->resetPage();
         }
     }
+
+    public $selectedOrder;
+    public $selectedOrderItems = [];
+
+    public function showDetail($encodedId)
+    {
+        $id = base64_decode($encodedId);
+
+        $this->selectedOrder = Pesanan::with(['user', 'items.menus', 'items.varian'])
+            ->find($id);
+
+        $this->selectedOrderItems = $this->selectedOrder->items ?? [];
+        // dd($this->selectedOrder);
+        $this->dispatch('open-modal', name: 'detail-order');
+    }
+
     public function render()
     {
         $query = Pesanan::query()
@@ -73,7 +90,7 @@ class Transaksi extends Component
             ->where('status', 'selesai')
             ->where('metode_pembayaran', '!=', 'komplemen')
             ->whereNotNull('metode_pembayaran')
-            ->sum(\DB::raw('total - discount_value'));
+            ->sum(DB::raw('total - discount_value'));
         $orders = $query->latest()->paginate($this->perPage);
 
         return view('livewire.transaksi.transaksi', [

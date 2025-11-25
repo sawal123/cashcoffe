@@ -6,7 +6,11 @@ use DB;
 use Carbon\Carbon;
 use App\Models\Pesanan;
 use Livewire\Component;
+use App\Models\Ingredients;
+use App\Models\RiwayatStock;
 use Livewire\WithPagination;
+use App\Models\MenuIngredients;
+
 
 class TableOrder extends Component
 {
@@ -21,15 +25,73 @@ class TableOrder extends Component
         $this->reset('search');
     }
 
+    // public function saji($id)
+    // {
+
+    //     $pesanan = Pesanan::findOrFail(base64_decode($id));
+    //     $pesanan->status =  $pesanan->status == 'diproses' ? 'selesai' : $this->status;
+    //     $pesanan->save();
+
+    //     $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
+    // }
+
     public function saji($id)
     {
+        $pesanan = Pesanan::with('items')->findOrFail(base64_decode($id));
 
-        $pesanan = Pesanan::findOrFail(base64_decode($id));
-        $pesanan->status =  $pesanan->status == 'diproses' ? 'selesai' : $this->status;
+        // Jika sudah selesai sebelumnya -> jangan kurangi stok lagi
+        $statusSebelumnya = $pesanan->status;
+
+        // Update status
+        $pesanan->status = $pesanan->status == 'diproses' ? 'selesai' : $this->status;
         $pesanan->save();
+
+        // Jika status sebelumnya DICAP sudah selesai → SKIP pengurangan stok
+        if ($statusSebelumnya === 'selesai') {
+            $this->dispatch('showToast', message: 'Pesanan sudah selesai sebelumnya.', type: 'info', title: 'Info');
+            return;
+        }
+
+        // 🔥 Jika status jadi selesai → Kurangi stok dapur
+        if ($pesanan->status === 'selesai') {
+
+            foreach ($pesanan->items as $item) {
+
+                // Ambil semua komposisi menu
+                $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
+
+                foreach ($komposisi as $k) {
+
+                    $ingredient = Ingredients::find($k->ingredient_id);
+                    if (! $ingredient) continue;
+
+                    // Hitung total pemakaian bahan
+                    $totalOut = $k->qty * $item->qty;
+
+                    $before = $ingredient->stok;
+                    $after = $before - $totalOut;
+
+                    // Update stok bahan
+                    $ingredient->update([
+                        'stok' => max(0, $after)
+                    ]);
+
+                    // Catat ke riwayat stok (OUT)
+                    RiwayatStock::create([
+                        'ingredient_id' => $ingredient->id,
+                        'qty' => $totalOut,
+                        'qty_before' => $before,
+                        'qty_after' => $after,
+                        'tipe' => 'out',
+                        'keterangan' => 'Pengurangan stok dari pesanan ' . $pesanan->kode,
+                    ]);
+                }
+            }
+        }
 
         $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
     }
+
 
     public function delPesanan($id)
     {

@@ -11,7 +11,7 @@
                 </button>
 
             </div>
-            
+
         </div>
         {{-- <p>Anda Login Sebagai Kasir!</p> --}}
         <div class="col-auto">
@@ -25,10 +25,6 @@
                         <i class="ri-moon-line"></i>
                     </span>
                 </button>
-
-                
-
-
 
 
                 <button data-dropdown-toggle="dropdownProfile" class="flex justify-center items-center rounded-full"
