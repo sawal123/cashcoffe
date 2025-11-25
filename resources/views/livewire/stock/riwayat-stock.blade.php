@@ -30,6 +30,7 @@
             <thead>
                 <tr>
                     <th>#</th>
+                    <th>kode</th>
                     <th>Nama Bahan</th>
                     <th>Tipe</th>
                     <th>Qty</th>
@@ -43,41 +44,47 @@
 
             <tbody>
                 @forelse ($riwayats as $item)
-                    <tr>
-                        <td>{{ ($riwayats->currentPage() - 1) * $riwayats->perPage() + $loop->iteration }}</td>
+                <tr>
+                    <td>{{ ($riwayats->currentPage() - 1) * $riwayats->perPage() + $loop->iteration }}</td>
 
-                        <td>{{ $item->ingredient->nama_bahan }}</td>
+                    <td>{{ $item->kode}}</td>
+                    <td>{{ $item->ingredient->nama_bahan }}</td>
 
-                        <td>
-                            <span
-                                class="px-3 py-1.5 rounded-full text-sm font-medium
+                    <td>
+                        <span
+                            class="px-3 py-1.5 rounded-full text-sm font-medium
                                 {{ $item->tipe === 'in' ? 'bg-success-500 text-success-700' : 'bg-danger-500 text-danger-700' }}">
-                                {{ $item->tipe === 'in' ? 'Masuk' : 'Keluar' }}
-                            </span>
-                        </td>
+                            {{ $item->tipe === 'in' ? 'Masuk' : 'Keluar' }}
+                        </span>
+                    </td>
 
-                        <td>{{ number_format($item->qty, 2, ',', '.') }}</td>
+                    <td>{{ number_format($item->qty, 0, ',', '.') }}</td>
 
-                        <td>{{ number_format($item->qty_before, 2, ',', '.') }}</td>
+                    <td>{{ number_format($item->qty_before, 0, ',', '.') }}</td>
 
-                        <td>{{ number_format($item->qty_after, 2, ',', '.') }}</td>
+                    <td>{{ number_format($item->qty_after, 0, ',', '.') }}</td>
 
-                        <td>{{ $item->keterangan ?? '-' }}</td>
 
-                        <td>{{ $item->created_at->format('d/m/Y H:i') }}</td>
+                    <td>{{ $item->keterangan ?? '-' }}</td>
 
-                        <td class="text-center">
-                            <button
-                                @click="$dispatch('open-modal', { name: 'confirm-delete', id: '{{ base64_encode($item->id) }}' })"
-                                class="w-8 h-8 bg-danger-100 text-danger-600 rounded-full inline-flex items-center justify-center">
-                                <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
-                            </button>
-                        </td>
-                    </tr>
+                    <td>{{ $item->created_at->format('d/m/Y H:i') }}</td>
+
+                    <td class="text-center">
+                        <a href="/riwayat-stock/{{ base64_encode($item->id) }}/edit" wire:navigate
+                            class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
+                            <iconify-icon icon="lucide:edit"></iconify-icon>
+                        </a>
+                        <button
+                            @click="$dispatch('open-modal', { name: 'confirm-delete', id: '{{ base64_encode($item->id) }}' })"
+                            class="w-8 h-8 bg-danger-100 text-danger-600 rounded-full inline-flex items-center justify-center">
+                            <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
+                        </button>
+                    </td>
+                </tr>
                 @empty
-                    <tr>
-                        <td colspan="10" class="text-center py-4">Tidak ada riwayat stok.</td>
-                    </tr>
+                <tr>
+                    <td colspan="10" class="text-center py-4">Tidak ada riwayat stok.</td>
+                </tr>
                 @endforelse
             </tbody>
         </table>

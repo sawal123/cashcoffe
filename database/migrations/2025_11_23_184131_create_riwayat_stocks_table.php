@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('riwayat_stocks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('ingredient_id')->constrained('ingredients')->onDelete('cascade');
+            $table->string('kode')->nullable();
             $table->decimal('qty', 10, 2);
             $table->decimal('qty_before', 10, 2)->nullable();
             $table->decimal('qty_after', 10, 2)->nullable();

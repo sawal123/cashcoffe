@@ -158,6 +158,7 @@ class CreateOrder extends Component
 
                 RiwayatStock::create([
                     'ingredient_id' => $ingredient->id,
+                    'kode' => strtoupper('OUT-' . Str::random(6)),
                     'qty' => $totalOut,
                     'qty_before' => $before,
                     'qty_after' => $after,
@@ -189,6 +190,7 @@ class CreateOrder extends Component
                 // Simpan riwayat masuk
                 RiwayatStock::create([
                     'ingredient_id' => $ingredient->id,
+                    'kode' => strtoupper('IN-' . Str::random(6)),
                     'qty' => $totalIn,
                     'qty_before' => $before,
                     'qty_after' => $after,

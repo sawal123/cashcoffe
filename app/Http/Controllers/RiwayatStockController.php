@@ -21,15 +21,15 @@ class RiwayatStockController extends Controller
 
     public function create()
     {
-        return view('dashboard.stock.stock-add',
-            [
-                'stockId' => null,
-                'title' => 'Stock / Create',
-                'url' => $this->url,
-                'submit' => 'simpan'
-            ]
-        );
+        return view('dashboard.stock.stock-add', [
+            'stockId' => null,
+            'title' => 'Stock / Create',
+            'url' => $this->url,
+            'submit' => 'Simpan',
+            'mode' => 'create'
+        ]);
     }
+
 
     /**
      * Store a newly created resource in storage.
@@ -52,8 +52,16 @@ class RiwayatStockController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        // dd(base64_decode($id));
+        return view('dashboard.stock.stock-add', [
+            'stockId' => base64_decode($id),
+            'title' => 'Stock / Edit',
+            'url' => $this->url,
+            'submit' => 'Update',
+            'mode' => 'edit'
+        ]);
     }
+
 
     /**
      * Update the specified resource in storage.

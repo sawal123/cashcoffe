@@ -1,51 +1,55 @@
 <div>
     <x-toast />
-    <form wire:submit.prevent="tambahStok" class="grid grid-cols-12 gap-4">
+    <form wire:submit.prevent="{{ $stockId ? 'updateStok' : 'tambahStok' }}" class="grid grid-cols-12 gap-4">
+
 
         <div class="col-span-12">
-            {{-- <label class="form-label">Pilih Bahan</label>
-            <select wire:model.live="ingredient_id"
-                class="form-control form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
-                <option value="">-- Pilih Bahan --</option>
-                @foreach ($ingredients as $bahan)
-                    <option value="{{ $bahan->id }}">{{ $bahan->nama_bahan }}</option>
-                @endforeach
-            </select>
-            @if ($current_stok !== null)
-                <p class="text-sm mt-2">Stok Saat Ini: <b>{{ number_format($current_stok, 0) }} {{ $current_satuan }}</b>
-                </p>
-            @endif --}}
+
 
             <div class="mb-4" wire:ignore>
-                <div x-data x-init="new TomSelect($refs.menuSelect, {
+                <div x-data x-init="
+                const ts = new TomSelect($refs.menuSelect, {
                     allowEmptyOption: true,
                     create: false,
                     sortField: { field: 'text', direction: 'asc' }
-                });">
+                });
+
+                // Set TomSelect value saat EDIT
+                $nextTick(() => {
+                    @this.ingredient_id && ts.setValue(@this.ingredient_id);
+                });
+
+                // Sinkronisasi TomSelect -> Livewire
+                ts.on('change', function(value) {
+                    @this.set('ingredient_id', value);
+                });
+            ">
                     <label class="font-semibold mb-1 block">Pilih Bahan</label>
 
-                    <select x-ref="menuSelect" wire:model.live="menu_id" class="">
+                    <select x-ref="menuSelect" class="">
                         <option value="">Pilih Bahan:</option>
                         @foreach ($ingredients as $bahan)
-                            <option value="{{ $bahan->id }}">{{ $bahan->nama_bahan }}</option>
+                        <option value="{{ $bahan->id }}">{{ $bahan->nama_bahan }}</option>
                         @endforeach
                     </select>
                 </div>
+
                 @if ($current_stok !== null)
-                    <p class="text-sm mt-2">Stok Saat Ini: <b>{{ number_format($current_stok, 0) }}
-                            {{ $current_satuan }}</b>
-                    </p>
+                <p class="text-sm mt-2">
+                    Stok Saat Ini:
+                    <b>{{ number_format($current_stok, 0) }} {{ $current_satuan }}</b>
+                </p>
                 @endif
             </div>
         </div>
 
-
-
-
-
         <div class="col-span-6">
             <label class="form-label">Jumlah</label>
-            <input type="number" wire:model="qty" class="form-control" placeholder="Contoh: 50" required>
+            <input type="number" wire:model="qty" step="1" inputmode="numeric" class="form-control"
+                placeholder="Contoh: 50" required>
+
+
+
         </div>
 
         <div class="col-span-6">
@@ -54,7 +58,7 @@
         </div>
 
         <div class="col-span-12">
-            <button class="btn btn-primary-600" type="submit">Tambahkan Stok</button>
+            <button class="btn btn-primary-600" type="submit">{{$submit}} Stok</button>
         </div>
 
     </form>

@@ -9,7 +9,7 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
         <div class="md:col-span-12 2xl:col-span-12">
-            <livewire:stock.stock-add :stock-id="$stockId" />
+            <livewire:stock.stock-add :stock-id="$stockId" :submit="$submit" />
         </div>
     </div>
 </x-app-layout>

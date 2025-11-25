@@ -10,45 +10,20 @@
         </a>
     </div>
     <style>
-        /* Normal title style */
-        .menu-title-link {
+        .menu-title {
             padding: 12px 20px;
             font-size: 12px;
             font-weight: bold;
-            color: rgb(155, 155, 155) !important;
+            color: #888;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            background: transparent !important;
-            pointer-events: none;
-            /* tidak bisa diklik */
-        }
-        .menu-title-link .color {
-            color: #A4A4A4FF !important;
-        }
-
-        /* Jangan ikut hover/active */
-        .menu-title-link:hover,
-        .menu-title-link:focus {
-            background: transparent !important;
-            color: #888 !important;
-        }
-
-        /* Hilangkan saat collapsed */
-        .sidebar-menu-area.collapsed .menu-title-link,
-        .sidebar-menu-area.collapsed .menu-title {
-            display: none !important;
+            margin-top: 15px;
         }
     </style>
     <div class="sidebar-menu-area">
         <ul class="sidebar-menu" id="sidebar-menu">
 
             <!-- GROUP: Dashboard -->
-            <li class="menu-title">
-                <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">MAIN</span>
-                </a>
-            </li>
-
+            <li class="menu-title">Main</li>
             <li>
                 <a href="/dashboard" wire:navigate>
                     <iconify-icon icon="solar:home-smile-angle-outline" class="menu-icon"></iconify-icon>
@@ -57,12 +32,7 @@
             </li>
 
             <!-- GROUP: Menu & Order -->
-
-            <li class="menu-title">
-                <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">Menu & Order</span>
-                </a>
-            </li>
+            <li class="menu-title">Menu & Order</li>
 
             <li>
                 <a href="/order" wire:navigate>
@@ -92,12 +62,8 @@
                 </a>
             </li>
 
-
-            <li class="menu-title">
-                <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">Keuangan</span>
-                </a>
-            </li>
+            <!-- GROUP: Keuangan -->
+            <li class="menu-title">Keuangan</li>
 
             <li>
                 <a href="/transaksi" wire:navigate>
@@ -129,16 +95,13 @@
 
             <li>
                 <a href="/discount" wire:navigate>
-                    <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
+                    <iconify-icon icon="solar:discount-bold" class="menu-icon"></iconify-icon>
                     <span>Discount</span>
                 </a>
             </li>
 
             <!-- GROUP: Gudang -->
-           <li class="menu-title">
-                <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">Gudang</span>
-                </a>
+            <li class="menu-title">Gudang</li>
 
             <li>
                 <a href="/stock-dapur" wire:navigate>
@@ -170,18 +133,17 @@
 
             <!-- GROUP: User -->
             @unlessrole('kasir')
-              <li class="menu-title">
-                <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">User Management</span>
-                </a>
-            <li>
-                <a href="/user" wire:navigate>
-                    <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
-                    <span>User</span>
-                </a>
-            </li>
+                <li class="menu-title">User Management</li>
+                <li>
+                    <a href="/user" wire:navigate>
+                        <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
+                        <span>User</span>
+                    </a>
+                </li>
             @endunlessrole
 
         </ul>
+
     </div>
+
 </aside>

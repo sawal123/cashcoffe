@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use App\Models\Pesanan;
 use Livewire\Component;
 use App\Models\Ingredients;
+use Illuminate\Support\Str;
 use App\Models\RiwayatStock;
 use Livewire\WithPagination;
 use App\Models\MenuIngredients;
@@ -79,6 +80,7 @@ class TableOrder extends Component
                     // Catat ke riwayat stok (OUT)
                     RiwayatStock::create([
                         'ingredient_id' => $ingredient->id,
+                        'kode' => strtoupper('OUT-' . Str::random(6)),
                         'qty' => $totalOut,
                         'qty_before' => $before,
                         'qty_after' => $after,
