@@ -48,7 +48,7 @@
                     <td>{{ ($riwayats->currentPage() - 1) * $riwayats->perPage() + $loop->iteration }}</td>
 
                     <td>{{ $item->kode}}</td>
-                    <td>{{ $item->ingredient->nama_bahan }}</td>
+                    <td>{{ $item->ingredient->nama_bahan }} </td>
 
                     <td>
                         <span
@@ -58,7 +58,7 @@
                         </span>
                     </td>
 
-                    <td>{{ number_format($item->qty, 0, ',', '.') }}</td>
+                    <td>{{ number_format($item->qty, 0, ',', '.') }} {{ $item->ingredient->satuan->nama_satuan }}</td>
 
                     <td>{{ number_format($item->qty_before, 0, ',', '.') }}</td>
 
