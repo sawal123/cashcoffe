@@ -20,8 +20,7 @@ class StockDapurController extends Controller
      */
     public function create()
     {
-        return view(
-            'dashboard.stock.create-stock',
+        return view('dashboard.stock.create-stock',
             [
                 'stockId' => null,
                 'title' => 'Stock / Create',

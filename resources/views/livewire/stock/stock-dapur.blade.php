@@ -21,7 +21,7 @@
                 <tr>
                     <td class="border-r border-neutral-200 dark:border-neutral-600">{{ $i->nama_bahan }}</td>
                     <td class="border-r border-neutral-200 dark:border-neutral-600">{{ $i->stok }}</td>
-                    <td class="border-r border-neutral-200 dark:border-neutral-600">{{ $i->satuan }}</td>
+                    <td class="border-r border-neutral-200 dark:border-neutral-600">{{ $i->satuan->nama_satuan }}</td>
                 </tr>
                 @empty
                 <tr>

@@ -1,6 +1,6 @@
 <div>
 
- 
+
 
     <div class="mb-4" wire:ignore>
         <div x-data x-init="new TomSelect($refs.menuSelect, {
@@ -36,7 +36,7 @@
                     <option value="">Pilih Bahan:</option>
                     @foreach ($ingredients as $i)
                         <option value="{{ $i->id }}">
-                            {{ $i->nama_bahan }} ({{ $i->satuan }})
+                            {{ $i->nama_bahan }} ({{ $i->satuan->nama_satuan }})
                         </option>
                     @endforeach
                 </select>
@@ -88,7 +88,7 @@
                                 {{ $row->ingredient->nama_bahan }}
                             </td>
                             <td class="px-3 py-2">
-                                {{ $row->qty }} {{ $row->ingredient->satuan }}
+                                {{ number_format($row->qty, '0','','') }} {{ $row->ingredient->satuan->nama_satuan }}
                             </td>
                             <td class="px-3 py-2 text-right">
                                 <button wire:click="removeIngredient({{ $row->id }})"

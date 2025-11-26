@@ -24,4 +24,9 @@ class Ingredients extends Model
     {
         return $this->stocks->sum('qty');
     }
+
+    public function satuan()
+    {
+        return $this->belongsTo(SatuanBahan::class, 'satuan_id');
+    }
 }

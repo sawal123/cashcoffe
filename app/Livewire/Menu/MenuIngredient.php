@@ -30,17 +30,7 @@ class MenuIngredient extends Component
 
         $this->reset(['ingredient_id', 'qty']);
     }
-    // #[On('setMenu')]
-    // public function setMenu($payload)
-    // {
-    //     $this->menu_id = $payload['value'] ?? null;
-    // }
-
-    // #[On('setIngredient')]
-    // public function setIngredient(array $payload)
-    // {
-    //     $this->ingredient_id = $payload['value'] ?? null;
-    // }
+    
     public function removeIngredient($id)
     {
         MenuIngredients::where('id', $id)->delete();
