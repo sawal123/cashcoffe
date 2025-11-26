@@ -33,13 +33,13 @@
     <link rel="stylesheet" href="{{ asset('assets/css/lib/file-upload.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/lib/audioplayer.css') }}">
     <!-- main css -->
-    @vite(['resources/css/app.css'])
-    @vite(['resources/js/app.js'])
+    {{-- @vite(['resources/css/app.css'])
+    @vite(['resources/js/app.js']) --}}
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    {{-- <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css ') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-MmSL9RS0.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css ') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/app-D5CgVHyx.css ') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-OScb3ZFM.js') }}"> --}}
+    <link rel="stylesheet" href="{{ asset('build/assets/app-OScb3ZFM.js') }}">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
 
