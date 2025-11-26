@@ -15,11 +15,9 @@
                         <div class="card-body p-6">
                             <div class="grid grid-cols-12 gap-5">
                                 <div class="col-span-12">
-                                    <div class="card border-0">
-                                        <div class="card-body">
-                                            <livewire:menu.create :menu-id="$menuId" />
-                                        </div>
-                                    </div>
+
+                                    <livewire:menu.create :menu-id="$menuId" />
+
                                 </div>
                             </div>
                         </div>

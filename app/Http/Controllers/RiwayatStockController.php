@@ -12,7 +12,7 @@ class RiwayatStockController extends Controller
     public $url = "stock-dapur";
     public function index()
     {
-        return view('dashboard.riwayat-stock', ['title' => 'Riwayat Stock', 'url' => $this->url]);
+        return view('dashboard.riwayat-stock', ['title' => 'Riwayat', 'url' => $this->url]);
     }
 
     /**

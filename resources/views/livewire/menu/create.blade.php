@@ -109,7 +109,7 @@
 
         {{-- Submit --}}
         <div class="col-span-12">
-            <button class="btn btn-primary-600" type="submit">{{ $button }} Menu</button>
+            <button class=" w-full justify-center btn btn-primary-600" type="submit">{{ $button }} Menu</button>
         </div>
     </form>
 

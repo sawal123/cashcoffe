@@ -15,7 +15,7 @@
                 class="text-primary-600 h-[41.6px] focus:bg-primary-600 hover:bg-primary-700 border border-primary-600
                hover:text-white focus:text-white font-medium rounded-lg px-4 text-center inline-flex items-center"
                 type="button">
-                {{ $category ? $categories->where('id', $category)->first()->nama : 'Semua Kategori' }}
+                {{ $category ? $categories->where('id', $category)->first()->nama : 'All' }}
 
                 <svg class="w-2.5 h-2.5 ms-3 transition-transform" :class="open ? 'rotate-180' : ''" aria-hidden="true"
                     xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
@@ -33,7 +33,7 @@
                     <li>
                         <a href="javascript:void(0)" wire:click="$set('category', '')" @click="open = false"
                             class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                            Semua Kategori
+                            All
                         </a>
                     </li>
 
