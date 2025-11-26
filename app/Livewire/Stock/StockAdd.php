@@ -30,7 +30,7 @@ class StockAdd extends Component
 
             $bahan = Ingredients::find($riwayat->ingredient_id);
             $this->current_stok = $bahan->stok;
-            $this->current_satuan = $bahan->satuan;
+            $this->current_satuan = $bahan->satuan->nama_satuan;
         }
     }
     public function updatedIngredientId($value)
@@ -38,7 +38,7 @@ class StockAdd extends Component
         if ($value) {
             $bahan = Ingredients::find($value);
             $this->current_stok = $bahan->stok;
-            $this->current_satuan = $bahan->satuan;
+            $this->current_satuan = $bahan->satuan->nama_satuan;
         } else {
             $this->current_stok = null;
             $this->current_satuan = null;
