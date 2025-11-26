@@ -5,6 +5,7 @@ namespace App\Livewire\Stock;
 use Livewire\Component;
 use App\Models\Ingredients;
 use App\Models\SatuanBahan;
+use Illuminate\Support\Str;
 use App\Models\RiwayatStock;
 use App\Models\MenuIngredients;
 use App\Livewire\Menu\MenuIngredient;
@@ -45,6 +46,7 @@ class StockDapurCreate extends Component
 
         RiwayatStock::create([
             'ingredient_id' => $ingredient->id,
+            'kode' => strtoupper('IN-' . Str::random(6)),
             'qty'           => $this->stok,
             'keterangan'    => 'Stok awal',
             'tipe'          => 'in'
