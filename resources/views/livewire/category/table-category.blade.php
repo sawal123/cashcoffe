@@ -35,6 +35,7 @@
                         </td>
 
 
+                        
 
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <a href="/category/{{ base64_encode($item->id) }}/edit" wire:navigate
