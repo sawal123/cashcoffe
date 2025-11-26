@@ -11,7 +11,8 @@
         <div class="relative inline-block text-left" x-data="{ open: false }">
 
             <!-- BUTTON -->
-            <button @click="open = !open" class="text-primary-600 h-[41.6px] focus:bg-primary-600 hover:bg-primary-700 border border-primary-600
+            <button @click="open = !open"
+                class="text-primary-600 h-[41.6px] focus:bg-primary-600 hover:bg-primary-700 border border-primary-600
                hover:text-white focus:text-white font-medium rounded-lg px-4 text-center inline-flex items-center"
                 type="button">
                 {{ $category ? $categories->where('id', $category)->first()->nama : 'Semua Kategori' }}
@@ -38,13 +39,14 @@
 
                     <!-- Loop kategori -->
                     @foreach ($categories as $cat)
-                    <li>
-                        <a href="javascript:void(0)" wire:click="$set('category', {{ $cat->id }})" @click="open = false"
-                            class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white
+                        <li>
+                            <a href="javascript:void(0)" wire:click="$set('category', {{ $cat->id }})"
+                                @click="open = false"
+                                class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white
                         {{ $category == $cat->id ? 'bg-gray-100 dark:bg-gray-600 font-semibold' : '' }}">
-                            {{ $cat->nama }}
-                        </a>
-                    </li>
+                                {{ $cat->nama }}
+                            </a>
+                        </li>
                     @endforeach
 
                 </ul>
@@ -71,53 +73,53 @@
             </thead>
             <tbody>
                 @forelse ($menu as $item)
-                <tr>
-                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                        <span>{{ ($menu->currentPage() - 1) * $menu->perPage() + $loop->iteration }}</span>
-                    </td>
-                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                    <tr>
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            <span>{{ ($menu->currentPage() - 1) * $menu->perPage() + $loop->iteration }}</span>
+                        </td>
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
 
-                        <div class="flex items-center gap-2">
-                            <img src="{{ asset('storage/' . $item->gambar) }}" alt=""
-                                class="shrink-0 rounded-lg w-12 h-12 object-cover">
+                            <div class="flex items-center gap-2">
+                                <img src="{{ asset('storage/' . $item->gambar) }}" alt=""
+                                    class="shrink-0 rounded-lg w-12 h-12 object-cover">
 
-                            <h6 class="text-base mb-0 font-normal">{{ $item->nama_menu }}</h6>
+                                <h6 class="text-base mb-0 font-normal">{{ $item->nama_menu }}</h6>
 
-                        </div>
-                    </td>
-                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                        <span class="">{{ $item->category->nama }}</span>
-                    </td>
-                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                        <span class="">Rp {{ number_format($item->harga, 0, ',', '.') }}</span>
-                    </td>
+                            </div>
+                        </td>
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            <span class="">{{ $item->category->nama }}</span>
+                        </td>
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            <span class="">Rp {{ number_format($item->harga, 0, ',', '.') }}</span>
+                        </td>
 
-                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                        <span
-                            class=" bg-danger-100 dark:bg-blue-600/25 text-danger-600 dark:text-danger-400 px-8 py-1.5 rounded-full font-medium text-sm">{{
-                            $item->is_active == 1 ? 'Active' : 'Inactive' }}</span>
-                    </td>
-                    {{-- <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            <span
+                                class=" bg-danger-100 dark:bg-blue-600/25 text-danger-600 dark:text-danger-400 px-8 py-1.5 rounded-full font-medium text-sm">{{ $item->is_active == 1 ? 'Active' : 'Inactive' }}</span>
+                        </td>
+                        {{-- <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                         <span class="">{{ \Illuminate\Support\Str::limit($item->deskripsi, 10, '....') }}</span>
                     </td> --}}
 
-                    <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                        <a href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate
-                            class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
-                            <iconify-icon icon="lucide:edit"></iconify-icon>
-                        </a>
-                        <button
-                            @click="$dispatch('open-modal', {  name: 'confirm-delete',  id: {{ json_encode(base64_encode($item->id)) }} })"
-                            class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
-                            <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
-                        </button>
-
-                    </td>
-                </tr>
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                            <a href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate
+                                class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
+                                <iconify-icon icon="lucide:edit"></iconify-icon>
+                            </a>
+                            @unlessrole('kasir')
+                                <button
+                                    @click="$dispatch('open-modal', {  name: 'confirm-delete',  id: {{ json_encode(base64_encode($item->id)) }} })"
+                                    class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
+                                    <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
+                                </button>
+                            @endunlessrole
+                        </td>
+                    </tr>
                 @empty
-                <tr>
-                    <td colspan="5" class="text-center py-4">No Menu found.</td>
-                </tr>
+                    <tr>
+                        <td colspan="5" class="text-center py-4">No Menu found.</td>
+                    </tr>
                 @endforelse
             </tbody>
         </table>
