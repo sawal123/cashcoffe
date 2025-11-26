@@ -74,11 +74,11 @@
                             class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
                             <iconify-icon icon="lucide:edit"></iconify-icon>
                         </a>
-                        <button
+                        {{-- <button
                             @click="$dispatch('open-modal', { name: 'confirm-delete', id: '{{ base64_encode($item->id) }}' })"
                             class="w-8 h-8 bg-danger-100 text-danger-600 rounded-full inline-flex items-center justify-center">
                             <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
-                        </button>
+                        </button> --}}
                     </td>
                 </tr>
                 @empty

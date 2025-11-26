@@ -22,6 +22,7 @@
             pointer-events: none;
             /* tidak bisa diklik */
         }
+
         .menu-title-link .color {
             color: #A4A4A4FF !important;
         }
@@ -133,53 +134,53 @@
                     <span>Discount</span>
                 </a>
             </li>
+            @unlessrole('kasir')
+                <!-- GROUP: Gudang -->
+                <li class="menu-title">
+                    <a href="#" class="menu-title-link" onclick="return false;">
+                        <span class="color">Gudang</span>
+                    </a>
 
-            <!-- GROUP: Gudang -->
-           <li class="menu-title">
-                <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">Gudang</span>
-                </a>
+                <li>
+                    <a href="/stock-dapur" wire:navigate>
+                        <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
+                        <span>Stock Dapur</span>
+                    </a>
+                </li>
 
-            <li>
-                <a href="/stock-dapur" wire:navigate>
-                    <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
-                    <span>Stock Dapur</span>
-                </a>
-            </li>
+                <li>
+                    <a href="/riwayat-stock" wire:navigate>
+                        <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
+                        <span>Riwayat Stock</span>
+                    </a>
+                </li>
 
-            <li>
-                <a href="/riwayat-stock" wire:navigate>
-                    <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
-                    <span>Riwayat Stock</span>
-                </a>
-            </li>
+                <li>
+                    <a href="/gudang" wire:navigate>
+                        <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
+                        <span>Gudang</span>
+                    </a>
+                </li>
 
-            <li>
-                <a href="/gudang" wire:navigate>
-                    <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
-                    <span>Gudang</span>
-                </a>
-            </li>
-
-            <li>
-                <a href="/riwayat-gudang" wire:navigate>
-                    <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
-                    <span>Riwayat Gudang</span>
-                </a>
-            </li>
-
+                <li>
+                    <a href="/riwayat-gudang" wire:navigate>
+                        <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
+                        <span>Riwayat Gudang</span>
+                    </a>
+                </li>
+            @endunlessrole
             <!-- GROUP: User -->
             @unlessrole('kasir')
-              <li class="menu-title">
-                <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">User Management</span>
-                </a>
-            <li>
-                <a href="/user" wire:navigate>
-                    <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
-                    <span>User</span>
-                </a>
-            </li>
+                <li class="menu-title">
+                    <a href="#" class="menu-title-link" onclick="return false;">
+                        <span class="color">User Management</span>
+                    </a>
+                <li>
+                    <a href="/user" wire:navigate>
+                        <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
+                        <span>User</span>
+                    </a>
+                </li>
             @endunlessrole
 
         </ul>
