@@ -6,20 +6,21 @@ use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MejaController;
 use App\Http\Controllers\MenuController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\OmsetController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\GudangController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\StruckController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DiscountController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\MemberController;
-use App\Http\Controllers\MenuIngredientController;
 use App\Http\Controllers\TransaksiController;
-use App\Http\Controllers\PengeluaranController;
-use App\Http\Controllers\RiwayatGudangController;
-use App\Http\Controllers\RiwayatStockController;
 use App\Http\Controllers\StockDapurController;
+use App\Http\Controllers\PengeluaranController;
+use App\Http\Controllers\RiwayatStockController;
+use App\Http\Controllers\RiwayatGudangController;
+use App\Http\Controllers\MenuIngredientController;
 
 Route::view('/', 'welcome');
 
@@ -43,6 +44,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('stock-dapur', StockDapurController::class);
     Route::resource('riwayat-stock', RiwayatStockController::class);
     Route::resource('menu-ingredient', MenuIngredientController::class);
+    Route::resource('user', UserController::class);
     // Route::get('stock-dapur/add', [StockDapurController::class, 'add'])->name('stock-dapur.add');
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 
