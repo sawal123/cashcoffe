@@ -12,9 +12,7 @@
                             <div class="flex justify-end">
                                 <x-a url='/category/create' active='blue' wire:navigate>+ Tambah Category</x-a>
                             </div>
-
                             <livewire:category.table-category>
-
                         </div>
                     </div>
                 </div>

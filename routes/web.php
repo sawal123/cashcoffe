@@ -1,6 +1,7 @@
 <?php
 
 use App\Exports\OrdersExport;
+use App\Livewire\Absensi\Login;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
@@ -21,9 +22,16 @@ use App\Http\Controllers\PengeluaranController;
 use App\Http\Controllers\RiwayatStockController;
 use App\Http\Controllers\RiwayatGudangController;
 use App\Http\Controllers\MenuIngredientController;
+use App\Livewire\Absensi\ClockIn as AbsensiClockIn;
+use App\Livewire\Absensi\Home;
 
 Route::view('/', 'welcome');
 
+Route::prefix('absen')->name('absensi.')->group(function () {
+    Route::get('/login', Login::class)->name('login');
+    Route::get('/', Home::class)->name('home');
+    Route::get('/clock-in', AbsensiClockIn::class)->name('clock.in');
+});
 Route::middleware(['auth'])->group(function () {
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard.index');
@@ -53,6 +61,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('orders.export');
     Route::middleware(['role:admin'])->group(function () {});
 });
+
 
 // routes/web.php
 
