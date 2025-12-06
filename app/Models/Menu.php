@@ -20,10 +20,30 @@ class Menu extends Model
         return $this->hasMany(PesananItem::class, 'menus_id');
     }
 
+    // public function ingredients()
+    // {
+    //     return $this->belongsToMany(Ingredients::class, 'menu_ingredients')
+    //         ->withPivot('qty')
+    //         ->withTimestamps();
+    // }
     public function ingredients()
     {
-        return $this->belongsToMany(Ingredients::class, 'menu_ingredients')
-            ->withPivot('qty')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            Ingredients::class,
+            'menu_ingredients',
+            'menu_id',        // foreign key di pivot untuk Menu
+            'ingredient_id'   // foreign key di pivot untuk Ingredient ✅
+        )->withPivot('qty');
+    }
+
+
+    public function stokTersedia(): bool
+    {
+        foreach ($this->ingredients as $ingredient) {
+            if ($ingredient->stok < $ingredient->pivot->qty) {
+                return false; // salah satu bahan habis
+            }
+        }
+        return true;
     }
 }

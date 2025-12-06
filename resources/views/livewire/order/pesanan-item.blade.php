@@ -1,56 +1,61 @@
-<div id="pesan"
-    class="sm:w-[300px] w-ful shrink-0 border border-slate-200 mt-2 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 shadow-sm p-2 h-fit order-2 lg:order-2">
+<div id="pesan" class="
+     sm:w-[300px] shrink-0
+        border border-slate-200 mt-2
+        dark:border-slate-700
+        rounded-xl bg-white dark:bg-slate-800 shadow-sm
+        p-2 h-fit order-2 lg:order-2
+
+        lg:sticky lg:top-20
+    ">
     <div class="flex items-center justify-between mb-3">
+
         <p class="font-bold text-lg mb-2 text-slate-800 dark:text-white">Pesanan Item</p>
         @if ($orderId)
-            <span
-                class="inline-flex items-center rounded-md {{ $status == 'selesai' ? 'bg-gray-500' : 'bg-red-500 ' }} px-2 py-1 text-xs font-medium text-gray-600 inset-ring inset-ring-gray-500/10">Pesanan
-                {{ ucfirst(strtolower($status)) }}
-            </span>
+        <span
+            class="inline-flex items-center rounded-md {{ $status == 'selesai' ? 'bg-gray-500' : 'bg-red-500 ' }} px-2 py-1 text-xs font-medium text-gray-600 inset-ring inset-ring-gray-500/10">Pesanan
+            {{ ucfirst(strtolower($status)) }}
+        </span>
         @endif
     </div>
     <hr class="border-slate-200 dark:border-slate-700 mb-3">
 
 
-    {{-- <x-input wire:model="nama_costumer" place="Nama Costumer" /> --}}
+    {{--
+    <x-input wire:model="nama_costumer" place="Nama Costumer" /> --}}
     <x-inputsmall wire:model="nama_costumer" placeholder="Nama Costumer" />
 
 
     <ul class="space-y-3 my-3">
         @forelse ($pesanan as $index=>$p)
-            <li class="flex items-center justify-between gap-2">
-                <img src="{{ asset('storage/' . $p['gambar']) }}" alt="Produk"
-                    class="shrink-0 rounded-md w-12 h-12 object-cover">
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ $p['nama_menu'] }}</p>
-                    <span
-                        class="text-sm font-bold text-slate-900 dark:text-white">Rp{{ number_format($p['harga'], 0, ',', '.') }}</span>
-                </div>
-                <div class="flex items-center gap-1">
-                    <button wire:click="decrement({{ $p['id'] }})"
-                        @if ($status === 'selesai') disabled @endif
-                        class="w-7 h-7 flex items-center justify-center rounded-md border 
+        <li class="flex items-center justify-between gap-2">
+            <img src="{{ asset('storage/' . $p['gambar']) }}" alt="Produk"
+                class="shrink-0 rounded-md w-12 h-12 object-cover">
+            <div class="flex-1">
+                <p class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ $p['nama_menu'] }}</p>
+                <span class="text-sm font-bold text-slate-900 dark:text-white">Rp{{ number_format($p['harga'], 0, ',',
+                    '.') }}</span>
+            </div>
+            <div class="flex items-center gap-1">
+                <button wire:click="decrement({{ $p['id'] }})" @if ($status==='selesai' ) disabled @endif class="w-7 h-7 flex items-center justify-center rounded-md border
                transition duration-300 hover:bg-gray-600
                {{ $status === 'selesai' ? 'opacity-50 cursor-not-allowed hover:bg-transparent' : '' }}">
-                        -
-                    </button>
+                    -
+                </button>
 
-                    <span class="w-6 text-center text-sm font-semibold text-slate-800 dark:text-white">
-                        {{ $p['qty'] }}
-                    </span>
+                <span class="w-6 text-center text-sm font-semibold text-slate-800 dark:text-white">
+                    {{ $p['qty'] }}
+                </span>
 
-                    <button wire:click="increment({{ $p['id'] }})"
-                        @if ($status === 'selesai') disabled @endif
-                        class="w-7 h-7 flex items-center justify-center rounded-md border 
+                <button wire:click="increment({{ $p['id'] }})" @if ($status==='selesai' ) disabled @endif class="w-7 h-7 flex items-center justify-center rounded-md border
                transition duration-300 hover:bg-gray-600
                {{ $status === 'selesai' ? 'opacity-50 cursor-not-allowed hover:bg-transparent' : '' }}">
-                        +
-                    </button>
-                </div>
+                    +
+                </button>
+            </div>
 
-            </li>
+        </li>
         @empty
-            <li class="text-sm text-slate-500">Belum ada pesanan</li>
+        <li class="text-sm text-slate-500">Belum ada pesanan</li>
         @endforelse
     </ul>
     <hr class="border-slate-200 dark:border-slate-700 mb-3">
@@ -59,37 +64,36 @@
             Pembayaran
         </span>
 
-        <select id="metode_pembayaran" wire:model="metode_pembayaran" required
-            class="w-full rounded-lg border border-slate-300 dark:border-slate-700 
+        <select id="metode_pembayaran" wire:model="metode_pembayaran" required class="w-full rounded-lg border border-slate-300 dark:border-slate-700
                bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
-               px-3 py-2 text-sm focus:outline-none focus:ring-2 
+               px-3 py-2 text-sm focus:outline-none focus:ring-2
                focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer">
             <option value="" class="text-neutral-500">Pilih Pembayaran…</option>
 
             @foreach ($pembayaran as $pay)
-                <option value="{{ $pay }}" class="text-neutral-800 dark:text-neutral-200">
-                    {{ $pay }}
-                </option>
+            <option value="{{ $pay }}" class="text-neutral-800 dark:text-neutral-200">
+                {{ $pay }}
+            </option>
             @endforeach
         </select>
     </div>
 
 
     @if ($status != null)
-        <div class="flex justify-between gap-4 items-center mt-2">
-            <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
-            <select id="status" wire:model="status"
-                class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
-                required>
-                <option value="selesai" class="text-neutral-800 dark:text-neutral-200">
-                    Selesai
-                </option>
-                <option value="dibatalkan" class="text-neutral-800 dark:text-neutral-200">
-                    Dibatalkan
-                </option>
+    <div class="flex justify-between gap-4 items-center mt-2">
+        <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
+        <select id="status" wire:model="status"
+            class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
+            required>
+            <option value="selesai" class="text-neutral-800 dark:text-neutral-200">
+                Selesai
+            </option>
+            <option value="dibatalkan" class="text-neutral-800 dark:text-neutral-200">
+                Dibatalkan
+            </option>
 
-            </select>
-        </div>
+        </select>
+    </div>
     @endif
 
     <x-inputsmall label="Voucher" wire:model.live="discount" placeholder="Masukan Code Voucher"
@@ -128,21 +132,21 @@
 
 
         @if ($status == 'dibatalkan')
-            <button disabled
-                class="w-full bg-gray-600 mt-2 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-                {{ $teks }} Pesanan
-            </button>
+        <button disabled
+            class="w-full bg-gray-600 mt-2 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+            {{ $teks }} Pesanan
+        </button>
         @else
-            <button wire:click="{{ $submit }}"
-                class="w-full bg-blue-600 mt-2 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-                {{ $teks }} Pesanan
-            </button>
-            @if ($teks == 'Update')
-                <a href="{{ route('struk.print', base64_encode($orderId)) }}"
-                    class="w-full bg-slate-600 text-center mt-2 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-                    Cetak Struk
-                </a>
-            @endif
+        <button wire:click="{{ $submit }}"
+            class="w-full bg-blue-600 mt-2 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+            {{ $teks }} Pesanan
+        </button>
+        @if ($teks == 'Update')
+        <a href="{{ route('struk.print', base64_encode($orderId)) }}"
+            class="w-full bg-slate-600 text-center mt-2 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+            Cetak Struk
+        </a>
+        @endif
         @endif
 
     </div>

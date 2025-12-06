@@ -484,10 +484,15 @@ class CreateOrder extends Component
         }
         // 08222323232
         $totalAfterDiscount = max(0, $total - $discountValue);
+        $categories = Category::with([
+            'menus' => function ($query) {
+                $query->where('is_active', true)
+                    ->where('nama_menu', 'like', '%' . $this->search . '%')
+                    ->with('ingredients');
+            }
+        ])->get();
 
-        $categories = Category::with(['menus' => function ($query) {
-            $query->where('is_active', true);
-        }])->get();
+
         return view('livewire.order.create-order', [
             'menus' => $menus,
             'orderId' => $this->orderId,

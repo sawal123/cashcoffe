@@ -39,35 +39,24 @@
             @foreach ($category->menus as $item)
             @php
             $harga = $item->h_promo == 0 ? $item->harga : $item->h_promo;
-            $isAvailable = $item->stokTersedia();
             @endphp
-
-            <article @if($isAvailable) wire:click="addPesanan({{ $item->id }})" @endif class="group flex flex-col rounded-xl overflow-hidden border
-        {{ $isAvailable
-            ? 'cursor-pointer hover:shadow-xl bg-white dark:bg-slate-800'
-            : 'opacity-50 cursor-not-allowed bg-slate-100 dark:bg-slate-700'
-        }}">
-                <div class="h-40 md:h-52 overflow-hidden relative">
-                    <img src="{{ asset('storage/' . $item->gambar) }}" class="object-cover w-full h-full" />
-
-                    @unless($isAvailable)
-                    <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <span class="text-white text-sm font-semibold">
-                            Stok Habis
-                        </span>
-                    </div>
-                    @endunless
+            <article wire:click="addPesanan({{ $item->id }})"
+                class="hover:shadow-xl cursor-pointer group flex flex-col rounded-xl overflow-hidden border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <div class="h-40 md:h-52 overflow-hidden">
+                    <img src="{{ asset('storage/' . $item->gambar) }}"
+                        class="object-cover w-full h-full transition duration-500 ease-out group-hover:scale-105"
+                        alt="Produk" />
                 </div>
-
                 <div class="p-3">
-                    <p class="text-sm font-medium">{{ $item->nama_menu }}</p>
-                    <p class="font-bold">
+                    <p class="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        {{ $item->nama_menu }}
+                    </p>
+                    <p class="text-base font-bold text-slate-900 dark:text-white">
                         Rp{{ number_format($harga, 0, ',', '.') }}
                     </p>
                 </div>
             </article>
             @endforeach
-
         </div>
         @endforeach
         {{-- {{ $menus->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }} --}}
@@ -75,4 +64,5 @@
 
 
     {{-- Kanan: Pesanan --}}
-    @include('livewire.order.pesanan-item')
+     @include('livewire.order.pesanan-item')
+
