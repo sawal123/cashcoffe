@@ -33,27 +33,21 @@
     <link rel="stylesheet" href="{{ asset('assets/css/lib/file-upload.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/lib/audioplayer.css') }}">
     <!-- main css -->
-    @vite(['resources/css/app.css'])
-    @vite(['resources/js/app.js'])
+    {{-- @vite(['resources/css/app.css'])
+    @vite(['resources/js/app.js']) --}}
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    {{-- <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css ') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-D5CgVHyx.css ') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/app-Eupb82tA.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-OScb3ZFM.js') }}"> --}}
+    <link rel="stylesheet" href="{{ asset('build/assets/app-OScb3ZFM.js') }}">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-
     <!-- TomSelect CSS -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" rel="stylesheet">
 
     <!-- TomSelect JS -->
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
-
     <style>
-        /* ======================= */
-        /*    CONTROL (INPUT)      */
-        /* ======================= */
-
         .ts-control {
             width: 100% !important;
             padding: 0.5rem 0.75rem !important;
