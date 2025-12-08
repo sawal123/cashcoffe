@@ -18,5 +18,8 @@ class Absensi extends Model
         'status',
         'keterangan',
     ];
-
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class);
+    }
 }

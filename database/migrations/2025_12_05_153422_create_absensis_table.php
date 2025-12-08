@@ -21,8 +21,20 @@ return new class extends Migration
             $table->string('foto')->nullable();   // path foto absensi
             $table->string('foto_keluar')->nullable();
             $table->string('lokasi_keluar')->nullable();
-            $table->string('status', 20);
+            // $table->string('status', 20);
+            $table->enum('status', [
+                'hadir',
+                'terlambat',
+                'alpha',
+                'izin',
+                'sakit',
+                'cuti',
+                'wfh',
+                'dinas_luar',
+                'complete'
+            ])->default('hadir');
             $table->text('keterangan')->nullable();
+            $table->unique(['user_id', 'tanggal']);
             $table->softDeletes();
             $table->timestamps();
         });

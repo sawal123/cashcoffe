@@ -14,16 +14,7 @@
                 <div class="grid grid-cols-1 2xl:grid-cols-12">
                     <div class="xl:col-span-12 2xl:col-span-12">
                         <div class="card-body p-6">
-                            <div class="grid grid-cols-12 gap-5">
-                                <div class="col-span-12">
-                                    <div class="card border-0">
-                                        <div class="card-body">
-                                            <livewire:absense.show-absense :user-id="$userId" />
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
+                            <livewire:absense.show-absense :user-id="$userId" />
                         </div>
                     </div>
                 </div>

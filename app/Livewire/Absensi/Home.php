@@ -39,8 +39,23 @@ class Home extends Component
 
         session()->flash('success', 'Clock In berhasil!');
     }
+
+    // public $shift;
+
+    // public function getIsLateAttribute()
+    // {
+    //     if (!$this->jam_masuk) return false;
+
+    //     $shift = \App\Models\Shift::first();
+    //     if (!$shift) return false;
+
+    //     return \Carbon\Carbon::parse($this->jam_masuk)
+    //         ->gt(\Carbon\Carbon::parse($shift->jam_masuk));
+    // }
+
     public function render()
     {
-        return view('livewire.absensi.home')->layout('layouts.absensi');
+           $shift = \App\Models\Shift::first();
+        return view('livewire.absensi.home', compact('shift'))->layout('layouts.absensi');
     }
 }
