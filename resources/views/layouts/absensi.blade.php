@@ -50,7 +50,7 @@
             <div></div>
             <div></div>
             <div></div>
-            <div></div>
+            <div></div>p
             <div></div>
             <div></div>
             <div></div>
@@ -63,10 +63,44 @@
     </section> --}}
     <!-- splash-screen end -->
 
-    <main class="home">
-        <section class="wrapper dz-mode">
+    <main class="">
+        <div class="header p-3 d-flex align-items-center justify-content-between w-100">
+            <div class="d-flex align-items-center justify-content-between gap-14">
+                <div class="image shrink-0 rounded-full overflow-hidden">
+                    <img src="{{ asset('absensi/images/home/avatar.png') }}" alt="avatar"
+                        class="w-100 h-100 object-fit-cover">
+                </div>
+                <div>
+                    <h5>Hi, {{ Auth::user()->name }}</h5>
+                    <p class="d-flex align-items-center gap-04">
+                        <img src="{{ asset('absensi/svg/map-marker.svg') }}" alt="icon">
+                        <span id="userLocation">Mendeteksi lokasi...</span>
+                    </p>
+                </div>
+            </div>
+            <ul class="d-flex align-items-center gap-3">
+                <li>
+                    <a href="notification.html"
+                        class="d-flex align-items-center justify-content-center rounded-full border p-2 position-relative">
+                        <img src="{{ asset('absensi/svg/bell-black.svg') }}" width="24" height="24" alt="icon">
+                        <span class="dot"></span>
+                    </a>
+                </li>
+                <li>
+                    <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                        @csrf
+                    </form>
+                    <a href="#"  onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                        class="d-flex align-items-center justify-content-center rounded-full  border p-2 position-relative">
+                        <img src="{{ asset('absensi/svg/exit.svg') }}" width="24" height="24" alt="icon">
+                        <span class="dot"></span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        {{-- <section class="wrapper dz-mode">
             @include('layouts.partial.nav')
-        </section>
+        </section> --}}
         {{ $slot }}
         @include('layouts.partial.footer')
     </main>
@@ -102,6 +136,50 @@
 
     <!-- script -->
     <script src="{{ asset('absensi/js/script.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const el = document.getElementById('userLocation');
+
+            if (!navigator.geolocation) {
+                el.innerText = "Browser tidak mendukung lokasi";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                        try {
+                            const {
+                                latitude,
+                                longitude
+                            } = position.coords;
+
+                            const res = await fetch(
+                                `/reverse-geocode?lat=${latitude}&lon=${longitude}`
+                            );
+
+                            if (!res.ok) throw new Error('Backend error');
+
+                            const data = await res.json();
+
+                            el.innerText =
+                                data.address.city ||
+                                data.address.suburb ||
+                                data.address.neighbourhood ||
+                                data.address.country ||
+                                'Lokasi tidak ditemukan';
+
+                        } catch (e) {
+                            el.innerText = "Gagal membaca lokasi";
+                        }
+                    },
+                    () => el.innerText = "Izin lokasi ditolak", {
+                        enableHighAccuracy: true,
+                        timeout: 10000
+                    }
+            );
+        });
+    </script>
+
 </body>
 
 </html>

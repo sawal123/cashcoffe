@@ -171,6 +171,18 @@
             @endunlessrole
             <!-- GROUP: User -->
             @unlessrole('kasir')
+             <li class="menu-title">
+                    <a href="#" class="menu-title-link" onclick="return false;">
+                        <span class="color">Absensi</span>
+                    </a>
+                <li>
+                    <a href="/absense" wire:navigate>
+                        <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
+                        <span>Absensi</span>
+                    </a>
+                </li>
+
+
                 <li class="menu-title">
                     <a href="#" class="menu-title-link" onclick="return false;">
                         <span class="color">User Management</span>

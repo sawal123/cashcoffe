@@ -1,7 +1,7 @@
   <footer class="bottom-nav">
       <ul class="d-flex align-items-center justify-content-around w-100 h-100">
           <li>
-              <a href="{{ url('home') }}">
+              <a href="{{ url('absen') }}">
                   <img src="{{ asset('absensi/svg/bottom-nav/home-active.svg') }}" alt="home">
               </a>
           </li>

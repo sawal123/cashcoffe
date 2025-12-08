@@ -1,8 +1,12 @@
 <?php
 
+use Illuminate\Http\Request;
 use App\Exports\OrdersExport;
+use App\Http\Controllers\AbsenseController;
+use App\Livewire\Absensi\Home;
 use App\Livewire\Absensi\Login;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MejaController;
@@ -23,22 +27,31 @@ use App\Http\Controllers\RiwayatStockController;
 use App\Http\Controllers\RiwayatGudangController;
 use App\Http\Controllers\MenuIngredientController;
 use App\Livewire\Absensi\ClockIn as AbsensiClockIn;
-use App\Livewire\Absensi\Home;
+
 
 Route::view('/', 'welcome');
 
-Route::prefix('absen')->name('absensi.')->group(function () {
-    Route::get('/login', Login::class)->name('login');
-    Route::get('/', Home::class)->name('home');
-    Route::get('/clock-in', AbsensiClockIn::class)->name('clock.in');
-});
-Route::middleware(['auth'])->group(function () {
+// Route::prefix('absen')->name('absensi.')->group(function () {
+//     Route::get('/login', Login::class)->name('login');
+//     Route::get('/', Home::class)->name('home');
+//     Route::get('/clock-in', AbsensiClockIn::class)->name('clock.in');
+// });
+
+Route::prefix('absen')
+    ->name('absensi.')
+    ->middleware(['auth', 'role:karyawan'])
+    ->group(function () {
+        Route::get('/', Home::class)->name('home');
+        Route::get('/clock-in', AbsensiClockIn::class)->name('clock.in');
+    });
+
+Route::middleware(['auth', 'role:kasir|admin'])->group(function () {
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard.index');
     });
 
-    Route::resource('menu', MenuController::class);
 
+    Route::resource('menu', MenuController::class);
     Route::resource('order', OrderController::class);
     Route::resource('meja', MejaController::class);
     Route::resource('category', CategoryController::class);
@@ -52,6 +65,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('stock-dapur', StockDapurController::class);
     Route::resource('riwayat-stock', RiwayatStockController::class);
     Route::resource('menu-ingredient', MenuIngredientController::class);
+    Route::resource('absense', AbsenseController::class);
     Route::resource('user', UserController::class);
     // Route::get('stock-dapur/add', [StockDapurController::class, 'add'])->name('stock-dapur.add');
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
@@ -72,3 +86,26 @@ Route::post('/logout', function () {
 })->name('logout');
 
 require __DIR__ . '/auth.php';
+
+
+
+Route::get('/reverse-geocode', function (Request $request) {
+
+    if (! $request->lat || ! $request->lon) {
+        return response()->json([
+            'error' => 'Latitude & longitude wajib'
+        ], 400);
+    }
+
+    $url = "https://nominatim.openstreetmap.org/reverse";
+
+    $response = Http::withHeaders([
+        'User-Agent' => 'absensi-app/1.0 (admin@localhost)'
+    ])->get($url, [
+        'format' => 'json',
+        'lat' => $request->lat,
+        'lon' => $request->lon,
+    ]);
+
+    return $response->json();
+});

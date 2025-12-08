@@ -8,42 +8,9 @@
             color: black;
         }
     </style>
-    <section class="">
-        <div class="header d-flex align-items-center justify-content-between w-100">
-            <div class="d-flex align-items-center justify-content-between gap-14">
-                <div class="image shrink-0 rounded-full overflow-hidden">
-                    <img src="{{ asset('absensi/images/home/avatar.png') }}" alt="avatar"
-                        class="w-100 h-100 object-fit-cover">
-                </div>
-                <div>
-                    <h5>Hi, {{ Auth::user()->name }}</h5>
-                    <p class="d-flex align-items-center gap-04">
-                        <img src="{{ asset('absensi/svg/map-marker.svg') }}" alt="icon">
-                        <span id="userLocation">Mendeteksi lokasi...</span>
-                    </p>
-                </div>
-            </div>
-            <ul class="d-flex align-items-center gap-3">
-                <li>
-                    <a href="notification.html"
-                        class="d-flex align-items-center justify-content-center rounded-full border p-2 position-relative">
-                        <img src="{{ asset('absensi/svg/bell-black.svg') }}" alt="icon">
-                        <span class="dot"></span>
-                    </a>
-                </li>
-                <li>
-                    <a href="chat/message.html"
-                        class="d-flex align-items-center justify-content-center rounded-full  border p-2 position-relative">
-                        <img src="{{ asset('absensi/svg/message-square-dots.svg') }}" alt="icon">
-                        <span class="dot"></span>
-                    </a>
-                </li>
-            </ul>
-        </div>
-    </section>
+
     <section class="container my-4">
         <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-
             <!-- Header Biru -->
             <div class="p-4" style="background:#0798E3;">
                 <div class=" justify-content-between align-items-center white">
@@ -52,7 +19,7 @@
                     </h5>
 
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fw-semibold" id="realtimeClock">{{ $time }}</span>
+                        Pukul :<span class="fw-semibold" id="realtimeClock"> {{ $time }}</span>
                     </div>
                 </div>
                 <!-- CLOCK IN & CLOCK OUT -->
@@ -66,7 +33,8 @@
 
                             <div class="rounded-3 px-3 py-2 fw-bold white"
                                 style="background: {{ $absensiToday?->jam_masuk ? '#0798E3' : 'red' }};">
-                                {{ $absensiToday?->jam_masuk ? \Carbon\Carbon::parse($absensiToday->jam_masuk)->format('H : i : s') : '-- : -- : --' }}
+                                {{ $absensiToday?->jam_masuk ?
+                                \Carbon\Carbon::parse($absensiToday->jam_masuk)->format('H : i : s') : '-- : -- : --' }}
                             </div>
                         </div>
                     </div>
@@ -80,7 +48,9 @@
 
                             <div class="rounded-3 px-3 py-2 fw-bold white"
                                 style="background: {{ $absensiToday?->jam_keluar ? '#0798E3' : 'red' }};">
-                                {{ $absensiToday?->jam_keluar ? \Carbon\Carbon::parse($absensiToday->jam_keluar)->format('H : i : s') : '-- : -- : --' }}
+                                {{ $absensiToday?->jam_keluar ?
+                                \Carbon\Carbon::parse($absensiToday->jam_keluar)->format('H : i : s') : '-- : -- : --'
+                                }}
                             </div>
                         </div>
                     </div>
@@ -109,13 +79,13 @@
 
         </div>
         @if (!$absensiToday?->jam_masuk)
-            <a href="/absen/clock-in" class="btn btn-primary mt-5">
-                Clock In
-            </a>
+        <a href="/absen/clock-in" class="btn btn-primary mt-5">
+            Clock In
+        </a>
         @else
-            <a href="/absen/clock-in" class="btn btn-primary mt-5">
-                Clock Out
-            </a>
+        <a href="/absen/clock-in" class="btn btn-primary mt-5">
+            Clock Out
+        </a>
         @endif
 
 
@@ -133,34 +103,6 @@
         }, 1000);
     </script>
 
-    <script>
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(async function(position) {
 
-                    const latitude = position.coords.latitude;
-                    const longitude = position.coords.longitude;
-
-                    // Reverse Geocoding → ubah koordinat jadi nama lokasi
-                    const url =
-                        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
-
-                    const response = await fetch(url);
-                    const data = await response.json();
-
-                    document.getElementById('userLocation').innerText =
-                        data.address.city ||
-                        data.address.town ||
-                        data.address.village ||
-                        data.address.country ||
-                        "Lokasi tidak ditemukan";
-
-                },
-                function() {
-                    document.getElementById('userLocation').innerText = "Izin lokasi ditolak";
-                });
-        } else {
-            document.getElementById('userLocation').innerText = "Browser tidak mendukung lokasi";
-        }
-    </script>
 
 </div>
