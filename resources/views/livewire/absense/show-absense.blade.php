@@ -1,32 +1,45 @@
 <div>
     {{-- If your happiness depends on money, you will never be happy with yourself. --}}
-
+    <x-toast />
     <div class="bg-white dark:bg-neutral-800 rounded-xl p-4 mb-4">
         <h5 class="text-lg font-semibold mb-1">{{ $user->name }}</h5>
         <p class="text-sm text-neutral-500 mb-4">{{ $user->email }}</p>
 
         {{-- SUMMARY --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-3 text-center">
-                <p class="text-xs text-success-600">Hadir</p>
-                <p class="text-xl font-semibold text-success-700">{{ $totalHadir }}</p>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+
+            <div class="border dark:bg-neutral-600 rounded p-3 text-center">
+                <p class="text-xs ">Complete</p>
+                <p class="text-xl font-semibold ">{{ $totalHadir }}</p>
             </div>
 
-            <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-3 text-center">
-                <p class="text-xs text-warning-600">Terlambat</p>
-                <p class="text-xl font-semibold text-warning-700">{{ $totalTerlambat }}</p>
+            <div class="border dark:bg-neutral-600 rounded p-3 text-center">
+                <p class="text-xs">Terlambat</p>
+                <p class="text-xl font-semibold">{{ $totalTerlambat }}</p>
             </div>
 
-            <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-3 text-center">
-                <p class="text-xs text-danger-600">Alpha</p>
-                <p class="text-xl font-semibold text-danger-700">{{ $totalAlpha }}</p>
+            <div class="border dark:bg-neutral-600 rounded p-3 text-center">
+                <p class="text-xs ">Izin</p>
+                <p class="text-xl font-semibold ">{{ $totalIzin }}</p>
             </div>
 
-            <div class="bg-neutral-100 dark:bg-neutral-700 rounded-lg p-3 text-center">
-                <p class="text-xs text-neutral-600">Total Hari</p>
-                <p class="text-xl font-semibold">{{ $totalHari }}</p>
+            <div class="border dark:bg-neutral-600 rounded p-3 text-center">
+                <p class="text-xs ">Sakit</p>
+                <p class="text-xl font-semibold ">{{ $totalSakit }}</p>
             </div>
+
+            <div class="border dark:bg-neutral-600 rounded p-3 text-center">
+                <p class="text-xs ">Cuti</p>
+                <p class="text-xl font-semibold ">{{ $totalCuti }}</p>
+            </div>
+
+            <div class="border dark:bg-neutral-600 rounded p-3 text-center">
+                <p class="text-xs ">Alpha</p>
+                <p class="text-xl font-semibold ">{{ $totalAlpha }}</p>
+            </div>
+
         </div>
+
     </div>
 
 
@@ -95,46 +108,98 @@
 
 
             <tbody>
-                @forelse ($absensis as $item)
-                <tr>
-                    <td>{{ ($absensis->currentPage() - 1) * $absensis->perPage() + $loop->iteration }}</td>
+                @forelse ($calendar as $i => $row)
+                @php
+                $item = $row['absen'];
+                $tanggal = \Carbon\Carbon::parse($row['tanggal']);
 
-                    <td>{{ \Carbon\Carbon::parse($item->tanggal)->format('d M Y') }}</td>
+                $terlambat = false;
+                if ($item && $item->jam_masuk && $shift) {
+                $terlambat = \Carbon\Carbon::parse($item->jam_masuk)
+                ->gt(\Carbon\Carbon::parse($shift->jam_masuk));
+                }
+                @endphp
 
-                    @php
-                    $terlambat = false;
+                <tr class="{{ $item ? '' : 'opacity-70' }}">
+                    {{-- NO --}}
+                    <td>{{ $i + 1 }}</td>
 
-                    if ($item->jam_masuk && $shift) {
-                    $terlambat = \Carbon\Carbon::parse($item->jam_masuk)
-                    ->gt(\Carbon\Carbon::parse($shift->jam_masuk));
-                    }
-                    @endphp
-
-                    <td>
-                        <span
-                            class="px-4 py-1 rounded-full text-sm {{ $terlambat ? 'bg-danger-600 text-white-600' : 'bg-success-600 text-white-600' }}">
-                            {{ $item->jam_masuk ?? '-' }}
-                        </span>
+                    {{-- TANGGAL (WAJIB ADA) --}}
+                    <td class="font-medium">
+                        {{ $tanggal->format('d M Y') }}
                     </td>
 
-                    <td>{{ $item->jam_keluar ?? '-' }}</td>
-
+                    {{-- JAM MASUK --}}
                     <td>
-                        <span class="px-4 py-1 rounded-full text-sm
-            {{ $item->status == 'terlambat'
-                ? 'bg-warning-600 text-white-600'
-                : 'bg-success-600 text-white-600' }}">
-                            {{ ucfirst($item->status) }}
+                        @if ($item?->jam_masuk)
+                        <span class="{{ $terlambat ? 'text-danger-600 font-semibold' : '' }}">
+                            {{ $item->jam_masuk }}
                         </span>
+                        @else
+                        <span class="text-neutral-400">--</span>
+                        @endif
                     </td>
 
+                    {{-- JAM KELUAR --}}
                     <td>
+                        {{ $item?->jam_keluar ?? '--' }}
+                    </td>
+
+                    {{-- STATUS --}}
+                    <td>
+                        @php
+                        $isToday = $tanggal->isToday();
+                        $isPast = $tanggal->isPast();
+                        @endphp
+
+                        @if ($item)
+                        @php
+                        $badge = match($item->status) {
+                        'hadir' => 'bg-success-600',
+                        'terlambat' => 'bg-warning-600',
+                        'izin', 'sakit', 'cuti' => 'bg-blue-600',
+                        'alpha' => 'bg-danger-600',
+                        'complete' => 'bg-neutral-600',
+                        default => 'bg-gray-400'
+                        };
+                        @endphp
+                        <span class="px-3 py-1 rounded-full text-xs text-white {{ $badge }}">
+                            {{ ucfirst(str_replace('_',' ', $item->status)) }}
+                        </span>
+                        @else
+                        @if ($isPast)
+                        <span class="px-3 py-1 rounded-full text-xs bg-danger-600 text-white">
+                            Alpha
+                        </span>
+                        @elseif ($isToday)
+                        <span class="px-3 py-1 rounded-full text-xs bg-warning-400 text-white">
+                            Belum Absen
+                        </span>
+                        @else
+                        <span class="text-neutral-400">—</span>
+                        @endif
+                        @endif
+                    </td>
+
+
+                    <td>
+                        @if ($item)
                         <button @click="$dispatch('open-modal', {
         name: 'detail-absense',
-        id: {{ json_encode($item->id) }}
+        id: {{ $item->id }}
     })" class="px-3 py-1 text-sm bg-primary-100 text-primary-600 rounded hover:scale-105 transition">
                             Detail
                         </button>
+
+                        <button @click="$dispatch('open-modal', {
+        name: 'update-status',
+        id: {{ $item->id }}
+    })" class="px-3 py-1 text-sm bg-warning-600 rounded hover:scale-105 transition text-white">
+                            Status
+                        </button>
+                        @else
+                        <span class="text-xs text-neutral-400 italic">—</span>
+                        @endif
                     </td>
                 </tr>
                 @empty
@@ -146,7 +211,7 @@
 
         </table>
 
-        {{ $absensis->links(data: ['scroll' => false]) }}
+        {{-- {{ $absensis->links(data: ['scroll' => false]) }} --}}
     </div>
 
     <x-mdal name="detail-absense">
@@ -239,6 +304,63 @@
 
         </div>
     </x-mdal>
+
+    <x-mdal name="update-status">
+        <div class="px-5 py-4 max-h-[80vh] overflow-y-auto" x-data @open-modal.window="
+            if ($event.detail.name === 'update-status') {
+                $wire.loadStatus($event.detail.id)
+            }
+        ">
+            <h4 class="text-sm font-semibold mb-3 text-center">
+                Update Status Absensi
+            </h4>
+
+            {{-- STATUS --}}
+            <div class="mb-3">
+                <label class="text-xs text-neutral-500 mb-1 block">
+                    Status Kehadiran
+                </label>
+                <select wire:model="status" class="w-full rounded-lg border border-slate-300 dark:border-slate-700
+               bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
+               px-3 py-2 text-sm focus:outline-none focus:ring-2
+               focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer">
+                    <option value="">-- Pilih Status --</option>
+                    <option value="hadir">Hadir</option>
+                    <option value="terlambat">Terlambat</option>
+                    <option value="izin">Izin</option>
+                    <option value="sakit">Sakit</option>
+                    <option value="cuti">Cuti</option>
+                    <option value="alpha">Alpha</option>
+                    <option value="wfh">WFH</option>
+                    <option value="dinas_luar">Dinas Luar</option>
+                    <option value="complete">Complete</option>
+                </select>
+            </div>
+
+            {{-- KETERANGAN --}}
+            <div class="mb-4">
+                <label class="text-xs text-neutral-500 mb-1 block">
+                    Keterangan (opsional)
+                </label>
+                <textarea wire:model="keterangan" rows="3" class="w-full rounded-lg border border-slate-300 dark:border-slate-700
+                       bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100
+                       px-3 py-2 text-sm focus:outline-none focus:ring-2
+                       focus:ring-blue-500/40 focus:border-blue-500 transition"></textarea>
+            </div>
+
+            {{-- ACTION --}}
+            <div class="flex justify-end gap-2 border-t pt-3">
+                <button @click="modalIsOpen=false" class="px-4 py-2 text-sm rounded border">
+                    Batal
+                </button>
+
+                <button wire:click="updateStatus" class="px-4 py-2 text-sm rounded bg-primary-600 text-white">
+                    Simpan
+                </button>
+            </div>
+        </div>
+    </x-mdal>
+
 
 
 

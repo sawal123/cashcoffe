@@ -58,7 +58,7 @@ class ClockIn extends Component
         $jamMasukJadwal = $shift ? $shift->jam_masuk : '08:00:00';
         $jamSekarang = now()->format('H:i:s');
 
-        $status = ($jamSekarang > $jamMasukJadwal) ? 'terlambat' : 'masuk';
+        $status = ($jamSekarang > $jamMasukJadwal) ? 'terlambat' : 'hadir';
 
         Absensi::create([
             'user_id'   => $user_id,
