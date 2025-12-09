@@ -76,25 +76,7 @@
 
                 </div>
             </div>
-            <!-- Statistik -->
-            {{-- <div class="bg-white p-4">
-                <div class="row text-center">
-                    <div class="col-4">
-                        <p class="m-0 fw-semibold">Your Absence</p>
-                        <h4 class="fw-bold mt-2">27</h4>
-                    </div>
 
-                    <div class="col-4 border-start border-end">
-                        <p class="m-0 fw-semibold">Late Clock In</p>
-                        <h4 class="fw-bold mt-2">01</h4>
-                    </div>
-
-                    <div class="col-4">
-                        <p class="m-0 fw-semibold">No Clock In</p>
-                        <h4 class="fw-bold mt-2">03</h4>
-                    </div>
-                </div>
-            </div> --}}
 
         </div>
         @if (!$absensiToday?->jam_masuk)
@@ -106,6 +88,8 @@
             Clock Out
         </a>
         @endif
+
+
 
 
     </section>

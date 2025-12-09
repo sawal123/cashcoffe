@@ -30,6 +30,10 @@
 
     <!-- welcome -->
     <link rel="stylesheet" href="{{ asset('absensi/css/welcome.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
 
     <!-- auth -->
     <link rel="stylesheet" href="{{ asset('absensi/css/auth.css') }}">
@@ -64,6 +68,7 @@
     <!-- splash-screen end -->
 
     <main class="">
+        @if (!request()->routeIs('absensi.clock.in'))
         <div class="header p-3 d-flex align-items-center justify-content-between w-100">
             <div class="d-flex align-items-center justify-content-between gap-14">
                 <div class="image shrink-0 rounded-full overflow-hidden">
@@ -90,7 +95,7 @@
                     <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
                         @csrf
                     </form>
-                    <a href="#"  onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
+                    <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
                         class="d-flex align-items-center justify-content-center rounded-full  border p-2 position-relative">
                         <img src="{{ asset('absensi/svg/exit.svg') }}" width="24" height="24" alt="icon">
                         <span class="dot"></span>
@@ -98,11 +103,12 @@
                 </li>
             </ul>
         </div>
+        @endif
         {{-- <section class="wrapper dz-mode">
             @include('layouts.partial.nav')
         </section> --}}
         {{ $slot }}
-        @include('layouts.partial.footer')
+        {{-- @include('layouts.partial.footer') --}}
     </main>
 
 

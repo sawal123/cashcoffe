@@ -35,7 +35,7 @@
                         <td>{{ $user->name }}</td>
 
                         <td>
-                            <span class="px-3 py-1 rounded-full text-sm bg-info-600 text-info-600">
+                            <span class="px-3 py-1 rounded-full text-sm bg-info-600 text-white">
                                 {{ ucfirst($user->roles->first()->name ?? '-') }}
                             </span>
                         </td>
@@ -44,7 +44,7 @@
                             @if ($absen)
                                 <span
                                     class="px-3 py-1 rounded-full text-sm
-                                {{ $absen->status == 'terlambat' ? 'bg-danger text-danger-600' : 'bg-success-600 text-success-600' }}">
+                                {{ $absen->status == 'terlambat' ? 'bg-danger text-white' : 'bg-success-600 text-white' }}">
                                     {{ ucfirst($absen->status) }}
                                 </span>
                             @else
