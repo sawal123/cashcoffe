@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Menu;
 use App\Models\Pesanan;
 use App\Models\PesananItem;
 use Illuminate\Http\Request;
@@ -13,18 +14,18 @@ class DashboardController extends Controller
     public function index()
     {
         $omset = Pesanan::where('status', 'selesai')
-            ->where('metode_pembayaran','!=', 'komplemen')
+            ->where('metode_pembayaran', '!=', 'komplemen')
             ->whereDate('created_at', Carbon::today())
             ->sum('total');
 
         $sellMenu = PesananItem::whereHas('pesanan', function ($query) {
             $query->where('status', 'selesai')
-            ->where('metode_pembayaran','!=', 'komplemen')
+                ->where('metode_pembayaran', '!=', 'komplemen')
                 ->whereDate('created_at', Carbon::today());
         })->where('qty', '>', 0)
             ->sum('qty');
 
-        $totalOrder = Pesanan::where('status', 'selesai')->where('metode_pembayaran','!=', 'komplemen')->whereDate('created_at', Carbon::today())->count();
+        $totalOrder = Pesanan::where('status', 'selesai')->where('metode_pembayaran', '!=', 'komplemen')->whereDate('created_at', Carbon::today())->count();
         $proses = Pesanan::where('status', '!=', 'selesai')->where('status', '!=', 'dibatalkan')->whereDate('created_at', Carbon::today())->count();
         $cards = [
             [
@@ -55,7 +56,7 @@ class DashboardController extends Controller
 
         $omsetPerTanggal = DB::table('pesanans')
             ->where('status', 'selesai')
-            ->where('metode_pembayaran','!=', 'komplemen')
+            ->where('metode_pembayaran', '!=', 'komplemen')
             ->selectRaw('DATE(created_at) as tanggal, SUM(total) as omset')
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'desc')   // urutkan dari terbaru
@@ -63,6 +64,16 @@ class DashboardController extends Controller
             ->get()
             ->sortBy('tanggal')            // balik lagi biar urut ASC
             ->values();
+
+        $menuTerlaris = Menu::withSum(['pesananItems as jumlah_terjual' => function ($q) {
+            $q->whereHas('pesanan', function ($p) {
+                $p->where('status', 'selesai');
+            });
+        }], 'qty')
+            ->orderByDesc('jumlah_terjual')
+            ->limit(10)
+            ->get();
+
 
         // Data untuk chart
         $categories = $omsetPerTanggal->pluck('tanggal'); // untuk x-axis
@@ -72,6 +83,7 @@ class DashboardController extends Controller
             'cards' => $cards,
             'categories' => $categories,
             'data' => $data,
+            'menuTerlaris' => $menuTerlaris
         ]);
     }
 }

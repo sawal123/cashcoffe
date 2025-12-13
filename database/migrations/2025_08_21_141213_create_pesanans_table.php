@@ -24,6 +24,7 @@ return new class extends Migration
             $table->decimal('total_profit', 12, 2)->default(0);
             $table->decimal('discount_value', 10, 2)->default(0);
             $table->text('catatan')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -42,7 +42,10 @@ class TableOrder extends Component
 
         // Jika sudah selesai sebelumnya -> jangan kurangi stok lagi
         $statusSebelumnya = $pesanan->status;
-
+        if ($pesanan->metode_pembayaran === null) {
+            $this->dispatch('showToast', message: 'Metode pembayaran harus dipilih!', type: 'info', title: 'Info');
+            return;
+        }
         // Update status
         $pesanan->status = $pesanan->status == 'diproses' ? 'selesai' : $this->status;
         $pesanan->save();
@@ -52,6 +55,8 @@ class TableOrder extends Component
             $this->dispatch('showToast', message: 'Pesanan sudah selesai sebelumnya.', type: 'info', title: 'Info');
             return;
         }
+
+
 
         // 🔥 Jika status jadi selesai → Kurangi stok dapur
         if ($pesanan->status === 'selesai') {

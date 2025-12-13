@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Pesanan extends Model
 {
+    use SoftDeletes;
     //
     protected $guarded = [];
     public function items()
@@ -25,5 +27,5 @@ class Pesanan extends Model
         return $this->belongsTo(Discount::class, 'discount_id');
     }
 
-    
+
 }

@@ -37,6 +37,11 @@ class TableMenu extends Component
     public function render()
     {
         $menu = Menu::query()
+            ->withSum(['pesananItems as jumlah_terjual' => function ($q) {
+                $q->whereHas('pesanan', function ($p) {
+                    $p->where('status', 'selesai');
+                });
+            }], 'qty')
             ->when($this->category !== '', function ($query) {
                 $query->where('categories_id', $this->category);
             })

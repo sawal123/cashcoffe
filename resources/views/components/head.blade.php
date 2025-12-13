@@ -36,7 +36,8 @@
     @vite(['resources/css/app.css'])
     @vite(['resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    {{-- <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
+    {{--
+    <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-Eupb82tA.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-OScb3ZFM.js') }}"> --}}
@@ -47,6 +48,13 @@
 
     <!-- TomSelect JS -->
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css" />
+
+    <script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js"></script>
+
+
+
     <style>
         .ts-control {
             width: 100% !important;

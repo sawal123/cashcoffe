@@ -4,6 +4,7 @@
 <html lang="en" data-theme="light">
 
 <x-head />
+
 <body class="dark:bg-neutral-800 bg-neutral-100 dark:text-white">
 
     <!-- ..::  header area start ::.. -->
@@ -18,7 +19,8 @@
         <div class="dashboard-main-body">
 
             <!-- ..::  breadcrumb  start ::.. -->
-            <x-breadcrumb title='{{ isset($title) ? $title : '' }}' subTitle='{{ isset($subTitle) ? $subTitle : '' }}' />
+            <x-breadcrumb title='{{ isset($title) ? $title : '' }}'
+                subTitle='{{ isset($subTitle) ? $subTitle : '' }}' />
             <!-- ..::  header area end ::.. -->
 
             {{-- @yield('content') --}}
@@ -80,7 +82,7 @@
 
 
     <script src="{{ asset('assets/js/chartDashboard.js') }}" data-navigate-once></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js"></script>
     @livewireScripts
 </body>
 

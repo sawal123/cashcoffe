@@ -1,8 +1,8 @@
 <x-app-layout :data="$data" :categories="$categories">
     @php
-        $title = 'Dashboard';
-        $subTitle = 'eCommerce';
-        $script = '<script src="' . asset('assets/js/homethreeChart.js') . '"></script> ';
+    $title = 'Dashboard';
+    $subTitle = 'eCommerce';
+    $script = '<script src="' . asset('assets/js/homethreeChart.js') . '"></script> ';
     @endphp
 
     <a href="/order/create" wire:navigate
@@ -19,28 +19,70 @@
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-6">
         @foreach ($cards as $item)
-            <div
-                class="card shadow-none border border-gray-200 dark:border-neutral-600 dark:bg-neutral-700 rounded-lg h-full bg-gradient-to-r from-cyan-600/10 to-bg-white">
-                <div class="card-body p-5">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                            <p class="font-medium text-neutral-900 dark:text-white mb-1">{{ $item['title'] }}</p>
-                            <h6 class="mb-0 dark:text-white">{{ $item['value'] }}</h6>
-                        </div>
-                        <div
-                            class="w-[50px] h-[50px] {{ $item['color'] }} rounded-full flex justify-center items-center">
-                            <iconify-icon icon="{{ $item['icon'] }}" class="text-white text-2xl mb-0"></iconify-icon>
-                        </div>
+        <div
+            class="card shadow-none border border-gray-200 dark:border-neutral-600 dark:bg-neutral-700 rounded-lg h-full bg-gradient-to-r from-cyan-600/10 to-bg-white">
+            <div class="card-body p-5">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <p class="font-medium text-neutral-900 dark:text-white mb-1">{{ $item['title'] }}</p>
+                        <h6 class="mb-0 dark:text-white">{{ $item['value'] }}</h6>
+                    </div>
+                    <div class="w-[50px] h-[50px] {{ $item['color'] }} rounded-full flex justify-center items-center">
+                        <iconify-icon icon="{{ $item['icon'] }}" class="text-white text-2xl mb-0"></iconify-icon>
                     </div>
                 </div>
-            </div><!-- card end -->
+            </div>
+        </div><!-- card end -->
         @endforeach
 
     </div>
-    {{-- {{ Auth::user()->name }} --}}
+
+
+
+
+
+
 
     <div class="grid grid-cols-1 gap-6 mt-6 xl:grid-cols-6 2xl:grid-cols-6">
         <div class="xl:col-span-12 2xl:col-span-6">
+            <div class="my-6">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    🔥 Menu Paling Laris
+                </h2>
+                <style>
+                    .menu-swiper::part(pagination) {
+                        position: relative;
+                        margin-top: 16px;
+                        /* ⬅️ jarak ke bawah */
+                    }
+                </style>
+                <swiper-container class="mySwiper menu-swiper" slides-per-view="1.2" space-between="16" free-mode="true"
+                    pagination="true" pagination-clickable="true" breakpoints='{
+            "640": { "slidesPerView": 2.2 },
+            "1024": { "slidesPerView": 5 }
+        }'>
+                    @foreach ($menuTerlaris as $menu)
+                    <swiper-slide>
+                        <div class=" rounded-xl shadow-sm border ">
+                            <img src="{{ $menu->gambar ? asset('storage/' . $menu->gambar) : asset('images/default-menu.png') }}"
+                                alt="{{ $menu->nama_menu }}" class="h-36 w-full rounded-xl object-cover">
+
+                            <div class="p-3 text-center">
+                                <h3 class="text-sm font-medium truncate">
+                                    {{ $menu->nama_menu }}
+                                </h3>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    Terjual
+                                    <span class="font-semibold text-gray-800">
+                                        {{ $menu->jumlah_terjual ?? 0 }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </swiper-slide>
+                    @endforeach
+                </swiper-container>
+            </div>
             <div class="card h-full rounded-lg border-0">
                 <div class="card-body">
                     <div class="flex flex-wrap items-center justify-between">
