@@ -55,16 +55,19 @@ class DashboardController extends Controller
         ];
 
         $omsetPerTanggal = DB::table('pesanans')
+            ->whereNull('deleted_at') // ⬅️ INI PENTING
             ->where('status', 'selesai')
+            ->whereNotNull('metode_pembayaran')
             ->where('metode_pembayaran', '!=', 'komplemen')
-            ->selectRaw('DATE(created_at) as tanggal, SUM(total) as omset')
+            ->where('created_at', '>=', now()->subDays(9)->startOfDay())
+            ->selectRaw('
+        DATE(created_at) as tanggal,
+        SUM(total - discount_value) as omset
+    ')
             ->groupBy('tanggal')
-            ->orderBy('tanggal', 'desc')   // urutkan dari terbaru
-            ->limit(10)                    // ambil 10 terakhir
-            ->get()
-            ->sortBy('tanggal')            // balik lagi biar urut ASC
-            ->values();
-
+            ->orderBy('tanggal', 'asc')
+            ->get();
+        // dd($omsetPerTanggal);
         $menuTerlaris = Menu::withSum(['pesananItems as jumlah_terjual' => function ($q) {
             $q->whereHas('pesanan', function ($p) {
                 $p->where('status', 'selesai');

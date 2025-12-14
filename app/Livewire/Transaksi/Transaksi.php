@@ -53,6 +53,7 @@ class Transaksi extends Component
     {
         $query = Pesanan::query()
             ->with('user')
+
             ->when($this->search, function ($q) {
                 $q->where(function ($query) {
                     $query->where('kode', 'like', "%{$this->search}%")
@@ -62,6 +63,7 @@ class Transaksi extends Component
                         });
                 });
             })
+
             ->when($this->filterPembayaran, function ($q) {
                 if ($this->filterPembayaran === 'belum') {
                     $q->whereNull('metode_pembayaran');
@@ -69,11 +71,18 @@ class Transaksi extends Component
                     $q->where('metode_pembayaran', $this->filterPembayaran);
                 }
             })
+
+            // 👉 JIKA USER PILIH TANGGAL
             ->when($this->dateFrom && $this->dateTo, function ($q) {
                 $q->whereBetween('created_at', [
-                    \Carbon\Carbon::parse($this->dateFrom)->startOfDay(),
-                    \Carbon\Carbon::parse($this->dateTo)->endOfDay(),
+                    Carbon::parse($this->dateFrom)->startOfDay(),
+                    Carbon::parse($this->dateTo)->endOfDay(),
                 ]);
+            })
+
+            // 👉 DEFAULT: HARI INI
+            ->when(!$this->dateFrom && !$this->dateTo, function ($q) {
+                $q->whereDate('created_at', Carbon::today());
             });
 
         // Hitung total per metode pembayaran
@@ -88,6 +97,7 @@ class Transaksi extends Component
         // Hitung total omset keseluruhan
         $this->totalOmset = $query->clone()
             ->where('status', 'selesai')
+            ->where('status', '!=',  'dibatalkan')
             ->where('metode_pembayaran', '!=', 'komplemen')
             ->whereNotNull('metode_pembayaran')
             ->sum(DB::raw('total - discount_value'));

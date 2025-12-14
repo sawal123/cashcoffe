@@ -12,6 +12,8 @@ class TableOmset extends Component
     public $tahun;
     public $merged = []; // ← tambahkan ini
     public $dataOmset = [];
+    public $dataKomplemen = [];
+    public $dataQty;
 
     public function mount()
     {
@@ -44,6 +46,7 @@ class TableOmset extends Component
             ->whereMonth('created_at', $this->bulan)
             ->whereYear('created_at', $this->tahun)
             ->where('metode_pembayaran', '!=', 'komplemen')
+            ->where('metode_pembayaran', '!=', 'dibatalkan')
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'desc')
             ->get();
@@ -72,6 +75,7 @@ class TableOmset extends Component
                 DB::raw('SUM(pesanan_items.qty) as jumlah_menu')
             )
             ->where('pesanans.status', 'selesai')
+            ->where('metode_pembayaran', '!=', 'dibatalkan')
             ->whereMonth('pesanans.created_at', $this->bulan)
             ->whereYear('pesanans.created_at', $this->tahun)
             ->groupBy('tanggal')
