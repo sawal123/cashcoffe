@@ -42,6 +42,7 @@ class TableOmset extends Component
                 DB::raw('SUM(total) as total_omset'),
                 DB::raw('SUM(total_profit) as total_profit')
             )
+            ->whereNull('deleted_at')
             ->where('status', 'selesai')
             ->whereMonth('created_at', $this->bulan)
             ->whereYear('created_at', $this->tahun)
