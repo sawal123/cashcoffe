@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('satuan_id')->nullable()->constrained('satuan_bahans');
             $table->string('nama_bahan');
             $table->decimal('stok', 10, 2)->default(0);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

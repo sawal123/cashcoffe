@@ -4,6 +4,7 @@ namespace App\Livewire\Stock;
 
 use Livewire\Component;
 use App\Models\Ingredients;
+use Faker\Provider\Base;
 use Livewire\WithPagination;
 
 class StockDapur extends Component
@@ -26,9 +27,28 @@ class StockDapur extends Component
         $this->resetPage();
     }
 
+    public function deleteIngredient($id)
+    {
+        // dd($id);
+        $ingredient = Ingredients::find(base64_decode($id));
+        if ($ingredient) {
+            $ingredient->delete();
+            $this->dispatch('showToast', message: 'Bahan berhasil dihapus.', type: 'success', title: 'Success');
+        } else {
+            $this->dispatch('showToast', message: 'Bahan tidak ditemukan.', type: 'error', title: 'Error');
+        }
+    }
+
     public function render()
     {
-        $items = Ingredients::where('nama_bahan', 'like', '%' . $this->search . '%')
+
+        $items = Ingredients::with('satuan')
+            ->withSum([
+                'stocks as digunakan' => function ($q) {
+                    $q->where('tipe', 'out');
+                }
+            ], 'qty')
+            ->where('nama_bahan', 'like', '%' . $this->search . '%')
             ->orderBy('nama_bahan')
             ->paginate($this->perPage);
 

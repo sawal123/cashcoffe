@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Ingredients extends Model
 {
+    use SoftDeletes;
     protected $guarded = [];
 
     public function menus()
@@ -17,7 +19,7 @@ class Ingredients extends Model
 
     public function stocks()
     {
-        return $this->hasMany(RiwayatStock::class);
+        return $this->hasMany(RiwayatStock::class, 'ingredient_id');
     }
 
     public function getTotalStokAttribute()

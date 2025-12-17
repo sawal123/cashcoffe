@@ -2,10 +2,11 @@
 
 namespace App\Livewire\Stock;
 
-use App\Models\RiwayatStock as ModelsRiwayatStock;
+use Carbon\Carbon;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\DB;
+use App\Models\RiwayatStock as ModelsRiwayatStock;
 
 class RiwayatStock extends Component
 {
@@ -16,7 +17,7 @@ class RiwayatStock extends Component
     public $filterType = 'semua';
     public $selectedId;
 
-    protected $queryString = ['search', 'filterType', 'perPage'];
+    protected $queryString = ['search', 'filterType', 'perPage',  'tanggal' => ['except' => ''],];
 
     public function updatingSearch()
     {
@@ -56,7 +57,17 @@ class RiwayatStock extends Component
 
         $this->dispatch('showToast', type: 'success', message: 'Riwayat berhasil dihapus');
     }
-
+    public $tanggal;
+   
+    public function mount()
+    {
+        $this->tanggal = request()->query('tanggal')
+            ?? Carbon::today()->toDateString();
+    }
+    public function updatedTanggal()
+    {
+        $this->resetPage();
+    }
     public function render()
     {
         $riwayats = ModelsRiwayatStock::with('ingredient')
@@ -68,8 +79,12 @@ class RiwayatStock extends Component
             ->when($this->filterType !== 'semua', function ($q) {
                 $q->where('tipe', $this->filterType);
             })
+            ->when($this->tanggal, function ($q) {
+                $q->whereDate('created_at', $this->tanggal);
+            })
             ->latest()
             ->paginate($this->perPage);
+
 
         return view('livewire.stock.riwayat-stock', [
             'riwayats' => $riwayats,

@@ -1,7 +1,10 @@
 <div>
     <x-toast />
-
-    <form wire:submit.prevent="simpan" class="grid grid-cols-12 gap-4">
+    @php
+    $submit = $stockId ? 'update(' . $stockId . ')' : 'simpan';
+    $button = $stockId ? 'Update' : 'Simpan';
+    @endphp
+    <form wire:submit.prevent="{{$submit}}" class="grid grid-cols-12 gap-4">
 
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Nama Bahan</label>
@@ -15,19 +18,18 @@
 
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Satuan</label>
-            <select wire:model="satuan_id"
-                class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
+            <select wire:model="satuan_id" class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
 
                 <option value="">-- Pilih Satuan --</option>
 
                 @foreach ($satuans as $sat)
-                    <option value="{{ $sat->id }}">{{ $sat->nama_satuan }}</option>
+                <option value="{{ $sat->id }}">{{ $sat->nama_satuan }}</option>
                 @endforeach
             </select>
         </div>
 
         <div class="col-span-12">
-            <button class="btn btn-primary-600" type="submit">Tambah Bahan</button>
+            <button class="btn btn-primary-600" type="submit">{{$button}} Bahan</button>
         </div>
     </form>
 
@@ -38,8 +40,7 @@
             <form wire:submit.prevent="saveSatuan" class="grid grid-cols-12 gap-4">
                 <div class="md:col-span-6 col-span-12">
                     <label class="form-label">Tambah Satuan Baru</label>
-                    <input type="text" wire:model="newSatuan" class="form-control"
-                        placeholder="Contoh: Liter, Kg, Lusin" required>
+                    <input type="text" wire:model="newSatuan" class="form-control" placeholder="Contoh: Liter, Kg, Lusin" required>
                 </div>
 
                 <div class="col-span-12">
@@ -59,14 +60,13 @@
 
                     <tbody>
                         @foreach ($satuans as $index => $satuan)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $satuan->nama_satuan }}</td>
-                                <td>
-                                    <button wire:click="deleteSatuan({{ $satuan->id }})"
-                                        class="btn btn-danger-600 btn-sm">Hapus</button>
-                                </td>
-                            </tr>
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $satuan->nama_satuan }}</td>
+                            <td>
+                                <button wire:click="deleteSatuan({{ $satuan->id }})" class="btn btn-danger-600 btn-sm">Hapus</button>
+                            </td>
+                        </tr>
                         @endforeach
                     </tbody>
                 </table>

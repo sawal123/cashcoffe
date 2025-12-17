@@ -20,6 +20,7 @@ return new class extends Migration
             $table->decimal('qty_after', 10, 2)->nullable();
             $table->enum('tipe', ['in', 'out'])->default('in');
             $table->string('keterangan')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

@@ -8,6 +8,11 @@
             <div class="sm:w-[300px] w-full">
                 <x-input wire:model.live="search" place="Cari nama bahan..." />
             </div>
+            <div>
+                <input type="date" wire:model.live.debounce.500ms="tanggal"
+                    class="rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2
+            bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 w-40 min-w-[140px]">
+            </div>
         </div>
 
         <div class="flex gap-2">

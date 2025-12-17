@@ -20,7 +20,8 @@ class StockDapurController extends Controller
      */
     public function create()
     {
-        return view('dashboard.stock.create-stock',
+        return view(
+            'dashboard.stock.create-stock',
             [
                 'stockId' => null,
                 'title' => 'Stock / Create',
@@ -31,7 +32,8 @@ class StockDapurController extends Controller
     }
     public function add()
     {
-        return view('dashboard.stock.stock-add',
+        return view(
+            'dashboard.stock.stock-add',
             [
                 'stockId' => null,
                 'title' => 'Stock / Create',
@@ -62,7 +64,14 @@ class StockDapurController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        return view('dashboard.stock.create-stock',
+            [
+                'stockId' => base64_decode($id),
+                'title' => 'Stock / Edit',
+                'url' => $this->url,
+                'submit' => 'update'
+            ]
+        );
     }
 
     /**

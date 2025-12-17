@@ -18,12 +18,22 @@ class StockDapurCreate extends Component
 
     public $newSatuan;
 
-    public $satuans;
+    public $satuans, $stockId, $ingredient_id, $qty, $keterangan, $current_stok, $current_satuan;
 
-    public function mount()
+    public function mount($stockId = null)
     {
         $this->loadSatuan();
+        $this->stockId = $stockId;
+        // dd($stockId);
+        if ($stockId) {
+            $bahan = Ingredients::findOrFail($stockId);
+            // dd($bahan->stok);
+            $this->nama_bahan = $bahan->nama_bahan;
+            $this->satuan_id = $bahan->satuan_id;
+            $this->stok = intval($bahan->stok);
+        }
     }
+
 
     public function loadSatuan()
     {
@@ -55,6 +65,24 @@ class StockDapurCreate extends Component
         $this->reset(['nama_bahan', 'stok', 'satuan_id']);
 
         $this->dispatch('showToast', type: 'success', message: 'Bahan berhasil disimpan!');
+    }
+
+    public function update($id)
+    {
+        $this->validate([
+            'nama_bahan' => 'required',
+            'stok'       => 'required|numeric|min:0',
+            'satuan_id'  => 'required|exists:satuan_bahans,id',
+        ]);
+
+        $bahan = Ingredients::findOrFail($id);
+        $bahan->update([
+            'nama_bahan' => $this->nama_bahan,
+            'stok'       => $this->stok,
+            'satuan_id'  => $this->satuan_id,
+        ]);
+
+        $this->dispatch('showToast', type: 'success', message: 'Bahan berhasil diupdate!');
     }
 
     public function saveSatuan()
