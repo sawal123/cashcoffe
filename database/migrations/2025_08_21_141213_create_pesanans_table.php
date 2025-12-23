@@ -24,6 +24,8 @@ return new class extends Migration
             $table->decimal('total_profit', 12, 2)->default(0);
             $table->decimal('discount_value', 10, 2)->default(0);
             $table->text('catatan')->nullable();
+            $table->decimal('uang_tunai', 12, 2)->nullable(); // uang yang dibayar kasir
+            $table->decimal('kembalian', 12, 2)->default(0);
             $table->softDeletes();
             $table->timestamps();
         });

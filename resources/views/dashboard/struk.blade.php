@@ -71,7 +71,7 @@
             }
 
             .center {
-                margin-top: 50px;
+                margin-top: 20px;
                 text-align: center;
             }
 
@@ -102,6 +102,7 @@
                 margin: 4px 0;
             }
         }
+
     </style>
 </head>
 
@@ -162,7 +163,21 @@
             <td>Bayar</td>
             <td class="right">{{ $pesanan->metode_pembayaran ?? '-' }}</td>
         </tr>
+
     </table>
+    @if ($pesanan->metode_pembayaran === 'tunai')
+    <div class="separator"></div>
+    <table>
+        <tr>
+            <td>Cash</td>
+            <td class="right">{{ number_format($pesanan->uang_tunai) }}</td>
+        </tr>
+        <tr>
+            <td>Kembalian</td>
+            <td class="right">{{ number_format($pesanan->kembalian) }}</td>
+        </tr>
+    </table>
+    @endif
 
     <div class="separator"></div>
 

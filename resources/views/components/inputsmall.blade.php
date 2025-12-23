@@ -2,6 +2,7 @@
     'label' => '',
     'placeholder' => '',
     'message' => null,
+    'type' => 'text',
 ])
 
 <div class="flex justify-between mt-2 gap-4 items-center">
@@ -13,7 +14,7 @@
         <div class="relative">
             <input 
                 {{ $attributes }}
-                type="text" 
+                type="{{ $type ?? 'text' }}" 
                 placeholder="{{ $placeholder }}"
                 class="w-full rounded-lg border border-slate-300 dark:border-slate-700 
                        bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100

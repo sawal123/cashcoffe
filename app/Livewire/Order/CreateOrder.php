@@ -58,6 +58,13 @@ class CreateOrder extends Component
 
     protected $paginationTheme = 'tailwind'; // bisa juga 'bootstrap' sesuai css framework
 
+
+    public $uang_tunai = null;
+    public $kembalian = 0;
+    public $lastPesananId;
+    public $lastKodePesanan;
+    public $lastTotalPesanan;
+
     public function editOrder($id)
     {
         $this->orderId = $id;
@@ -69,6 +76,9 @@ class CreateOrder extends Component
 
         $this->discountId = $pesanan->discount_id;
         $this->nama_costumer = $pesanan->nama;
+        $this->uang_tunai = $pesanan->uang_tunai;
+        // dd( $this->uang_tunai);
+        $this->kembalian = $pesanan->kembalian;
         $this->discount = $pesanan->discount->kode_diskon ?? null;
         $this->pesanan = $pesanan->items->mapWithKeys(function ($item) {
             return [
@@ -121,6 +131,8 @@ class CreateOrder extends Component
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
                 'status' => $this->status,
                 'total' => $pesanan->items()->sum('subtotal'),
+                'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
+                'kembalian' => $this->isCash ? $this->uang_tunai - $pesanan->items()->sum('subtotal') : 0,
             ]);
 
             // ❗ Jika statusBaru = selesai → kurangi stok berdasarkan item BARU
@@ -236,6 +248,7 @@ class CreateOrder extends Component
                 'total' => 0,
                 'total_profit' => 0,
                 'catatan' => null,
+
             ]);
 
             foreach ($this->pesanan as $p) {
@@ -313,6 +326,8 @@ class CreateOrder extends Component
                 'discount_value' => $discountAmount,
                 'total' => $totalAfterDiscount,
                 'total_profit' => $totalProfit,
+                'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
+                'kembalian' => $this->isCash ? $this->uang_tunai - $this->total : 0,
             ]);
 
             DB::commit();
@@ -321,9 +336,14 @@ class CreateOrder extends Component
             $this->mejas_id = null;
             $this->nama_costumer = '';
 
+            $this->lastPesananId = $pesanan->id;
+            $this->lastKodePesanan = $pesanan->kode;
+            $this->lastTotalPesanan = $pesanan->total;
+
             $this->dispatch('showToast', message: 'Pesanan berhasil disimpan.', type: 'success', title: 'Success');
             if ($this->metode_pembayaran) {
-                return redirect()->route('struk.print', base64_encode($pesanan->id));
+                // return redirect()->route('struk.print', base64_encode($pesanan->id));
+                $this->dispatch('open-modal', name: 'order-success');
             }
         } catch (\Exception $e) {
             DB::rollBack();
@@ -331,8 +351,13 @@ class CreateOrder extends Component
         }
     }
 
+    public function getIsCashProperty()
+    {
+        return $this->metode_pembayaran === 'tunai';
+    }
     public function mount()
     {
+
         if ($this->orderId) {
             $this->submit = 'updateOrder';
             $this->teks = 'Update';
@@ -407,6 +432,24 @@ class CreateOrder extends Component
         // dd($categoryId);
         $this->selectedCategoryId = $categoryId;
     }
+    public function updatedMetodePembayaran()
+    {
+        if (! $this->isCash) {
+            $this->uang_tunai = null;
+            $this->kembalian = 0;
+        }
+    }
+    public $total1;
+    public function updatedUangTunai($value)
+    {
+        if ($this->isCash && is_numeric($value)) {
+            $this->kembalian = max(0, $value - $this->total1);
+        } else {
+            $this->kembalian = 0;
+        }
+    }
+
+
 
     public function render()
     {
@@ -484,6 +527,7 @@ class CreateOrder extends Component
         }
         // 08222323232
         $totalAfterDiscount = max(0, $total - $discountValue);
+        $this->total1 = $totalAfterDiscount;
         $categories = Category::with([
             'menus' => function ($query) {
                 $query->where('is_active', true)
@@ -492,8 +536,10 @@ class CreateOrder extends Component
             }
         ])->get();
 
+        $this->kembalian = $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0;
 
         return view('livewire.order.create-order', [
+
             'menus' => $menus,
             'orderId' => $this->orderId,
             'status' => $this->status,
@@ -503,7 +549,8 @@ class CreateOrder extends Component
             'categories' => $categories,
             'discountValue' => $discountValue,
             'totalAfterDiscount' => $totalAfterDiscount,
-            'memMessage' => $memMessage ?? null
+            'memMessage' => $memMessage ?? null,
+            'kembalian' => $this->kembalian,
         ]);
     }
 }
