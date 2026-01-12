@@ -10,6 +10,8 @@ use App\Models\Pesanan;
 use Livewire\Component;
 use App\Models\Category;
 use App\Models\Discount;
+
+
 use App\Models\Ingredients;
 use Illuminate\Support\Str;
 use App\Models\RiwayatStock;
@@ -166,7 +168,11 @@ class CreateOrder extends Component
                 $before = $ingredient->stok;
                 $after = $before - $totalOut;
 
-                $ingredient->update(['stok' => max(0, $after)]);
+                // $ingredient->update(['stok' => max(0, $after)]);
+                // dd($after);
+                $ingredient->update([
+                    'stok' => $after
+                ]);
 
                 RiwayatStock::create([
                     'ingredient_id' => $ingredient->id,
