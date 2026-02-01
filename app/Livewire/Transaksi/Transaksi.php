@@ -5,7 +5,11 @@ namespace App\Livewire\Transaksi;
 use Carbon\Carbon;
 use App\Models\Pesanan;
 use Livewire\Component;
+use App\Models\Ingredients;
+use Illuminate\Support\Str;
+use App\Models\RiwayatStock;
 use Livewire\WithPagination;
+use App\Models\MenuIngredients;
 use Illuminate\Support\Facades\DB;
 
 class Transaksi extends Component
@@ -26,6 +30,12 @@ class Transaksi extends Component
         'dateTo' => ['except' => ''],
     ];
 
+    public $selectedOrder;
+    public $status;
+    public $detailOrder;
+    public $metode_pembayaran;
+
+
     public function updating($field)
     {
         // reset pagination setiap kali filter berubah
@@ -34,20 +44,164 @@ class Transaksi extends Component
         }
     }
 
-    public $selectedOrder;
     public $selectedOrderItems = [];
+
+    public function editStatus($encodedId)
+    {
+        // TUTUP modal detail kalau terbuka
+        $this->dispatch('close-modal', name: 'detail-order');
+
+        $id = base64_decode($encodedId);
+
+        $this->selectedOrder = Pesanan::select(
+            'id',
+            'kode',
+            'status',
+            'metode_pembayaran'
+        )->findOrFail($id);
+
+        $this->status = $this->selectedOrder->status;
+        $this->metode_pembayaran = $this->selectedOrder->metode_pembayaran;
+
+        $this->dispatch('open-modal', name: 'edit-status-order');
+    }
+
+
+
+    public function updateStatus()
+    {
+        $this->validate([
+            'status' => 'required',
+            'metode_pembayaran' => 'nullable',
+        ]);
+
+        // Ambil data pesanan LENGKAP + items
+        $pesanan = Pesanan::with('items')->findOrFail($this->selectedOrder->id);
+
+        $oldStatus = $pesanan->status;
+        $newStatus = $this->status;
+
+        // =========================
+        // LOGIKA STOCK
+        // =========================
+
+        // dari diproses -> selesai (KURANGI STOK)
+        if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
+            $this->reduceStock($pesanan);
+        }
+
+        // dari selesai -> diproses ATAU dibatalkan (KEMBALIKAN STOK)
+        if ($oldStatus === 'selesai' && in_array($newStatus, ['diproses', 'dibatalkan'])) {
+            $this->restoreStock($pesanan);
+        }
+
+        // =========================
+        // UPDATE STATUS PESANAN
+        // =========================
+        $pesanan->update([
+            'status' => $newStatus,
+            'metode_pembayaran' => $this->metode_pembayaran,
+        ]);
+
+        // =========================
+        // UI FEEDBACK
+        // =========================
+        $this->dispatch('close-modal', name: 'edit-status-order');
+        $this->dispatch(
+            'showToast',
+            type: 'success',
+            message: 'Transaksi berhasil diperbarui'
+        );
+    }
+
+
+
+    private function reduceStock(Pesanan $pesanan)
+    {
+        foreach ($pesanan->items as $item) {
+
+            $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
+
+            foreach ($komposisi as $k) {
+                $ingredient = Ingredients::find($k->ingredient_id);
+                if (!$ingredient) continue;
+
+                $totalOut = $k->qty * $item->qty;
+                $before = $ingredient->stok;
+                $after = $before - $totalOut;
+
+                // $ingredient->update(['stok' => max(0, $after)]);
+                // dd($after);
+                $ingredient->update([
+                    'stok' => $after
+                ]);
+
+                RiwayatStock::create([
+                    'ingredient_id' => $ingredient->id,
+                    'kode' => strtoupper('OUT-' . Str::random(6)),
+                    'qty' => $totalOut,
+                    'qty_before' => $before,
+                    'qty_after' => $after,
+                    'tipe' => 'out',
+                    'keterangan' => 'Pengurangan stok dari pesanan ' . $pesanan->kode,
+                ]);
+            }
+        }
+    }
+
+    private function restoreStock(Pesanan $pesanan)
+    {
+        foreach ($pesanan->items as $item) {
+
+            $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
+
+            foreach ($komposisi as $k) {
+
+                $ingredient = Ingredients::find($k->ingredient_id);
+                if (!$ingredient) continue;
+
+                $totalIn = $k->qty * $item->qty;
+                $before = $ingredient->stok;
+                $after = $before + $totalIn;
+
+                // Kembalikan stok
+                $ingredient->update(['stok' => $after]);
+
+                // Simpan riwayat masuk
+                RiwayatStock::create([
+                    'ingredient_id' => $ingredient->id,
+                    'kode' => strtoupper('IN-' . Str::random(6)),
+                    'qty' => $totalIn,
+                    'qty_before' => $before,
+                    'qty_after' => $after,
+                    'tipe' => 'in',
+                    'keterangan' => 'Pengembalian stok dari pembatalan pesanan ' . $pesanan->kode,
+                ]);
+            }
+        }
+    }
+
+
+
+
+
 
     public function showDetail($encodedId)
     {
+        $this->dispatch('close-modal', name: 'edit-status-order');
         $id = base64_decode($encodedId);
+        $this->detailOrder = Pesanan::with([
+            'items:id,pesanans_id,menus_id,varian_id,qty,harga_satuan,subtotal',
+            'items.menus:id,nama_menu',
+            'items.varian:id,nama_varian',
+        ])->findOrFail($id);
 
-        $this->selectedOrder = Pesanan::with(['user', 'items.menus', 'items.varian'])
-            ->find($id);
+        $this->selectedOrderItems = $this->detailOrder->items;
 
-        $this->selectedOrderItems = $this->selectedOrder->items ?? [];
-        // dd($this->selectedOrder);
         $this->dispatch('open-modal', name: 'detail-order');
     }
+
+
 
     public function render()
     {

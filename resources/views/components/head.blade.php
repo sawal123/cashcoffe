@@ -33,10 +33,11 @@
     <link rel="stylesheet" href="{{ asset('assets/css/lib/file-upload.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/lib/audioplayer.css') }}">
     <!-- main css -->
+    @vite([])
     {{-- @vite(['resources/css/app.css'])
     @vite(['resources/js/app.js']) --}}
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
-    
+
     <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BUd4vcqu.css ') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">

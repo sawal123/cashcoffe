@@ -77,10 +77,6 @@ class TableOrder extends Component
                     $before = $ingredient->stok;
                     $after = $before - $totalOut;
 
-                    // Update stok bahan
-                    // $ingredient->update([
-                    //     'stok' => max(0, $after)
-                    // ]);
                     $ingredient->update([
                         'stok' => $after
                     ]);

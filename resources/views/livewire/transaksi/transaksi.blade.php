@@ -1,4 +1,5 @@
 <div>
+    <x-toast />
     <div class="flex flex-wrap sm:flex-nowrap items-center gap-3 mb-4">
         {{-- Search --}}
         <x-droppage perPage="{{ $perPage }}" />
@@ -41,8 +42,7 @@
     </a> --}}
     <div class="" id="print-area">
         @if (!empty($totalPerMetode))
-            <div
-                class="mb-1 text-sm font-medium text-neutral-700 dark:text-neutral-300 flex flex-wrap items-center gap-4">
+            <div class="mb-1 text-sm font-medium  dark:text-neutral-300 flex flex-wrap items-center gap-4">
                 @foreach ($totalPerMetode as $metode => $total)
                     <span>{{ ucfirst($metode ?? 'Belum Bayar') }}:
                         <span class="font-semibold text-green-600 dark:text-green-400">
@@ -96,8 +96,13 @@
                             <td>{{ $item->user->name ?? '-' }}</td>
                             <td>{{ $item->created_at->format('d M Y | H:i') }}</td>
                             <td>
-                                <button @click="$wire.showDetail('{{ base64_encode($item->id) }}')"
+                                <button @click="$wire.editStatus('{{ base64_encode($item->id) }}')"
                                     class="w-8 h-8 bg-primary-100 text-primary-600 rounded-full inline-flex items-center justify-center"
+                                    title="Edit Status">
+                                    <iconify-icon icon="mingcute:edit-2-line"></iconify-icon>
+                                </button>
+                                <button @click="$wire.showDetail('{{ base64_encode($item->id) }}')"
+                                    class="w-8 h-8 bg-danger-100 text-danger-600 rounded-full inline-flex items-center justify-center"
                                     title="Detail Pesanan">
                                     <iconify-icon icon="mingcute:eye-2-line"></iconify-icon>
                                 </button>
@@ -114,94 +119,154 @@
         </div>
     </div>
     {{ $orders->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}
-    <x-mdl name="detail-order">
+
+    <x-mdal name="edit-status-order">
         <div class="px-6 py-4">
-            <h3 class="font-semibold text-lg text-center">Detail Pesanan</h3>
+            <h3 class="font-semibold text-lg text-center">Edit Status Pesanan</h3>
 
             @if ($selectedOrder)
-                <div class="mt-4 text-sm space-y-2">
+                <div class="mt-4 space-y-4 text-sm">
 
-                    <div class="flex justify-between">
-                        <span class="font-semibold text-neutral-700">Kode</span>
-                        <span>{{ $selectedOrder->kode }}</span>
+                    {{-- Kode --}}
+                    <div>
+                        <label class="font-semibold ">Kode Pesanan</label>
+                        <div class="mt-1 ">
+                            {{ $selectedOrder->kode }}
+                        </div>
                     </div>
 
-                    <div class="flex justify-between">
-                        <span class="font-semibold text-neutral-700">Costumer</span>
-                        <span>{{ $selectedOrder->nama ?? '-' }}</span>
+                    {{-- Status --}}
+                    <div>
+                        <label class="font-semibold ">Status</label>
+                        <select wire:model="status"
+                            class="w-full rounded-lg border border-slate-300 dark:border-slate-700
+               bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
+               px-3 py-2 text-sm focus:outline-none focus:ring-2
+               focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer">
+                            <option value="dibatalkan">Dibatalkan</option>
+                            <option value="diproses">Diproses</option>
+                            <option value="selesai">Selesai</option>
+                        </select>
                     </div>
 
-
-
-                    <div class="flex justify-between">
-                        <span class="font-semibold text-neutral-700">Tanggal</span>
-                        <span>{{ $selectedOrder->created_at->format('d M Y H:i') }}</span>
-                    </div>
-
-                    <div class="flex justify-between">
-                        <span class="font-semibold text-neutral-700">Status</span>
-                        <span>{{ ucfirst($selectedOrder->status) }}</span>
-                    </div>
-
-                    <div class="flex justify-between">
-                        <span class="font-semibold text-neutral-700">Metode Pembayaran</span>
-                        <span>{{ ucfirst($selectedOrder->metode_pembayaran ?? 'Belum Bayar') }}</span>
+                    {{-- Metode Pembayaran --}}
+                    <div>
+                        <label class="font-semibold ">Metode Pembayaran</label>
+                        <select wire:model="metode_pembayaran"
+                            class="w-full rounded-lg border border-slate-300 dark:border-slate-700
+               bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
+               px-3 py-2 text-sm focus:outline-none focus:ring-2
+               focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer">
+                            <option value="">Belum Bayar</option>
+                            <option value="tunai">Tunai</option>
+                            <option value="qris">QRIS</option>
+                            <option value="transfer">Transfer</option>
+                            <option value="komplemen">Komplemen</option>
+                        </select>
                     </div>
 
                 </div>
             @endif
 
+            {{-- Action --}}
+            <div class="mt-6 flex justify-end gap-2">
+                <button @click="$dispatch('close-modal', { name: 'edit-status-order' })"
+                    class="px-4 py-2 text-sm rounded bg-red-600 text-white">
+                    Batal
+                </button>
 
-
-            <div class="mt-5 border-t pt-3 table-responsive">
-                <table class="table basic-border-table mb-2 w-full text-sm">
-                    <thead class="border-b">
-                        <tr>
-                            <th class="py-2 text-left">Menu</th>
-                            {{-- <th class="py-2 text-left">Varian</th> --}}
-                            <th class="py-2 text-left">Qty</th>
-                            <th class="py-2 text-left">Harga</th>
-                            <th class="py-2 text-left">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($selectedOrderItems as $it)
-                            <tr class="border-b">
-                                <td class="py-2">{{ $it->menus->nama_menu }}</td>
-                                {{-- <td>{{ $it->varian->nama ?? '-' }}</td> --}}
-                                <td>{{ $it->qty }}</td>
-                                <td>Rp {{ number_format($it->harga_satuan, 0, ',', '.') }}</td>
-                                <td>Rp {{ number_format($it->subtotal, 0, ',', '.') }}</td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="text-center py-3">Tidak ada item</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-
-            </div>
-
-            <div class="mt-4 p-3 text-end  rounded">
-                <p><strong>Total:</strong> Rp
-                    {{ number_format(($selectedOrder['total'] ?? 0) - ($selectedOrder['discount_value'] ?? 0), 0, ',', '.') }}
-                </p>
+                <button wire:click="updateStatus" wire:loading.attr="disabled"
+                    class="px-4 py-2 text-sm rounded bg-primary-600 text-white">
+                    Update
+                </button>
             </div>
         </div>
+        </x-mdl>
 
-        {{-- <div class="flex justify-center gap-3 border-t p-4">
-            <button x-on:click="modalIsOpen = false"
-                class="px-4 py-2 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300">
-                Tutup
-            </button>
-        </div> --}}
-    </x-mdl>
-    <script>
-        function printSection(areaId) {
-            const content = document.getElementById(areaId).innerHTML;
-            const printWindow = window.open('', '', 'width=900,height=600');
-            printWindow.document.write(`
+
+        <x-mdl name="detail-order">
+            <div class="px-6 py-4">
+                <h3 class="font-semibold text-lg text-center">Detail Pesanan</h3>
+
+                @if ($detailOrder)
+                    <div class="mt-4 text-sm space-y-2">
+
+                        <div class="flex justify-between">
+                            <span class="font-semibold ">Kode</span>
+                            <span>{{ $detailOrder->kode }}</span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="font-semibold ">Costumer</span>
+                            <span>{{ $detailOrder->user->nama ?? '-' }}</span>
+                        </div>
+
+
+
+                        <div class="flex justify-between">
+                            <span class="font-semibold ">Tanggal</span>
+                            <span>{{ $detailOrder->created_at->format('d M Y H:i') }}</span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="font-semibold ">Status</span>
+                            <span>{{ ucfirst($detailOrder->status) }}</span>
+                        </div>
+
+                        <div class="flex justify-between">
+                            <span class="font-semibold ">Metode Pembayaran</span>
+                            <span>{{ ucfirst($detailOrder->metode_pembayaran ?? 'Belum Bayar') }}</span>
+                        </div>
+
+                    </div>
+                @endif
+
+
+
+                <div class="mt-5 border-t pt-3 table-responsive">
+                    <table class="table basic-border-table mb-2 w-full text-sm">
+                        <thead class="border-b">
+                            <tr>
+                                <th class="py-2 text-left">Menu</th>
+                                {{-- <th class="py-2 text-left">Varian</th> --}}
+                                <th class="py-2 text-left">Qty</th>
+                                <th class="py-2 text-left">Harga</th>
+                                <th class="py-2 text-left">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($selectedOrderItems as $it)
+                                <tr class="border-b">
+                                    <td class="py-2">{{ $it->menus->nama_menu }}</td>
+                                    {{-- <td>{{ $it->varian->nama ?? '-' }}</td> --}}
+                                    <td>{{ $it->qty }}</td>
+                                    <td>Rp {{ number_format($it->harga_satuan, 0, ',', '.') }}</td>
+                                    <td>Rp {{ number_format($it->subtotal, 0, ',', '.') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center py-3">Tidak ada item</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+
+                </div>
+
+                <div class="mt-4 p-3 text-end  rounded">
+                    <p><strong>Total:</strong> Rp
+                        {{ number_format(($selectedOrder['total'] ?? 0) - ($selectedOrder['discount_value'] ?? 0), 0, ',', '.') }}
+                    </p>
+                </div>
+            </div>
+
+
+        </x-mdl>
+        <script>
+            function printSection(areaId) {
+                const content = document.getElementById(areaId).innerHTML;
+                const printWindow = window.open('', '', 'width=900,height=600');
+                printWindow.document.write(`
             <html>
                 <head>
                     <title>Cetak Laporan Transaksi</title>
@@ -217,11 +282,11 @@
                 </body>
             </html>
         `);
-            printWindow.document.close();
-            printWindow.focus();
-            printWindow.print();
-        }
-    </script>
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.print();
+            }
+        </script>
 
 
 
