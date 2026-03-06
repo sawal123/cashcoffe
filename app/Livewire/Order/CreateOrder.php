@@ -96,7 +96,53 @@ class CreateOrder extends Component
             ];
         })->toArray();
     }
+    // public $discMessage;
 
+    // public function cekDiscount($code)
+    // {
+    //     $disc = Discount::where('kode_diskon', $code)
+    //         ->where('is_active', true)
+    //         ->whereDate('tanggal_mulai', '<=', now())
+    //         ->whereDate('tanggal_akhir', '>=', now())
+    //         ->first();
+
+    //     if ($disc) {
+    //         $this->discountId = $disc->id;
+    //         $this->discount_value = 0; // reset nilai diskon
+
+    //         if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+    //             $this->dispatch('showToast', message: 'Diskon sudah mencapai batas penggunaan.', type: 'error', title: 'Error');
+    //         } elseif ($disc->minimum_transaksi && $this->total < $disc->minimum_transaksi) {
+    //             $this->dispatch('showToast', message: 'Minimal transaksi untuk diskon ini adalah Rp ' . number_format($disc->minimum_transaksi, 0, ',', '.'), type: 'error', title: 'Error');
+    //         } else {
+    //             if ($disc->jenis_diskon === 'persentase') {
+    //                 $this->discount_value = $this->total * ($disc->nilai_diskon / 100);
+
+    //                 if ($disc->maksimum_diskon && $this->discount_value > $disc->maksimum_diskon) {
+    //                     $this->discount_value = $disc->maksimum_diskon;
+    //                 }
+    //             } elseif ($disc->jenis_diskon === 'nominal') {
+    //                 $this->discount_value = $disc->nilai_diskon;
+    //             }
+
+    //             $this->dispatch('showToast', message: 'Diskon berhasil diterapkan.', type: 'success', title: 'Success');
+    //         }
+    //     } else {
+    //         $this->discountId = null;
+    //         $this->discount_value = 0;
+    //         $this->dispatch('showToast', message: 'Kode diskon tidak valid atau sudah tidak aktif.', type: 'error', title: 'Error');
+    //     }
+    // }
+
+    public $discount_id;
+    public $discount_value;
+    public function removeDiscount()
+    {
+        $this->discount = null;
+        $this->discount_id = null;
+        $this->discount_value = 0;
+        // $this->discMessage = null;
+    }
     public function updateOrder()
     {
         if (!$this->orderId) return;
@@ -104,51 +150,99 @@ class CreateOrder extends Component
         DB::beginTransaction();
 
         try {
-            $pesanan = Pesanan::with('items')->findOrFail($this->orderId);
-            $statusLama = $pesanan->status;
 
-            // ❗ Jika statusLama = selesai → kembalikan stok dulu sebelum update item
-            if ($statusLama === 'selesai') {
-                $this->restoreStock($pesanan);
+            $pesanan = Pesanan::with('items')->findOrFail($this->orderId);
+
+            // ❗ jika status selesai tidak boleh edit
+            if ($pesanan->status === 'selesai') {
+                $this->dispatch('showToast', message: 'Pesanan sudah selesai dan tidak dapat diubah.', type: 'error');
+                return;
             }
 
-            // Hapus item lama
+            // hapus item lama
             $pesanan->items()->delete();
 
-            // Tambah item baru
             foreach ($this->pesanan as $p) {
+
+                $menu = Menu::find($p['id']);
+                if (!$menu) continue;
+
+                $hargaJual = $menu->h_promo > 0 ? $menu->h_promo : $menu->harga;
+                $profitPerItem = ($hargaJual - $menu->h_pokok) * $p['qty'];
+
                 $pesanan->items()->create([
                     'menus_id' => $p['id'],
                     'qty' => $p['qty'],
-                    'harga_satuan' => $p['harga'],
-                    'subtotal' => $p['harga'] * $p['qty'],
+                    'harga_satuan' => $hargaJual,
+                    'subtotal' => $hargaJual * $p['qty'],
+                    'profit' => $profitPerItem,
                     'catatan_item' => $p['catatan'] ?? null,
                 ]);
             }
 
-            // Update pesanan
+            // hitung total & profit
+            $total = $pesanan->items()->sum('subtotal');
+            $totalProfit = $pesanan->items()->sum('profit');
+
+            $discountAmount = 0;
+
+            // cek discount
+            if ($this->discount_id) {
+
+                $disc = Discount::find($this->discount_id);
+
+                if (
+                    $disc && $disc->is_active &&
+                    (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
+                    (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
+                ) {
+
+                    if (!is_null($disc->limit) && !is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+
+                        // limit habis
+
+                    } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
+
+                        // tidak memenuhi minimum transaksi
+
+                    } else {
+
+                        if ($disc->jenis_diskon === 'persentase') {
+
+                            $discountAmount = $total * ($disc->nilai_diskon / 100);
+
+                            if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
+                                $discountAmount = $disc->maksimum_diskon;
+                            }
+                        } elseif ($disc->jenis_diskon === 'nominal') {
+
+                            $discountAmount = $disc->nilai_diskon;
+                        }
+                    }
+                }
+            }
+
+            $totalAfterDiscount = max(0, $total - $discountAmount);
+
             $pesanan->update([
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
-                'status' => $this->status,
-                'total' => $pesanan->items()->sum('subtotal'),
+                'discount_id' => $this->discount_id,
+                'discount_value' => $discountAmount,
+                'total' => $totalAfterDiscount,
+                'total_profit' => $totalProfit,
                 'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
-                'kembalian' => $this->isCash ? $this->uang_tunai - $pesanan->items()->sum('subtotal') : 0,
+                'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
             ]);
-
-            // ❗ Jika statusBaru = selesai → kurangi stok berdasarkan item BARU
-            if ($this->status === 'selesai') {
-                $this->reduceStock($pesanan);
-            }
 
             DB::commit();
 
-            $this->status = $pesanan->status;
-
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
         } catch (\Exception $e) {
+
             DB::rollBack();
+
             $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: ' . $e->getMessage());
         }
     }
@@ -502,6 +596,7 @@ class CreateOrder extends Component
                 $discMessage = 'Diskon berhasil diterapkan.';
             }
             $this->discountId = $disc->id;
+            $this->discount_id = $disc->id;
 
             $result = [
                 'nama' => $disc->nama_diskon,

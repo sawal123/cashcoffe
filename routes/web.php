@@ -50,7 +50,6 @@ Route::middleware(['auth', 'role:kasir|admin'])->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard.index');
     });
 
-
     Route::resource('menu', MenuController::class);
     Route::resource('order', OrderController::class);
     Route::resource('meja', MejaController::class);

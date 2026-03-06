@@ -5,37 +5,35 @@
     <meta charset="utf-8">
     <title>Struk {{ $pesanan->kode }}</title>
     <style>
+        /* Reset dasar untuk printer thermal */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: monospace;
-            font-size: 11px;
+            font-family: 'Courier New', Courier, monospace;
+            /* Font standar thermal */
+            font-size: 12px;
             line-height: 1.2;
-            max-width: 50mm;
-            /* <<< penting */
-            margin: auto;
+            width: 58mm;
+            /* Sesuaikan dengan lebar kertas (biasanya 58mm atau 80mm) */
+            padding: 2mm;
         }
 
-        td.left {
-            width: 60%;
-            text-align: left;
-            padding-right: 6px;
-            word-break: break-word;
-        }
-
-        td.center {
-            width: 10%;
+        .center {
             text-align: center;
-            white-space: nowrap;
+            margin-bottom: 5px;
         }
-
-        td.right {
-            width: 30%;
-            text-align: right;
-            white-space: nowrap;
-        }
-
 
         .bold {
             font-weight: bold;
+        }
+
+        .separator {
+            border-top: 1px dashed #000;
+            margin: 5px 0;
         }
 
         table {
@@ -44,100 +42,82 @@
         }
 
         td {
-            padding: 2px 0;
             vertical-align: top;
+            padding: 1px 0;
         }
 
-        .center {
-            margin-top: 50px;
+        /* Definisi kolom agar tidak berantakan */
+        .col-nama {
+            width: 50%;
+            text-align: left;
+        }
+
+        .col-qty {
+            width: 15%;
             text-align: center;
         }
 
-        .separator {
-            border-top: 1px dashed #000;
-            margin: 4px 0;
+        .col-harga {
+            width: 35%;
+            text-align: right;
+        }
+
+        .right {
+            text-align: right;
         }
 
         @media print {
             @page {
-                size: 50mm auto;
-                margin: 2mm;
+                size: 58mm auto;
+                /* Biarkan tinggi otomatis */
+                margin: 0;
             }
 
             body {
-                font-family: monospace;
-                font-size: 11px;
-                line-height: 1.2;
+                width: 58mm;
             }
 
-            .center {
-                margin-top: 20px;
-                text-align: center;
-            }
-
-            .right {
-                text-align: right;
-            }
-
-            .left {
-                text-align: left;
-            }
-
-            .bold {
-                font-weight: bold;
-            }
-
-            table {
-                width: 100%;
-                border-collapse: collapse;
-            }
-
-            td {
-                padding: 2px 0;
-                vertical-align: top;
-            }
-
-            .separator {
-                border-top: 1px dashed #000;
-                margin: 4px 0;
+            .no-print {
+                display: none;
             }
         }
-
     </style>
 </head>
 
 <body onload="window.print();">
-    <br>
-    <div class="center" style="">
-        <img src="{{ asset('logo/logo.png') }}" style="max-width:80px;"><br>
+    <div class="center">
+        <img src="{{ asset('logo/logo.png') }}" style="max-width:60px; filter: grayscale(1);"><br>
         <div class="bold">Temuan Space</div>
-        <span>Jl. Tenis No.30, Ps. Merah Bar., Kec. Medan Kota</span>
-        <div>{{ \Carbon\Carbon::now()->format('d/m/Y H:i') }}</div>
-
+        <div style="font-size: 10px;">Jl. Tenis No.30, Ps. Merah Bar., Medan</div>
+        <div>{{ date('d/m/Y H:i') }}</div>
     </div>
+
     <div class="separator"></div>
-    <table class="w-full mb-4 text-sm">
+
+    <table>
         <tr>
-            <td class="font-bold w-24">Invoice</td>
+            <td>Inv</td>
             <td>: {{ $pesanan->kode }}</td>
         </tr>
         <tr>
-            <td class="font-bold">Kasir</td>
+            <td>Kasir</td>
             <td>: {{ $pesanan->user->name }}</td>
         </tr>
         <tr>
-            <td class="font-bold">Customer</td>
+            <td>Cust</td>
             <td>: {{ $pesanan->nama ?? '-' }}</td>
         </tr>
     </table>
+
     <div class="separator"></div>
+
     <table>
         @foreach ($pesanan->items as $item)
-        <tr>
-            <td class="left">{{ $item->menu->nama_menu }}</td>
-            <td class="center">{{ $item->qty }}</td>
-            <td class="right">{{ number_format($item->subtotal) }}</td>
-        </tr>
+            <tr>
+                <td class="col-nama">{{ $item->menu->nama_menu }}</td>
+                <td class="col-qty">{{ $item->qty }}</td>
+                <td class="col-harga">{{ number_format($item->subtotal) }}</td>
+            </tr>
         @endforeach
     </table>
 
@@ -146,44 +126,42 @@
     <table>
         <tr>
             <td class="bold">Sub Total</td>
-            <td class="right bold">{{ number_format($pesanan->total) }}</td>
+            <td class="right">{{ number_format($pesanan->total) }}</td>
         </tr>
+        @if ($pesanan->discount_value > 0)
+            <tr>
+                <td>Discount</td>
+                <td class="right">-{{ number_format($pesanan->discount_value) }}</td>
+            </tr>
+        @endif
         <tr>
-            <td class="bold">Discount</td>
-            <td class="right bold">-{{ number_format($pesanan->discount_value) }}</td>
-
+            <td class="bold" style="font-size: 14px;">TOTAL</td>
+            <td class="right bold" style="font-size: 14px;">
+                {{ number_format($pesanan->total - $pesanan->discount_value) }}</td>
         </tr>
-
-        <tr>
-            <td class="bold">TOTAL</td>
-            <td class="right bold">{{ number_format($pesanan->total - $pesanan->discount_value) }}</td>
-        </tr>
-
         <tr>
             <td>Bayar</td>
-            <td class="right">{{ $pesanan->metode_pembayaran ?? '-' }}</td>
+            <td class="right">{{ strtoupper($pesanan->metode_pembayaran) }}</td>
         </tr>
+    </table>
 
-    </table>
     @if ($pesanan->metode_pembayaran === 'tunai')
-    <div class="separator"></div>
-    <table>
-        <tr>
-            <td>Cash</td>
-            <td class="right">{{ number_format($pesanan->uang_tunai) }}</td>
-        </tr>
-        <tr>
-            <td>Kembalian</td>
-            <td class="right">{{ number_format($pesanan->kembalian) }}</td>
-        </tr>
-    </table>
+        <div class="separator"></div>
+        <table>
+            <tr>
+                <td>Cash</td>
+                <td class="right">{{ number_format($pesanan->uang_tunai) }}</td>
+            </tr>
+            <tr>
+                <td>Kembali</td>
+                <td class="right">{{ number_format($pesanan->kembalian) }}</td>
+            </tr>
+        </table>
     @endif
 
     <div class="separator"></div>
-
-
-    <div class="center">*** Terima Kasih ***</div>
-
+    <div class="center" style="margin-top: 10px;">*** Terima Kasih ***</div>
+    <br>
 </body>
 
 </html>
