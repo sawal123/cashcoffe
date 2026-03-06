@@ -230,7 +230,7 @@ class CreateOrder extends Component
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
                 'discount_id' => $this->discount_id,
                 'discount_value' => $discountAmount,
-                'total' => $totalAfterDiscount,
+                'total' => $total,
                 'total_profit' => $totalProfit,
                 'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
                 'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,

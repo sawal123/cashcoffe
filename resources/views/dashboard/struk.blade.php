@@ -112,6 +112,7 @@
     <div class="separator"></div>
 
     <table>
+        {{-- {{ $pesanan->items }} --}}
         @foreach ($pesanan->items as $item)
             <tr>
                 <td class="col-nama">{{ $item->menu->nama_menu }}</td>
