@@ -128,13 +128,13 @@
                 </a>
             </li>
 
-            <li>
-                <a href="/discount" wire:navigate>
-                    <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
-                    <span>Discount</span>
-                </a>
-            </li>
             @unlessrole('kasir')
+                <li>
+                    <a href="/discount" wire:navigate>
+                        <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
+                        <span>Discount</span>
+                    </a>
+                </li>
                 <!-- GROUP: Gudang -->
                 <li class="menu-title">
                     <a href="#" class="menu-title-link" onclick="return false;">
@@ -171,7 +171,7 @@
             @endunlessrole
             <!-- GROUP: User -->
             @unlessrole('kasir')
-             <li class="menu-title">
+                <li class="menu-title">
                     <a href="#" class="menu-title-link" onclick="return false;">
                         <span class="color">Absensi</span>
                     </a>
@@ -194,6 +194,18 @@
                     </a>
                 </li>
             @endunlessrole
+            <hr class="my-4 opacity-50">
+            <li>
+                <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">
+                    @csrf
+                </form>
+                <a href="#" style="background: red"
+                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                    <iconify-icon icon="solar:logout-bold" class="menu-icon"></iconify-icon>
+                    <span>Logout</span>
+                </a>
+
+            </li>
 
         </ul>
     </div>
