@@ -180,22 +180,29 @@ trait HandlesCartInput
 
         if (count($adminIds) > 0) {
             try {
-                Http::withHeaders([
+                $response = \Illuminate\Support\Facades\Http::withHeaders([
                     'Authorization' => 'Basic ' . env('ONESIGNAL_REST_API_KEY'),
                     'accept' => 'application/json',
                     'content-type' => 'application/json',
                 ])->post('https://onesignal.com/api/v1/notifications', [
                     'app_id' => env('ONESIGNAL_APP_ID'),
-                    'target_channel' => 'push',
-                    'include_aliases' => [
-                        'external_id' => $adminIds // Mengirim spesifik ke ID Admin yang tadi di-set di app.blade.php
-                    ],
-                    'headings' => ['en' => 'Permintaan Diskon Baru!'],
-                    'contents' => ['en' => 'Kasir ' . Auth::user()->name . ' meminta persetujuan untuk diskon ' . $disc->kode_diskon],
-                    'url' => url('/dashboard'), // URL yang dibuka saat admin tap notifikasi di HP (sesuaikan)
+
+                    // 👉 UBAH BAGIAN INI SEMENTARA:
+                    'included_segments' => ['Total Subscriptions'], // Ini akan mengirim ke SEMUA perangkat
+
+                    // (HAPUS ATAU JADIKAN KOMENTAR BAGIAN INI DULU)
+                    // 'target_channel' => 'push',
+                    // 'include_aliases' => [
+                    //     'external_id' => $adminIds 
+                    // ],
+
+                    'headings' => ['en' => 'TEST DARI KASIR!'],
+                    'contents' => ['en' => 'Apakah notif ini masuk ke HP dan PC?'],
                 ]);
+
+                \Illuminate\Support\Facades\Log::info('OneSignal Response: ' . $response->body());
             } catch (\Exception $e) {
-                // Abaikan error jika API OneSignal gagal, agar proses kasir tidak macet
+                \Illuminate\Support\Facades\Log::error('OneSignal Error: ' . $e->getMessage());
             }
         }
         $this->dispatch('showToast', message: 'Notifikasi berhasil dikirim ke Admin.', type: 'info');
