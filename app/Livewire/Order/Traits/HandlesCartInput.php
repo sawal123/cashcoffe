@@ -196,8 +196,8 @@ trait HandlesCartInput
                     //     'external_id' => $adminIds 
                     // ],
 
-                    'headings' => ['en' => 'TEST DARI KASIR!'],
-                    'contents' => ['en' => 'Apakah notif ini masuk ke HP dan PC?'],
+                    'headings' => ['en' => 'Temuan Space'],
+                    'contents' => ['en' => 'Confirmastion Discount Request from ' . Auth::user()->name],
                 ]);
 
                 \Illuminate\Support\Facades\Log::info('OneSignal Response: ' . $response->body());
