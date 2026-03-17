@@ -21,6 +21,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->text('deskripsi')->nullable();
             $table->string('gambar')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }

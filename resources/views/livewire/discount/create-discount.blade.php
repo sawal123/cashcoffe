@@ -5,7 +5,7 @@
         $button = $discountId ? 'Update' : 'Simpan';
     @endphp
 
-    <form wire:submit.prevent="{{ $submit }}" class="grid grid-cols-12 gap-4" >
+    <form wire:submit.prevent="{{ $submit }}" class="grid grid-cols-12 gap-4">
         {{-- Nama Diskon --}}
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Nama Diskon</label>
@@ -16,13 +16,27 @@
         {{-- Jenis Diskon --}}
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Jenis Diskon</label>
-            <select wire:model="jenis_diskon" class="form-control" required>
-                <option value="">Pilih jenis</option>
-                <option value="persentase">Persentase (%)</option>
-                <option value="nominal">Nominal (Rp)</option>
+            <select wire:model="jenis_diskon"
+                class="form-control rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer"
+                required>
+                <option value="" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">Pilih jenis</option>
+                <option value="persentase" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">Persentase (%)</option>
+                <option value="nominal" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">Nominal (Rp)</option>
             </select>
         </div>
-
+        <div class="md:col-span-6 col-span-12">
+            <label class="form-label">Type Diskon</label>
+            <select wire:model="type"
+                class="form-control rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer"
+                required>
+                <option value="" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">Pilih Type
+                </option>
+                <option value="general" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">General
+                </option>
+                <option value="private" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">Private
+                </option>
+            </select>
+        </div>
         {{-- Nilai Diskon --}}
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Nilai Diskon</label>
@@ -68,8 +82,8 @@
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Status</label>
             <select wire:model="is_active" class="form-control">
-                <option value="1">Aktif</option>
-                <option value="0">Tidak Aktif</option>
+                <option value="1" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">Aktif</option>
+                <option value="0" class="bg-white text-slate-800 dark:bg-slate-800 dark:text-slate-200">Tidak Aktif</option>
             </select>
         </div>
 

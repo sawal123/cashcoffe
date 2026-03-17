@@ -23,7 +23,7 @@
 
     {{--
     <x-input wire:model="nama_costumer" place="Nama Costumer" /> --}}
-    <x-inputsmall wire:model="nama_costumer" placeholder="Nama Costumer" />
+    <x-inputsmall wire:model="nama_costumer" placeholder="Nama Costumer" :readonly="$status === 'selesai'" />
 
 
     <ul
@@ -92,7 +92,7 @@
     </div>
 
 
-    @if ($status != null)
+    {{-- @if ($status != null)
         <div class="flex justify-between gap-4 items-center mt-2">
             <span class="text-sm dark:text-slate-200 text-slate-900">Status: </span>
             <select id="status" wire:model="status"
@@ -107,32 +107,47 @@
 
             </select>
         </div>
-    @endif
+    @endif --}}
 
     <div class="space-y-1">
         <div class="flex gap-2 items-end">
             <div class="flex-1">
-                <x-inputsmall label="Voucher" wire:model.live="discount" placeholder="Masukan Code Voucher" />
+                <x-inputsmall label="Voucher" wire:model.live.debounce.500ms="discount"
+                    placeholder="Masukan Code Voucher" :readonly="$status === 'selesai'" />
             </div>
-            @if ($discount)
-                <button wire:click="removeDiscount" type="button"
-                    class="bg-red-600 text-white font-semibold h-[38px] px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">
-                    Hapus
-                </button>
+
+            @if ($status !== 'selesai')
+                @if (
+                    $discount &&
+                        ($disc === null || $disc['type'] === 'general' || ($disc['type'] === 'private' && $isDiscountVerified)))
+                    <button wire:click="removeDiscount" type="button"
+                        class="bg-red-600 text-white font-semibold h-[38px] px-4 py-2 rounded-lg hover:bg-red-700 transition duration-300">
+                        Hapus
+                    </button>
+                @endif
+
+                @if (isset($disc) && $disc['type'] === 'private' && !$isDiscountVerified)
+                    <button type="button" @click="$dispatch('open-modal', { name: 'verify-discount-modal' })"
+                        class="bg-primary-600 text-white font-semibold h-[38px] px-4 py-2 rounded-lg hover:bg-yellow-800 transition duration-300">
+                        Verifikasi
+                    </button>
+                @endif
             @endif
         </div>
 
-        {{-- Pesan dipindah ke luar flex agar tidak menarik tombol ke bawah --}}
-        @if ($discMessage)
-            <p class="text-sm italic text-blue-400 leading-none">
+        @if ($discMessage && $status !== 'selesai')
+            <p
+                class="text-xs mt-1 {{ $isDiscountVerified || (isset($disc) && $disc['type'] == 'general') ? 'text-green-500' : 'text-red-500' }}">
                 {{ $discMessage }}
             </p>
         @endif
     </div>
 
+    @include('livewire.order.create-order.modal-verfikasi')
+
 
     <x-inputsmall label="Member" wire:model.live="member" placeholder="Masukan Code Voucher"
-        message="{{ $memMessage }}" />
+        message="{{ $memMessage }}" :readonly="$status === 'selesai'" />
 
     @if ($this->isCash)
         <div x-data="{
@@ -206,30 +221,36 @@
 
 
 
-        {{-- @if ($status == 'dibatalkan')
-        <button
-            class="w-full bg-gray-600 mt-2 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-            {{ $teks }} Pesanan
-        </button>
-        @else --}}
+        @if ($status !== 'dibatalkan')
+            @if ($status !== 'selesai')
+                <button wire:click="{{ $submit }}" x-data
+                    :disabled="$wire.metode_pembayaran === 'tunai' &&
+                        (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})"
+                    :class="($wire.metode_pembayaran === 'tunai' &&
+                        (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})) ?
+                    'opacity-50 cursor-not-allowed bg-gray-400' :
+                    'bg-blue-600 hover:bg-blue-700'"
+                    class="w-full mt-2 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                    {{ $teks }} Pesanan
+                </button>
+            @endif
 
-        <button wire:click="{{ $submit }}" x-data
-            :disabled="$wire.metode_pembayaran === 'tunai' &&
-                (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})"
-            :class="($wire.metode_pembayaran === 'tunai' &&
-                (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})) ?
-            'opacity-50 cursor-not-allowed bg-gray-400' :
-            'bg-blue-600 hover:bg-blue-700'"
-            class="w-full mt-2 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-            {{ $teks }} Pesanan
-        </button>
+            @if ($status !== 'dibatalkan')
+                <button @click="$dispatch('open-modal', { name: 'confirm-cancel-modal' })" type="button"
+                    class="w-full bg-red-600 mt-2 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                    Batalkan
+                </button>
+                @include('livewire.order.create-order.modal-batalkan')
+            @endif
 
 
-        @if ($teks == 'Update')
-            <a href="{{ route('struk.print', base64_encode($orderId)) }}"
-                class="w-full bg-slate-600 text-center mt-2 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-                Cetak Struk
-            </a>
+
+            @if ($teks == 'Update')
+                <a href="{{ route('struk.print', base64_encode($orderId)) }}"
+                    class="w-full bg-slate-600 text-center mt-2 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                    Cetak Struk
+                </a>
+            @endif
         @endif
 
     </div>
@@ -238,6 +259,10 @@
         class=" lg:hidden fixed bottom-6 right-6 w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center shadow-lg transition-all duration-300 hover:bg-blue-700 z-50">
         <iconify-icon id="scrollIcon" icon="solar:round-arrow-down-broken" class="text-2xl"></iconify-icon>
     </button>
+
+
+
+
     <style>
         /* Tombol selalu muncul di mobile */
         #scrollButton {

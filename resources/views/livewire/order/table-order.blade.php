@@ -71,8 +71,10 @@
                             {{-- Jika Admin --}}
                             @role('admin')
                                 @if ($item->status == 'diproses')
-                                    <button wire:click="saji('{{ base64_encode($item->id) }}')" type="button"
-                                        class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
+                                    <button wire:click="saji('{{ base64_encode($item->id) }}')"
+                                        wire:loading.attr="disabled" wire:target="saji('{{ base64_encode($item->id) }}')"
+                                        type="button"
+                                        class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed">
                                         <iconify-icon icon="mingcute:check-line"></iconify-icon>
                                     </button>
                                 @endif
@@ -99,10 +101,10 @@
                                 @if ($item->status !== 'selesai')
                                     @if ($item->status == 'diproses')
                                         {{-- @if ($item->metode_pembayaran !== null) --}}
-                                            <button wire:click="saji('{{ base64_encode($item->id) }}')" type="button"
-                                                class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
-                                                <iconify-icon icon="mingcute:check-line"></iconify-icon>
-                                            </button>
+                                        <button wire:click="saji('{{ base64_encode($item->id) }}')" type="button"
+                                            class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
+                                            <iconify-icon icon="mingcute:check-line"></iconify-icon>
+                                        </button>
                                         {{-- @endif --}}
                                     @endif
                                     <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate

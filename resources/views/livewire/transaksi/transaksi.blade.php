@@ -186,87 +186,119 @@
 
         <x-mdl name="detail-order">
             <div class="px-6 py-4">
-                <h3 class="font-semibold text-lg text-center">Detail Pesanan</h3>
+                <h3 class="font-bold text-xl text-center mb-6 text-slate-800 dark:text-white">Detail Pesanan</h3>
 
                 @if ($detailOrder)
-                    <div class="mt-4 text-sm space-y-2">
-
-                        <div class="flex justify-between">
-                            <span class="font-semibold ">Kode</span>
-                            <span>{{ $detailOrder->kode }}</span>
+                    <div
+                        class="text-sm space-y-3 p-4 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500 dark:text-slate-400">Kode</span>
+                            <span
+                                class="font-semibold text-slate-800 dark:text-slate-200">{{ $detailOrder->kode }}</span>
                         </div>
-
-                        <div class="flex justify-between">
-                            <span class="font-semibold ">Costumer</span>
-                            <span>{{ $detailOrder->user->nama ?? '-' }}</span>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500 dark:text-slate-400">Costumer</span>
+                            <span
+                                class="font-semibold text-slate-800 dark:text-slate-200">{{ $detailOrder->nama ?? '-' }}</span>
                         </div>
-
-
-
-                        <div class="flex justify-between">
-                            <span class="font-semibold ">Tanggal</span>
-                            <span>{{ $detailOrder->created_at->format('d M Y H:i') }}</span>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500 dark:text-slate-400">Tanggal</span>
+                            <span
+                                class="font-semibold text-slate-800 dark:text-slate-200">{{ $detailOrder->created_at->format('d M Y H:i') }}</span>
                         </div>
-
-                        <div class="flex justify-between">
-                            <span class="font-semibold ">Status</span>
-                            <span>{{ ucfirst($detailOrder->status) }}</span>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500 dark:text-slate-400">Status</span>
+                            <span
+                                class="font-semibold text-slate-800 dark:text-slate-200">{{ ucfirst($detailOrder->status) }}</span>
                         </div>
-
-                        <div class="flex justify-between">
-                            <span class="font-semibold ">Metode Pembayaran</span>
-                            <span>{{ ucfirst($detailOrder->metode_pembayaran ?? 'Belum Bayar') }}</span>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500 dark:text-slate-400">Metode Pembayaran</span>
+                            <span
+                                class="font-semibold text-slate-800 dark:text-slate-200">{{ ucfirst($detailOrder->metode_pembayaran ?? 'Belum Bayar') }}</span>
                         </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-slate-500 dark:text-slate-400">Code Discount</span>
+                            <span
+                                class="font-semibold text-slate-800 dark:text-slate-200">{{ $detailOrder->discount->kode_diskon ?? 'Tidak Ada' }}</span>
+                        </div>
+                    </div>
 
+                    <div class="mt-6 border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left text-slate-600 dark:text-slate-300">
+                                <thead
+                                    class="text-xs text-slate-700 uppercase bg-slate-100 dark:bg-slate-800 dark:text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                                    <tr>
+                                        <th class="px-4 py-3 font-semibold">Menu</th>
+                                        <th class="px-4 py-3 font-semibold text-center w-16">Qty</th>
+                                        <th class="px-4 py-3 font-semibold text-right">Harga</th>
+                                        <th class="px-4 py-3 font-semibold text-right">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                                    @forelse ($selectedOrderItems as $it)
+                                        <tr
+                                            class="bg-white dark:bg-slate-900/50 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition">
+                                            <td class="px-4 py-3 font-medium text-slate-800 dark:text-slate-200">
+                                                {{ $it->menus->nama_menu }}</td>
+                                            <td class="px-4 py-3 text-center">{{ $it->qty }}</td>
+                                            <td class="px-4 py-3 text-right whitespace-nowrap">Rp
+                                                {{ number_format($it->harga_satuan, 0, ',', '.') }}</td>
+                                            <td class="px-4 py-3 text-right whitespace-nowrap">Rp
+                                                {{ number_format($it->subtotal, 0, ',', '.') }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="px-4 py-6 text-center text-slate-500 italic">
+                                                Tidak ada item</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end">
+                        <div
+                            class="w-full sm:w-2/3 md:w-1/2 space-y-2 text-sm text-slate-600 dark:text-slate-300 bg-transparent">
+                            <div class="flex justify-between px-2">
+                                <span>Total Sebelum Diskon</span>
+                                <span class="font-medium text-slate-800 dark:text-slate-200">Rp
+                                    {{ number_format($detailOrder->total ?? 0, 0, ',', '.') }}</span>
+                            </div>
+
+                            @if (($detailOrder->discount_value ?? 0) > 0)
+                                <div class="flex justify-between px-2 text-red-500 dark:text-red-400">
+                                    <span>Diskon</span>
+                                    <span>- Rp {{ number_format($detailOrder->discount_value, 0, ',', '.') }}</span>
+                                </div>
+                            @endif
+
+                            <div
+                                class="pt-3 mt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center px-2">
+                                <span class="font-bold text-base text-slate-800 dark:text-white">Total Akhir</span>
+                                <span class="font-bold text-lg text-primary-600 dark:text-primary-400">
+                                    Rp
+                                    {{ number_format(($detailOrder->total ?? 0) - ($detailOrder->discount_value ?? 0), 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <div class="text-center py-8 text-slate-500">
+                        Memuat data pesanan...
                     </div>
                 @endif
-
-
-
-                <div class="mt-5 border-t pt-3 table-responsive">
-                    <table class="table basic-border-table mb-2 w-full text-sm">
-                        <thead class="border-b">
-                            <tr>
-                                <th class="py-2 text-left">Menu</th>
-                                {{-- <th class="py-2 text-left">Varian</th> --}}
-                                <th class="py-2 text-left">Qty</th>
-                                <th class="py-2 text-left">Harga</th>
-                                <th class="py-2 text-left">Subtotal</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($selectedOrderItems as $it)
-                                <tr class="border-b">
-                                    <td class="py-2">{{ $it->menus->nama_menu }}</td>
-                                    {{-- <td>{{ $it->varian->nama ?? '-' }}</td> --}}
-                                    <td>{{ $it->qty }}</td>
-                                    <td>Rp {{ number_format($it->harga_satuan, 0, ',', '.') }}</td>
-                                    <td>Rp {{ number_format($it->subtotal, 0, ',', '.') }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-3">Tidak ada item</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-
-                </div>
-
-                <div class="mt-4 p-3 text-end  rounded">
-                    <p><strong>Total:</strong> Rp
-                        {{ number_format(($selectedOrder['total'] ?? 0) - ($selectedOrder['discount_value'] ?? 0), 0, ',', '.') }}
-                    </p>
-                </div>
             </div>
+</div>
 
 
-        </x-mdl>
-        <script>
-            function printSection(areaId) {
-                const content = document.getElementById(areaId).innerHTML;
-                const printWindow = window.open('', '', 'width=900,height=600');
-                printWindow.document.write(`
+</x-mdl>
+<script>
+    function printSection(areaId) {
+        const content = document.getElementById(areaId).innerHTML;
+        const printWindow = window.open('', '', 'width=900,height=600');
+        printWindow.document.write(`
             <html>
                 <head>
                     <title>Cetak Laporan Transaksi</title>
@@ -282,11 +314,11 @@
                 </body>
             </html>
         `);
-                printWindow.document.close();
-                printWindow.focus();
-                printWindow.print();
-            }
-        </script>
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+    }
+</script>
 
 
 

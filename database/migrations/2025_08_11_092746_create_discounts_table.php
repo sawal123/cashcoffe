@@ -24,6 +24,8 @@ return new class extends Migration
             $table->integer('limit')->nullable();
             $table->integer('digunakan')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->enum('type', ['general', 'private']);
+            $table->softDeletes();
             $table->timestamps();
         });
     }

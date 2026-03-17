@@ -15,7 +15,7 @@
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Nama Diskon</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Jenis</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Nilai</th>
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Min. Transaksi</th>
+                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Digunakan</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Status</th>
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">Action</th>
                 </tr>
@@ -42,7 +42,8 @@
                             </span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span>Rp {{ number_format($item->minimum_transaksi, 0, ',', '.') }}</span>
+                            {{-- <span>Rp {{ number_format($item->minimum_transaksi, 0, ',', '.') }}</span> --}}
+                            <span>{{ $item->digunakan ?? '0' }}</span>
                         </td>
                         <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
                             <span

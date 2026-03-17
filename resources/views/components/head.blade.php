@@ -33,9 +33,9 @@
     <link rel="stylesheet" href="{{ asset('assets/css/lib/file-upload.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/lib/audioplayer.css') }}">
     <!-- main css -->
-    @vite([])
-    {{-- @vite(['resources/css/app.css'])
-    @vite(['resources/js/app.js']) --}}
+    {{-- @vite([]) --}}
+    @vite(['resources/css/app.css'])
+    @vite(['resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
 
     <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
@@ -162,5 +162,24 @@
         }
     </style>
 
+
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script>
+        window.OneSignalDeferred = window.OneSignalDeferred || [];
+        OneSignalDeferred.push(async function(OneSignal) {
+            await OneSignal.init({
+                appId: "{{ env('ONESIGNAL_APP_ID') }}",
+                notifyButton: {
+                    enable: true, // Akan memunculkan ikon lonceng kecil di sudut kanan bawah web untuk minta izin
+                },
+            });
+
+            // Daftarkan ID User yang sedang login ke OneSignal (Sangat Penting!)
+            // Ini agar kita bisa mengirim notif spesifik hanya ke Admin, bukan ke Kasir
+            @auth
+            OneSignal.login("{{ auth()->user()->id }}");
+        @endauth
+        });
+    </script>
     @livewireStyles
 </head>

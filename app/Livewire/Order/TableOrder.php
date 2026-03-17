@@ -38,29 +38,36 @@ class TableOrder extends Component
 
     public function saji($id)
     {
-        $pesanan = Pesanan::with('items')->findOrFail(base64_decode($id));
+        // Cukup panggil relasinya
+        $pesanan = Pesanan::with(['items', 'discount'])->findOrFail(base64_decode($id));
 
-        // Jika sudah selesai sebelumnya -> jangan kurangi stok lagi
-        $statusSebelumnya = $pesanan->status;
+        // Jika belum pilih metode pembayaran, batalkan proses
         if ($pesanan->metode_pembayaran === null) {
             $this->dispatch('showToast', message: 'Metode pembayaran harus dipilih!', type: 'info', title: 'Info');
             return;
         }
-        // Update status
-        $pesanan->status = $pesanan->status == 'diproses' ? 'selesai' : $this->status;
-        $pesanan->save();
 
-        // Jika status sebelumnya DICAP sudah selesai → SKIP pengurangan stok
+        $statusSebelumnya = $pesanan->status;
+
+        // Jika status sebelumnya DICAP sudah selesai → SKIP proses ke bawah
         if ($statusSebelumnya === 'selesai') {
             $this->dispatch('showToast', message: 'Pesanan sudah selesai sebelumnya.', type: 'info', title: 'Info');
             return;
         }
 
+        // Update status pesanan
+        $pesanan->status = $pesanan->status == 'diproses' ? 'selesai' : $this->status;
+        $pesanan->save();
 
-
-        // 🔥 Jika status jadi selesai → Kurangi stok dapur
+        // 🔥 Jika status baru saja berubah jadi selesai
         if ($pesanan->status === 'selesai') {
 
+            // 1. PERBAIKAN DISKON: Gunakan increment() agar aman & menghindari error null
+            // if ($pesanan->discount_id && $pesanan->discount) {
+            //     $pesanan->discount->increment('digunakan');
+            // }
+
+            // 2. Kurangi stok bahan
             foreach ($pesanan->items as $item) {
 
                 // Ambil semua komposisi menu

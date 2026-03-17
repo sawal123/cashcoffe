@@ -11,7 +11,7 @@ class CreateDiscount extends Component
     public $button = "Simpan";
 
     // Form fields
-    public $nama_diskon, $jenis_diskon, $nilai_diskon, $minimum_transaksi, $limit;
+    public $nama_diskon, $jenis_diskon, $nilai_diskon, $minimum_transaksi, $limit, $type = 'general';
     public $maksimum_diskon, $kode_diskon, $tanggal_mulai, $tanggal_akhir;
     public $is_active = 1;
 
@@ -51,6 +51,7 @@ class CreateDiscount extends Component
         $this->tanggal_akhir = $diskon->tanggal_akhir;
         $this->limit = $diskon->limit;
         $this->is_active = $diskon->is_active;
+        $this->type = $diskon->type;
     }
 
     public function simpan()
@@ -69,6 +70,7 @@ class CreateDiscount extends Component
             'tanggal_akhir' => $this->tanggal_akhir,
             'limit' => $this->limit,
             'is_active' => $this->is_active,
+            'type' => $this->type,
         ]);
 
         $this->resetForm();
@@ -92,6 +94,7 @@ class CreateDiscount extends Component
             'tanggal_akhir' => $this->tanggal_akhir,
             'limit' => $this->limit,
             'is_active' => $this->is_active,
+            'type' => $this->type,
         ]);
 
        $this->dispatch('showToast', message: 'Discount Berhasil Diupdate', type: 'success', title: 'Success');
@@ -112,6 +115,8 @@ class CreateDiscount extends Component
         $this->tanggal_mulai = null;
         $this->tanggal_akhir = null;
         $this->is_active = 1;
+        $this->limit = null;
+        $this->type = '';
     }
 
     public function render()

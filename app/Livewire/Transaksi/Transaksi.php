@@ -94,6 +94,7 @@ class Transaksi extends Component
         if ($oldStatus === 'selesai' && in_array($newStatus, ['diproses', 'dibatalkan'])) {
             $this->restoreStock($pesanan);
         }
+        
 
         // =========================
         // UPDATE STATUS PESANAN
@@ -102,6 +103,12 @@ class Transaksi extends Component
             'status' => $newStatus,
             'metode_pembayaran' => $this->metode_pembayaran,
         ]);
+
+        if ($pesanan->status === 'dibatalkan') {
+            if ($pesanan->discount_id) {
+                $pesanan->discount->decrement('digunakan');
+            }
+        }
 
         // =========================
         // UI FEEDBACK
@@ -197,6 +204,7 @@ class Transaksi extends Component
         ])->findOrFail($id);
 
         $this->selectedOrderItems = $this->detailOrder->items;
+        // dd($this->detailOrder);
 
         $this->dispatch('open-modal', name: 'detail-order');
     }
