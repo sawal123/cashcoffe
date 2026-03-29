@@ -58,7 +58,7 @@
                 </button>
 
                 <button wire:click="requestAdminApproval" wire:loading.attr="disabled" type="button"
-                    class="w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg bg-yellow-500 text-white hover:bg-yellow-600 transition flex items-center justify-center gap-2">
+                    class="w-full sm:w-auto px-4 py-2 text-sm font-medium rounded-lg bg-orange-500 text-white hover:bg-orange-700 transition flex items-center justify-center gap-2">
                     <span wire:loading.remove wire:target="requestAdminApproval">Kirim Notif</span>
                     <span wire:loading wire:target="requestAdminApproval">Mengirim...</span>
                 </button>

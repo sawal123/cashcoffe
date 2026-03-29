@@ -66,3 +66,4 @@
     {{-- Kanan: Pesanan --}}
      @include('livewire.order.pesanan-item')
 
+</div>  
