@@ -39,7 +39,7 @@
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
 
     <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-BUd4vcqu.css ') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/app-An2FQxug.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-OScb3ZFM.js') }}">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
@@ -166,7 +166,7 @@
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
         window.OneSignalDeferred = window.OneSignalDeferred || [];
-        OneSignalDeferred.push(async function(OneSignal) {
+        OneSignalDeferred.push(async function (OneSignal) {
             await OneSignal.init({
                 appId: "{{ env('ONESIGNAL_APP_ID') }}",
                 notifyButton: {
@@ -177,8 +177,8 @@
             // Daftarkan ID User yang sedang login ke OneSignal (Sangat Penting!)
             // Ini agar kita bisa mengirim notif spesifik hanya ke Admin, bukan ke Kasir
             @auth
-            OneSignal.login("{{ auth()->user()->id }}");
-        @endauth
+                OneSignal.login("{{ auth()->user()->id }}");
+            @endauth
         });
     </script>
     @livewireStyles
