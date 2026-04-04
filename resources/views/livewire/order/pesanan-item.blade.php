@@ -116,7 +116,8 @@
         </div>
 
         <div class="mb-4">
-            <x-inputsmall wire:model="nama_costumer" placeholder="Nama costumer" :readonly="$status === 'selesai'" />
+            <x-inputsmall wire:model="nama_costumer" placeholder="Nama costumer" autocomplete="off"
+                :readonly="$status === 'selesai'" />
         </div>
 
         <p class="font-bold text-sm mb-2 text-slate-900 dark:text-white">Item Dipilih</p>
@@ -189,7 +190,7 @@
                         wire:click="$set('metode_pembayaran','{{ $pay }}')"
                         @click="if('{{ strtolower($pay) }}' === 'tunai') $dispatch('open-tunai-modal')"
                         class="flex flex-col items-center justify-center gap-1 p-1.5 sm:p-2 rounded-lg border text-[10px] sm:text-xs font-medium transition duration-200 overflow-hidden
-                                                        {{ $metode_pembayaran === $pay ? 'bg-white border-blue-200 text-blue-600 shadow-sm dark:bg-slate-100 dark:text-blue-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
+                                                                {{ $metode_pembayaran === $pay ? 'bg-white border-blue-200 text-blue-600 shadow-sm dark:bg-slate-100 dark:text-blue-700' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700' }}">
                         <iconify-icon icon="{{ $icon }}"
                             class="text-lg sm:text-xl {{ $metode_pembayaran === $pay ? 'text-blue-600 dark:text-blue-700' : 'text-slate-400 dark:text-slate-400' }}"></iconify-icon>
                         <span class="truncate w-full text-center">{{ ucfirst($pay) }}</span>
@@ -283,19 +284,19 @@
 
         @if ($this->isCash)
             <div x-data="{
-                                                open: true,
-                                                uang: '',
-                                                minTunai: {{ $totalAfterDiscount }},
-                                                sync() {
-                                                    let clean = this.uang.replace(/\D/g, '');
-                                                    clean = clean.replace(/^0+/, '');
-                                                    this.uang = clean;
-                                                    $wire.set('uang_tunai', clean === '' ? null : parseInt(clean));
-                                                },
-                                                get isValid() {
-                                                    return this.uang && parseInt(this.uang) >= this.minTunai;
-                                                }
-                                            }"
+                                                        open: true,
+                                                        uang: '',
+                                                        minTunai: {{ $totalAfterDiscount }},
+                                                        sync() {
+                                                            let clean = this.uang.replace(/\D/g, '');
+                                                            clean = clean.replace(/^0+/, '');
+                                                            this.uang = clean;
+                                                            $wire.set('uang_tunai', clean === '' ? null : parseInt(clean));
+                                                        },
+                                                        get isValid() {
+                                                            return this.uang && parseInt(this.uang) >= this.minTunai;
+                                                        }
+                                                    }"
                 x-init="if ($wire.uang_tunai) { uang = String($wire.uang_tunai); open = false; }"
                 @open-tunai-modal.window="open = true">
 
@@ -400,11 +401,11 @@
                 @if ($status !== 'selesai')
                     <button wire:click="{{ $submit }}" x-data
                         :disabled="$wire.metode_pembayaran === 'tunai' &&
-                                                                                            (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})"
+                                                                                                            (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})"
                         :class="($wire.metode_pembayaran === 'tunai' &&
-                                                                                            (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})) ?
-                                                                                        'opacity-50 cursor-not-allowed bg-gray-400' :
-                                                                                        'bg-[#FF5A1F] hover:bg-[#E04D18]'"
+                                                                                                            (!$wire.uang_tunai || $wire.uang_tunai < {{ $totalAfterDiscount }})) ?
+                                                                                                        'opacity-50 cursor-not-allowed bg-gray-400' :
+                                                                                                        'bg-[#FF5A1F] hover:bg-[#E04D18]'"
                         class="w-full mt-4 text-white font-bold py-3 px-4 rounded-xl transition duration-300 text-sm">
                         {{ $teks }} Pesanan
                     </button>
