@@ -12,7 +12,7 @@
         </label>
 
         <div class="relative">
-            <input 
+            <input  autocomplete="off"
                 {{ $attributes }}
                 type="{{ $type ?? 'text' }}" 
                 placeholder="{{ $placeholder }}"
