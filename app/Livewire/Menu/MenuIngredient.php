@@ -30,7 +30,7 @@ class MenuIngredient extends Component
 
         $this->reset(['ingredient_id', 'qty']);
     }
-    
+
     public function removeIngredient($id)
     {
         MenuIngredients::where('id', $id)->delete();
@@ -38,12 +38,38 @@ class MenuIngredient extends Component
 
     public function getMenuIngredientsProperty()
     {
-        if (!$this->menu_id) return [];
+        if (!$this->menu_id)
+            return [];
         // dd($this->menu_id);
 
         return MenuIngredients::where('menu_id', $this->menu_id)
             ->with('ingredient')
             ->get();
+    }
+
+    public function getTotalHppProperty()
+    {
+        $total = 0;
+        foreach ($this->menuIngredients as $row) {
+            if ($row->ingredient) {
+                $total += $row->qty * $row->ingredient->hpp;
+            }
+        }
+        return $total;
+    }
+
+    public function saveHpp()
+    {
+        if ($this->menu_id) {
+            $menu = Menu::find($this->menu_id);
+            if ($menu) {
+                $menu->update([
+                    'h_pokok' => $this->total_hpp
+                ]);
+                session()->flash('success', 'HPP Menu berhasil disimpan.');
+                // $this->dispatch('showToast', message: 'HPP Berhasil Diupdate', type: 'success', title: 'Success');
+            }
+        }
     }
 
     public function render()

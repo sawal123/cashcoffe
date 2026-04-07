@@ -17,6 +17,7 @@ class StockDapurCreate extends Component
     public $satuan_id;
 
     public $newSatuan;
+    public $hpp;
 
     public $satuans, $stockId, $ingredient_id, $qty, $keterangan, $current_stok, $current_satuan;
 
@@ -44,22 +45,23 @@ class StockDapurCreate extends Component
     {
         $this->validate([
             'nama_bahan' => 'required',
-            'stok'       => 'required|numeric|min:0',
-            'satuan_id'  => 'required|exists:satuan_bahans,id',
+            'stok' => 'required|numeric|min:0',
+            'satuan_id' => 'required|exists:satuan_bahans,id',
         ]);
 
         $ingredient = Ingredients::create([
             'nama_bahan' => $this->nama_bahan,
-            'stok'       => $this->stok,
-            'satuan_id'  => $this->satuan_id,
+            'stok' => $this->stok,
+            'hpp' => $this->hpp,
+            'satuan_id' => $this->satuan_id,
         ]);
 
         RiwayatStock::create([
             'ingredient_id' => $ingredient->id,
             'kode' => strtoupper('IN-' . Str::random(6)),
-            'qty'           => $this->stok,
-            'keterangan'    => 'Stok awal',
-            'tipe'          => 'in'
+            'qty' => $this->stok,
+            'keterangan' => 'Stok awal',
+            'tipe' => 'in'
         ]);
 
         $this->reset(['nama_bahan', 'stok', 'satuan_id']);
@@ -71,15 +73,16 @@ class StockDapurCreate extends Component
     {
         $this->validate([
             'nama_bahan' => 'required',
-            'stok'       => 'required|numeric|min:0',
-            'satuan_id'  => 'required|exists:satuan_bahans,id',
+            'stok' => 'required|numeric|min:0',
+            'satuan_id' => 'required|exists:satuan_bahans,id',
         ]);
 
         $bahan = Ingredients::findOrFail($id);
         $bahan->update([
             'nama_bahan' => $this->nama_bahan,
-            'stok'       => $this->stok,
-            'satuan_id'  => $this->satuan_id,
+            'stok' => $this->stok,
+            'hpp' => $this->hpp,
+            'satuan_id' => $this->satuan_id,
         ]);
 
         $this->dispatch('showToast', type: 'success', message: 'Bahan berhasil diupdate!');
