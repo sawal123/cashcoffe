@@ -20,6 +20,7 @@ class StockDapurCreate extends Component
     public $hpp;
 
     public $satuans, $stockId, $ingredient_id, $qty, $keterangan, $current_stok, $current_satuan;
+    public $editSatuanId, $editSatuanNama;
 
     public function mount($stockId = null)
     {
@@ -106,10 +107,47 @@ class StockDapurCreate extends Component
 
     public function deleteSatuan($id)
     {
-        SatuanBahan::find($id)?->delete();
+        $satuan = SatuanBahan::find($id);
+
+        if (!$satuan) {
+            return;
+        }
+
+        // Check if the unit is used in any ingredients (including soft-deleted ones)
+        if ($satuan->ingredients()->withTrashed()->exists()) {
+            $this->dispatch('showToast', type: 'error', message: 'Satuan tidak bisa dihapus karena sedang digunakan oleh bahan dapur!');
+            return;
+        }
+
+        $satuan->delete();
         $this->loadSatuan();
 
         $this->dispatch('showToast', type: 'success', message: 'Satuan berhasil dihapus!');
+    }
+
+    public function editSatuan($id)
+    {
+        $satuan = SatuanBahan::findOrFail($id);
+        $this->editSatuanId = $satuan->id;
+        $this->editSatuanNama = $satuan->nama_satuan;
+
+        $this->dispatch('open-modal', name: 'edit-satuan');
+    }
+
+    public function updateSatuan()
+    {
+        $this->validate([
+            'editSatuanNama' => 'required|string|min:2'
+        ]);
+
+        $satuan = SatuanBahan::findOrFail($this->editSatuanId);
+        $satuan->update([
+            'nama_satuan' => $this->editSatuanNama
+        ]);
+
+        $this->loadSatuan();
+        $this->dispatch('close-modal', name: 'edit-satuan');
+        $this->dispatch('showToast', type: 'success', message: 'Satuan berhasil diupdate!');
     }
 
     public function render()

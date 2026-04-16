@@ -1,115 +1,118 @@
 <div>
     <x-toast />
-     @php
+    @php
         // $categoryId = $categoryId ?? null;
         $submit = $menuId ? 'update(' . $menuId . ')' : 'simpan';
         $button = $menuId ? 'Update' : 'Simpan';
     @endphp
     <form wire:submit.prevent="{{ $submit }}" class="grid grid-cols-12 gap-4" enctype="multipart/form-data">
         {{-- Nama Menu --}}
-        <div class="md:col-span-6 col-span-12">
-            <label class="form-label">Nama Menu</label>
-            <input type="text" wire:model="nama_menu" class="form-control" placeholder="Masukkan nama menu" required>
+        <div class="md:col-span-12 col-span-12">
+            <x-ui.input 
+                label="Nama Menu" 
+                wire:model="nama_menu" 
+                placeholder="Masukkan nama menu" 
+                required 
+            />
         </div>
 
         {{-- Kategori --}}
         <div class="md:col-span-6 col-span-12">
-            <label for="categories_id" class="form-label">Kategori</label>
-            <select id="categories_id" wire:model="categories_id"
-                class="form-select w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
-                required>
-                <option value="" class="text-neutral-500">-- Pilih Kategori --</option>
+            <x-ui.select label="Kategori" wire:model="categories_id" required>
+                <option value="">-- Pilih Kategori --</option>
                 @foreach ($category as $item)
-                    <option value="{{ $item->id }}" class="text-neutral-800 dark:text-neutral-200">
-                        {{ $item->nama }}
-                    </option>
+                    <option value="{{ $item->id }}">{{ $item->nama }}</option>
                 @endforeach
-            </select>
-        </div>
-
-
-        {{-- Harga --}}
-        <div class="md:col-span-6 col-span-12">
-            <label class="form-label">Harga Pokok</label>
-            <div class="flex">
-                <span
-                    class="inline-flex items-center px-3 border rounded-e-0 border-e-0 rounded-s-md border-neutral-200 dark:border-neutral-600">
-                    Rp
-                </span>
-                <input type="number" step="0.01" wire:model="h_pokok"
-                    class="form-control grow rounded-ss-none rounded-es-none" placeholder="0.00" required>
-            </div>
-        </div>
-        <div class="md:col-span-6 col-span-12">
-            <label class="form-label">Harga Jual</label>
-            <div class="flex">
-                <span
-                    class="inline-flex items-center px-3 border rounded-e-0 border-e-0 rounded-s-md border-neutral-200 dark:border-neutral-600">
-                    Rp
-                </span>
-                <input type="number" step="0.01" wire:model="harga"
-                    class="form-control grow rounded-ss-none rounded-es-none" placeholder="0.00" required>
-            </div>
-        </div>
-        <div class="md:col-span-6 col-span-12">
-            <label class="form-label">Harga Promo</label>
-            <div class="flex">
-                <span
-                    class="inline-flex items-center px-3 border rounded-e-0 border-e-0 rounded-s-md border-neutral-200 dark:border-neutral-600">
-                    Rp
-                </span>
-                <input type="number" step="0.01" wire:model="h_promo"
-                    class="form-control grow rounded-ss-none rounded-es-none" placeholder="0.00">
-            </div>
+            </x-ui.select>
         </div>
 
         {{-- Status Aktif --}}
         <div class="md:col-span-6 col-span-12">
-            <label class="flex items-center md:mt-10 cursor-pointer">
-                <input type="checkbox" class="sr-only peer" wire:model="is_active" {{ $is_active ? 'checked' : '' }}>
+            <label class="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-2 block">Status Menu</label>
+            <label class="flex items-center h-[50px] cursor-pointer bg-neutral-50 dark:bg-neutral-900 px-4 rounded-2xl">
+                <input type="checkbox" class="sr-only peer" wire:model="is_active">
                 <span
-                    class="relative w-11 h-6 bg-gray-400 peer-focus:outline-none rounded-full peer dark:bg-gray-500 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></span>
-                <span
-                    class="line-height-1 font-medium ms-3 peer-checked:text-primary-600 text-md text-gray-600 dark:text-gray-300">Is
-                    Acitve?</span>
+                    class="relative w-11 h-6 bg-gray-400 peer-focus:outline-none rounded-full peer dark:bg-gray-500 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></span>
+                <span class="line-height-1 font-bold ms-3 {{ $is_active ? 'text-blue-600' : 'text-gray-500' }} text-sm uppercase">
+                    {{ $is_active ? 'Aktif' : 'Non-Aktif' }}
+                </span>
             </label>
+        </div>
+
+        {{-- Harga --}}
+        <div class="md:col-span-4 col-span-12">
+            <x-ui.input 
+                label="Harga Pokok" 
+                type="number" 
+                step="0.01" 
+                wire:model="h_pokok" 
+                prefix="Rp" 
+                placeholder="0.00" 
+                required 
+            />
+        </div>
+        <div class="md:col-span-4 col-span-12">
+            <x-ui.input 
+                label="Harga Jual" 
+                type="number" 
+                step="0.01" 
+                wire:model="harga" 
+                prefix="Rp" 
+                placeholder="0.00" 
+                required 
+            />
+        </div>
+        <div class="md:col-span-4 col-span-12">
+            <x-ui.input 
+                label="Harga Promo" 
+                type="number" 
+                step="0.01" 
+                wire:model="h_promo" 
+                prefix="Rp" 
+                placeholder="0.00" 
+            />
         </div>
 
         {{-- Deskripsi --}}
         <div class="col-span-12">
-            <label class="form-label">Deskripsi</label>
-            <textarea wire:model="deskripsi" class="form-control" rows="3" placeholder="Tuliskan deskripsi menu..."></textarea>
+            <label class="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-2 block">Deskripsi</label>
+            <textarea wire:model="deskripsi" 
+                class="w-full bg-neutral-50 dark:bg-neutral-900 border-0 rounded-2xl px-4 py-3 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500" 
+                rows="3" placeholder="Tuliskan deskripsi menu..."></textarea>
         </div>
 
         {{-- Gambar --}}
-        <div class="md:col-span-6 col-span-12">
-            <label class="form-label">Gambar Menu</label>
-            <div class="upload-image-wrapper flex items-center gap-3">
-                <label
-                    class="upload-file cursor-pointer h-[120px] w-[120px] border input-form-light rounded-lg overflow-hidden border-dashed bg-neutral-50 dark:bg-neutral-600 hover:bg-neutral-200 flex items-center flex-col justify-center gap-1"
-                    for="upload-file">
-                    <iconify-icon icon="solar:camera-outline" class="text-xl text-secondary-light"></iconify-icon>
-                    <span class="font-semibold text-secondary-light">Upload</span>
-                    <input id="upload-file" wire:model="gambar" type="file" hidden>
-                </label>
-
-                <div  wire:ignore.self
-                    class="uploaded-img  hidden relative h-[120px] w-[120px] border input-form-light rounded-lg overflow-hidden border-dashed bg-neutral-50 dark:bg-neutral-600">
-                    <button type="button"
-                        class="uploaded-img__remove absolute top-0 end-0 z-1 text-2xxl line-height-1 me-1 mt-2 flex">
-                        <iconify-icon icon="radix-icons:cross-2" class="text-xl text-danger-600"></iconify-icon>
-                    </button>
-
-                    <img id="uploaded-img__preview" class="w-full h-full object-fit-cover" wire:ignore.self
-                        src="{{ $gambarUrl ?? asset('assets/images/user.png') }}" alt="image">
-
+        <div class="col-span-12">
+            <label class="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-2 block">Gambar Menu</label>
+            <div class="flex items-center gap-4">
+                {{-- Preview Area --}}
+                <div class="relative w-32 h-32 bg-neutral-50 dark:bg-neutral-900 rounded-2xl border-2 border-dashed border-neutral-200 dark:border-neutral-700 overflow-hidden flex items-center justify-center group">
+                    @if($gambarUrl)
+                        <img src="{{ $gambarUrl }}" class="w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                             <iconify-icon icon="lucide:refresh-cw" class="text-white text-xl"></iconify-icon>
+                        </div>
+                    @else
+                        <iconify-icon icon="solar:camera-outline" class="text-3xl text-neutral-300"></iconify-icon>
+                    @endif
+                    <input type="file" wire:model="gambar" class="absolute inset-0 opacity-0 cursor-pointer">
+                </div>
+                
+                <div class="flex flex-col gap-1">
+                    <span class="text-sm font-bold text-neutral-700 dark:text-neutral-300">Upload Photo</span>
+                    <span class="text-xs text-neutral-400 italic">Max size: 1MB (JPG, PNG)</span>
+                    <div wire:loading wire:target="gambar" class="text-xs text-blue-500 font-bold mt-1">
+                        Uploading...
+                    </div>
                 </div>
             </div>
         </div>
 
         {{-- Submit --}}
-        <div class="col-span-12">
-            <button class=" w-full justify-center btn btn-primary-600" type="submit">{{ $button }} Menu</button>
+        <div class="col-span-12 pt-4">
+            <x-ui.button type="submit" class="w-full">
+                {{ $button }} Menu Sekarang
+            </x-ui.button>
         </div>
     </form>
 

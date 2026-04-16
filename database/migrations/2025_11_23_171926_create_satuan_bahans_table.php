@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('satuan_bahans', function (Blueprint $table) {
             $table->id();
             $table->string('nama_satuan');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

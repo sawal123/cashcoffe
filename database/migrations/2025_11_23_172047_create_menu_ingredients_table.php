@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('menu_id')->constrained('menus')->onDelete('cascade');
             $table->foreignId('ingredient_id')->constrained('ingredients')->onDelete('cascade');
             $table->decimal('qty', 10, 2); // jumlah bahan yang dipakai
+            $table->softDeletes();
             $table->timestamps();
         });
     }
