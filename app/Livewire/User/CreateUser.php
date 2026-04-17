@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 class CreateUser extends Component
 {
     // Properti Form
-    public $name, $email, $phone, $password, $role_selected;
+    public $name, $email, $phone, $password, $role_selected, $branch_id;
 
     // Properti Logic Edit
     public $userId = null;
@@ -22,11 +22,21 @@ class CreateUser extends Component
     public function mount($userId = null)
     {
         // dd($userId);
+        // Set default branch_id untuk manager
+        if (!auth()->user()->hasRole('superadmin')) {
+            $this->branch_id = auth()->user()->branch_id;
+        }
+
         // Jika ada ID di URL, berarti Mode Edit
         if ($userId) {
             try {
                 $decodedId = base64_decode($userId);
                 $user = User::findOrFail($decodedId);
+
+                // Audit Role Check: Manager hanya bisa mengedit user di cabangnya sendiri
+                if (!auth()->user()->hasRole('superadmin') && $user->branch_id !== auth()->user()->branch_id) {
+                    abort(403, 'Aksi ditolak. Anda hanya bisa mengelola user di cabang Anda sendiri.');
+                }
 
                 $this->userId = $user->id;
                 $this->isEdit = true;
@@ -35,6 +45,7 @@ class CreateUser extends Component
                 $this->name = $user->name;
                 $this->email = $user->email;
                 $this->phone = $user->phone;
+                $this->branch_id = $user->branch_id;
                 // Password tidak diisi karena terenkripsi
 
                 // Ambil role pertama (karena form kita single select)
@@ -62,6 +73,14 @@ class CreateUser extends Component
                 Rule::unique('users')->ignore($this->userId)
             ],
 
+            'branch_id' => [
+                Rule::requiredIf(function () {
+                    return $this->role_selected !== 'superadmin';
+                }),
+                'nullable',
+                'exists:branches,id'
+            ],
+
             // Password: Wajib saat Create, Nullable (boleh kosong) saat Edit
             'password' => $this->isEdit ? 'nullable|min:6' : 'required|min:6',
         ]);
@@ -74,6 +93,7 @@ class CreateUser extends Component
                 'name'  => $this->name,
                 'email' => $this->email,
                 'phone' => $this->phone,
+                'branch_id' => $this->branch_id,
             ];
 
             // Hanya update password jika input tidak kosong
@@ -94,10 +114,16 @@ class CreateUser extends Component
                 'email'    => $this->email,
                 'phone'    => $this->phone,
                 'password' => Hash::make($this->password),
+                'branch_id' => auth()->user()->hasRole('superadmin') ? $this->branch_id : auth()->user()->branch_id,
             ]);
 
             $user->assignRole($this->role_selected);
             $this->reset(['name', 'email', 'phone', 'password', 'role_selected']);
+            
+            // Re-assign branch_id for manager after reset so it's ready for next input
+            if (!auth()->user()->hasRole('superadmin')) {
+                $this->branch_id = auth()->user()->branch_id;
+            }
 
             $message = 'User berhasil ditambahkan.';
         }
@@ -107,8 +133,17 @@ class CreateUser extends Component
     }
     public function render()
     {
+        $currentUser = auth()->user();
+        $roleQuery = \Spatie\Permission\Models\Role::query();
+        
+        // Audit Role: Manager hanya boleh mengelola role 'kasir'
+        if (!$currentUser->hasRole('superadmin')) {
+            $roleQuery->where('name', 'kasir');
+        }
+
         return view('livewire.user.create-user', [
-            'roles' => Role::all()
+            'roles' => $roleQuery->latest()->get(),
+            'branches' => $currentUser->hasRole('superadmin') ? \App\Models\Branch::all() : []
         ]);
     }
 }

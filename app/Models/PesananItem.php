@@ -25,8 +25,12 @@ class PesananItem extends Model
         return $this->belongsTo(Menu::class, 'menus_id');
     }
 
-    public function varian()
+    /**
+     * Opsi varian yang dipilih untuk item pesanan ini.
+     */
+    public function variants()
     {
-        return $this->belongsTo(MenuVarian::class, 'varian_id');
+        return $this->belongsToMany(VariantOption::class, 'pesanan_item_variants')
+            ->withTimestamps();
     }
 }

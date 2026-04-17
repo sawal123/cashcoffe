@@ -106,17 +106,24 @@
                     </td> --}}
 
                     <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
+                        @hasrole('superadmin')
+                        <a href="{{ route('menu.variants', $item->id) }}" wire:navigate
+                            title="Kelola Varian"
+                            class="w-8 h-8 bg-blue-100 dark:bg-blue-600/25 text-blue-600 dark:text-blue-400 rounded-full inline-flex items-center justify-center mr-1">
+                            <iconify-icon icon="solar:tuning-square-2-linear"></iconify-icon>
+                        </a>
                         <a href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate
                             class="w-8 h-8 bg-success-100 dark:bg-success-600/25 text-success-600 dark:text-success-400 rounded-full inline-flex items-center justify-center">
                             <iconify-icon icon="lucide:edit"></iconify-icon>
                         </a>
-                        @unlessrole('kasir')
                         <button
                             @click="$dispatch('open-modal', {  name: 'confirm-delete',  id: {{ json_encode(base64_encode($item->id)) }} })"
                             class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center">
                             <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
                         </button>
-                        @endunlessrole
+                        @else
+                        <span class="text-xs text-neutral-400 italic">No Action (Centralized)</span>
+                        @endhasrole
                     </td>
                 </tr>
                 @empty

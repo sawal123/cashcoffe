@@ -13,7 +13,7 @@ class StruckController extends Controller
     public function index($id)
     {
         // dd($id);
-        $pesanan = Pesanan::with('items.menu', 'meja')->findOrFail(base64_decode($id));
+        $pesanan = Pesanan::with('items.menu', 'items.variants', 'meja')->findOrFail(base64_decode($id));
         return view('dashboard.struk', compact('pesanan'));
     }
 

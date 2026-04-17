@@ -24,7 +24,7 @@
         x-trap.inert.noscroll="modalIsOpen"
         x-on:keydown.esc.window="modalIsOpen = false" 
         x-on:click.self="modalIsOpen = false"
-        class="fixed inset-0 z-30 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" 
+        class="fixed inset-0 z-[100] flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto" 
         role="dialog"
         aria-modal="true" 
         aria-labelledby="defaultModalTitle">
@@ -33,7 +33,7 @@
             x-transition:enter="transition ease-out duration-200 delay-100"
             x-transition:enter-start="opacity-0 scale-75" 
             x-transition:enter-end="opacity-100 scale-100"
-            class="w-full max-w-md rounded-2xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+            class="w-full max-w-md rounded-2xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800 my-auto">
             
             <div class="flex items-center justify-end border-neutral-200 p-4 dark:border-neutral-700">
                 <button x-on:click="modalIsOpen = false" aria-label="close modal"

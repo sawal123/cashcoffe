@@ -10,8 +10,9 @@ use Livewire\WithFileUploads;
 class Create extends Component
 {
     use WithFileUploads;
-    public $nama_menu, $categories_id, $harga, $is_active = false, $deskripsi, $gambar;
-    public $h_pokok, $h_promo = 0;
+    public $nama_menu, $categories_id, $is_active = false, $deskripsi, $gambar;
+    public $h_pokok;
+    public $tieredPrices = []; // [tier_id => ['harga' => X, 'h_promo' => Y]]
     public $menuId = null, $gambarUrl = null;
 
     public function updatedGambar()
@@ -26,10 +27,11 @@ class Create extends Component
         $this->validate([
             'nama_menu' => 'string|max:255',
             'categories_id' => 'exists:categories,id',
-            'harga' => 'numeric|min:0',
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'gambar' => 'nullable|image|max:1024',
+            'tieredPrices.*.harga' => 'required|numeric|min:0',
+            'tieredPrices.*.h_promo' => 'nullable|numeric|min:0',
         ]);
         // dd($this->gambar);
         try {
@@ -38,16 +40,24 @@ class Create extends Component
                 $gambarPath = $this->gambar->store('menu', 'public');
             }
 
-            Menu::create([
+            $menu = Menu::create([
                 'nama_menu'    => $this->nama_menu,
                 'categories_id' => $this->categories_id,
                 'h_pokok'        => $this->h_pokok,
-                'harga'        => $this->harga,
-                'h_promo'        => $this->h_promo,
                 'is_active'    => $this->is_active ?? false,
                 'deskripsi'    => $this->deskripsi,
                 'gambar'       => $gambarPath,
             ]);
+
+            // Simpan Harga Bertingkat
+            foreach ($this->tieredPrices as $tierId => $priceData) {
+                \App\Models\MenuPrice::create([
+                    'menu_id' => $menu->id,
+                    'price_tier_id' => $tierId,
+                    'harga' => $priceData['harga'] ?? 0,
+                    'h_promo' => $priceData['h_promo'] ?? 0,
+                ]);
+            }
             $this->dispatch('reset-upload');
             $this->dispatch('showToast', message: 'Menu Berhasil Dibuat', type: 'success', title: 'Success');
             $this->resetForm();
@@ -59,13 +69,19 @@ class Create extends Component
 
     public function update()
     {
+        // Security Check
+        if (!auth()->user()->hasRole('superadmin')) {
+            abort(403, 'Aksi ini hanya diperbolehkan untuk Superadmin (Pusat).');
+        }
+
         $this->validate([
             'nama_menu' => 'string|max:255',
             'categories_id' => 'exists:categories,id',
-            'harga' => 'numeric|min:0',
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'gambar' => 'nullable|image|max:1024',
+            'tieredPrices.*.harga' => 'required|numeric|min:0',
+            'tieredPrices.*.h_promo' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -85,11 +101,20 @@ class Create extends Component
                 'nama_menu'    => $this->nama_menu,
                 'categories_id' => $this->categories_id,
                 'h_pokok'        => $this->h_pokok,
-                'harga'        => $this->harga,
-                'h_promo'        => $this->h_promo,
                 'is_active'    => $this->is_active ?? false,
                 'deskripsi'    => $this->deskripsi,
             ]);
+
+            // Sync Harga Bertingkat
+            foreach ($this->tieredPrices as $tierId => $priceData) {
+                \App\Models\MenuPrice::updateOrCreate(
+                    ['menu_id' => $menu->id, 'price_tier_id' => $tierId],
+                    [
+                        'harga' => $priceData['harga'] ?? 0,
+                        'h_promo' => $priceData['h_promo'] ?? 0,
+                    ]
+                );
+            }
             // $this->dispatch('reset-upload');
             $this->dispatch('showToast', message: 'Menu Berhasil Diupdate', type: 'success', title: 'Success');
         } catch (\Exception $e) {
@@ -100,8 +125,14 @@ class Create extends Component
     public $hidden = 'hidden';
     public function mount($menuId = null)
     {
-        // dd($menuId);
-       $this->hidden =  !$this->gambarUrl ? 'hidden' : '';
+        $this->hidden = !$this->gambarUrl ? 'hidden' : '';
+        $tiers = \App\Models\PriceTier::all();
+
+        // Inisialisasi tieredPrices dengan tier yang ada
+        foreach ($tiers as $tier) {
+            $this->tieredPrices[$tier->id] = ['harga' => 0, 'h_promo' => 0];
+        }
+
         if ($menuId) {
             $menu = Menu::find(base64_decode($menuId));
             if ($menu) {
@@ -109,11 +140,20 @@ class Create extends Component
                 $this->nama_menu = $menu->nama_menu;
                 $this->categories_id = $menu->categories_id;
                 $this->h_pokok = (int) $menu->h_pokok;
-                $this->harga = (int) $menu->harga;
-                $this->h_promo =  (int) $menu->h_promo;
                 $this->is_active = (bool) $menu->is_active;
                 $this->deskripsi = $menu->deskripsi;
-                // Set Gambar URL from Storage if exists
+
+                // Load existing prices from menu_prices
+                foreach ($this->tieredPrices as $tierId => $val) {
+                    $mp = $menu->menuPrices()->where('price_tier_id', $tierId)->first();
+                    if ($mp) {
+                        $this->tieredPrices[$tierId] = [
+                            'harga' => (int) $mp->harga,
+                            'h_promo' => (int) $mp->h_promo,
+                        ];
+                    }
+                }
+
                 if ($menu->gambar) {
                     $this->gambarUrl = asset('storage/' . $menu->gambar);
                 }
@@ -126,14 +166,23 @@ class Create extends Component
     {
         $this->nama_menu = '';
         $this->categories_id = '';
-        $this->harga = '';
         $this->is_active = false;
         $this->deskripsi = '';
         $this->gambar = '';
+        $this->h_pokok = '';
+        
+        // Reset tiered prices
+        foreach ($this->tieredPrices as $tierId => $val) {
+            $this->tieredPrices[$tierId] = ['harga' => 0, 'h_promo' => 0];
+        }
     }
     public function render()
     {
         $category = Category::where('is_active', 1)->get();
-        return view('livewire.menu.create', ['category' => $category]);
+        $tiers = \App\Models\PriceTier::all();
+        return view('livewire.menu.create', [
+            'category' => $category,
+            'tiers' => $tiers
+        ]);
     }
 }

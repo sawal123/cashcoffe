@@ -26,46 +26,165 @@ trait HandlesCartInput
 
     public function addPesanan($id)
     {
-        $item = Menu::find($id);
-        $harga = $item->h_promo == '0' ? $item->harga : $item->h_promo;
+        $item = Menu::with(['variantGroups.options'])->find($id);
+        if (!$item) return;
 
-        if (! $item) return;
+        // Mendapatkan Harga berdasarkan Tier Cabang User
+        $user = Auth::user();
+        $priceTierId = $user->branch ? $user->branch->price_tier_id : null;
 
-        if (isset($this->pesanan[$id])) {
-            $this->pesanan[$id]['qty']++;
+        $tieredPrice = \App\Models\MenuPrice::where('menu_id', $id)
+            ->where('price_tier_id', $priceTierId)
+            ->first();
+
+        $harga = ($tieredPrice) 
+            ? (($tieredPrice->h_promo > 0) ? $tieredPrice->h_promo : $tieredPrice->harga)
+            : (($item->h_promo > 0) ? $item->h_promo : $item->harga);
+
+        // Jika menu punya varian, buka modal penyesuaian
+        if ($item->variantGroups->count() > 0) {
+            $this->selectedMenuForVariant = [
+                'id' => $item->id,
+                'nama_menu' => $item->nama_menu,
+                'harga_base' => (int) $harga,
+                'gambar' => $item->gambar,
+                'groups' => $item->variantGroups
+            ];
+            $this->tempSelectedOptions = [];
+            $this->totalExtraPrice = 0;
+            $this->showVariantModal = true;
+            $this->dispatch('open-modal', name: 'variant-modal');
+            $this->dispatch('showToast', message: 'Pilih varian untuk ' . $item->nama_menu, type: 'info', title: 'Penyesuaian Menu');
+            return;
+        }
+
+        // Jika tidak ada varian, tambahkan langsung seperti biasa
+        $cartKey = $id; 
+        if (isset($this->pesanan[$cartKey])) {
+            $this->pesanan[$cartKey]['qty']++;
         } else {
-            $this->pesanan[$id] = [
+            $this->pesanan[$cartKey] = [
                 'id' => $item->id,
                 'nama_menu' => $item->nama_menu,
                 'harga' => (int) $harga,
                 'gambar' => $item->gambar,
                 'qty' => 1,
+                'selected_options' => [],
+                'display_options' => []
             ];
         }
     }
 
-    public function increment($id)
+    public function selectOption($groupId, $optionId, $type = 'single')
     {
-        if ($this->status === 'selesai') return;
-        $this->updateQty($id, 1);
+        if ($type === 'single') {
+            $this->tempSelectedOptions[$groupId] = [$optionId];
+        } else {
+            // Multiple Selection (Add-on)
+            if (!isset($this->tempSelectedOptions[$groupId])) {
+                $this->tempSelectedOptions[$groupId] = [];
+            }
+
+            if (in_array($optionId, $this->tempSelectedOptions[$groupId])) {
+                $this->tempSelectedOptions[$groupId] = array_diff($this->tempSelectedOptions[$groupId], [$optionId]);
+            } else {
+                $this->tempSelectedOptions[$groupId][] = $optionId;
+            }
+        }
+
+        $this->recalculateExtraPrice();
     }
 
-    public function decrement($id)
+    private function recalculateExtraPrice()
     {
-        if ($this->status === 'selesai') return;
-        $this->updateQty($id, -1);
+        $total = 0;
+        foreach ($this->tempSelectedOptions as $groupId => $optionIds) {
+            foreach ($optionIds as $optId) {
+                $option = \App\Models\VariantOption::find($optId);
+                if ($option) {
+                    $total += (int) $option->extra_price;
+                }
+            }
+        }
+        $this->totalExtraPrice = $total;
     }
 
-    private function updateQty($id, $delta)
+    public function confirmVariant()
     {
-        if (! isset($this->pesanan[$id])) return;
+        if (!$this->selectedMenuForVariant) return;
 
-        $newQty = $this->pesanan[$id]['qty'] + $delta;
+        $menu = $this->selectedMenuForVariant;
+        
+        // Validasi: Pastikan semua group yang required sudah dipilih
+        foreach ($menu['groups'] as $group) {
+            if ($group->is_required && (!isset($this->tempSelectedOptions[$group->id]) || empty($this->tempSelectedOptions[$group->id]))) {
+                $this->dispatch('showToast', message: 'Pilih ' . $group->nama_group . ' terlebih dahulu', type: 'warning', title: 'Required');
+                return;
+            }
+        }
+
+        $allOptionIds = [];
+        foreach ($this->tempSelectedOptions as $groupId => $optionIds) {
+            foreach ($optionIds as $optId) {
+                $allOptionIds[] = $optId;
+            }
+        }
+        sort($allOptionIds);
+
+        // Buat slug unik agar Americano Hot & Americano Ice tidak duplikat
+        $optionSlug = count($allOptionIds) > 0 ? '_' . md5(json_encode($allOptionIds)) : '';
+        $cartKey = $menu['id'] . $optionSlug;
+
+        $totalHarga = $menu['harga_base'] + $this->totalExtraPrice;
+
+        if (isset($this->pesanan[$cartKey])) {
+            $this->pesanan[$cartKey]['qty']++;
+        } else {
+            // Ambil nama-nama opsi untuk ditampilkan di UI keranjang
+            $displayOptions = \App\Models\VariantOption::whereIn('id', $allOptionIds)->pluck('nama_opsi')->toArray();
+
+            $this->pesanan[$cartKey] = [
+                'id' => $menu['id'],
+                'nama_menu' => $menu['nama_menu'],
+                'harga' => (int) $totalHarga,
+                'gambar' => $menu['gambar'],
+                'qty' => 1,
+                'selected_options' => $allOptionIds,
+                'display_options' => $displayOptions
+            ];
+        }
+
+        // Close Modal & Reset
+        $this->showVariantModal = false;
+        $this->selectedMenuForVariant = null;
+        $this->tempSelectedOptions = [];
+        $this->totalExtraPrice = 0;
+        $this->dispatch('close-modal', name: 'variant-modal');
+        $this->dispatch('showToast', message: $menu['nama_menu'] . ' berhasil ditambahkan ke pesanan', type: 'success', title: 'Berhasil');
+    }
+
+    public function increment($key)
+    {
+        if ($this->status === 'selesai') return;
+        $this->updateQty($key, 1);
+    }
+
+    public function decrement($key)
+    {
+        if ($this->status === 'selesai') return;
+        $this->updateQty($key, -1);
+    }
+
+    private function updateQty($key, $delta)
+    {
+        if (! isset($this->pesanan[$key])) return;
+
+        $newQty = $this->pesanan[$key]['qty'] + $delta;
 
         if ($newQty > 0) {
-            $this->pesanan[$id]['qty'] = $newQty;
+            $this->pesanan[$key]['qty'] = $newQty;
         } else {
-            unset($this->pesanan[$id]);
+            unset($this->pesanan[$key]);
         }
     }
 

@@ -119,6 +119,20 @@
                 <td class="col-qty">{{ $item->qty }}</td>
                 <td class="col-harga">{{ number_format($item->subtotal) }}</td>
             </tr>
+            {{-- Tampilkan variant jika ada --}}
+            @if ($item->variants->count() > 0)
+                <tr>
+                    <td colspan="3" style="padding-left: 5px; font-size: 10px; color: #555;">
+                        @foreach ($item->variants as $variant)
+                            <div>◦ {{ $variant->nama_opsi }}
+                                @if($variant->extra_price > 0)
+                                    +{{ number_format($variant->extra_price) }}
+                                @endif
+                            </div>
+                        @endforeach
+                    </td>
+                </tr>
+            @endif
         @endforeach
     </table>
 

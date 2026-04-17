@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Traits\BelongsToBranch;
 
 class Ingredients extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, BelongsToBranch;
     protected $guarded = [];
 
     public function menus()

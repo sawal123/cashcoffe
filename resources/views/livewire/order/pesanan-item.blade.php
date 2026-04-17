@@ -133,6 +133,11 @@
                         <p class="text-sm font-bold text-slate-900 dark:text-slate-200 truncate leading-tight mb-0.5">
                             {{ $p['nama_menu'] }}
                         </p>
+                        @if (!empty($p['display_options']))
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                                {{ implode(', ', $p['display_options']) }}
+                            </p>
+                        @endif
                         <span class="text-[13px] font-bold text-blue-600 dark:text-blue-400">
                             Rp {{ number_format($p['harga'], 0, ',', '.') }}
                         </span>
@@ -140,7 +145,7 @@
 
                     <div
                         class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-700 rounded-lg p-1 border border-slate-100 dark:border-slate-600">
-                        <button wire:click="decrement({{ $p['id'] }})" @if ($status === 'selesai') disabled @endif
+                        <button wire:click="decrement('{{ $index }}')" @if ($status === 'selesai') disabled @endif
                             class="w-6 h-6 flex items-center justify-center rounded bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 transition hover:bg-slate-300 {{ $status === 'selesai' ? 'opacity-50 cursor-not-allowed' : '' }}">
                             <iconify-icon icon="lucide:minus" class="text-xs"></iconify-icon>
                         </button>
@@ -149,7 +154,7 @@
                             {{ $p['qty'] }}
                         </span>
 
-                        <button wire:click="increment({{ $p['id'] }})" @if ($status === 'selesai') disabled @endif
+                        <button wire:click="increment('{{ $index }}')" @if ($status === 'selesai') disabled @endif
                             class="w-6 h-6 flex items-center justify-center rounded bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-200 transition hover:bg-slate-300 {{ $status === 'selesai' ? 'opacity-50 cursor-not-allowed' : '' }}">
                             <iconify-icon icon="lucide:plus" class="text-xs"></iconify-icon>
                         </button>

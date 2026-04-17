@@ -96,7 +96,7 @@ class TableUser extends Component
         }
 
         // 5. SECURITY: Cegah Hapus Super Admin (Opsional, sesuaikan nama role)
-        if ($user->hasRole('super-admin')) {
+        if ($user->hasRole('superadmin')) {
             $this->dispatch('close-modal', name: 'confirm-delete');
             $this->dispatch('showToast', type: 'error', message: 'Akun Super Admin dilindungi dan tidak bisa dihapus.');
             return;
@@ -118,14 +118,20 @@ class TableUser extends Component
 
     public function render()
     {
-        $users = User::query()
-            ->with('roles') // <--- Tambahkan ini untuk performa (Eager Loading)
+        $user = auth()->user();
+        $query = User::query()
+            ->with(['roles', 'branch']) // <--- Eager Loading branch
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                     ->orWhere('email', 'like', '%' . $this->search . '%');
-            })
-            ->latest()
-            ->paginate($this->perPage);
+            });
+
+        // Audit Role: JIKA bukan superadmin, hanya boleh lihat user di cabangnya sendiri
+        if (!$user->hasRole('superadmin')) {
+            $query->where('branch_id', $user->branch_id);
+        }
+
+        $users = $query->latest()->paginate($this->perPage);
         $all_roles = Role::latest()->get();
         return view('livewire.user.table-user', [
             'users' => $users,

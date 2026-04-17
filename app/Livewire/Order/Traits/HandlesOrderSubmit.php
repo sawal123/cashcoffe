@@ -18,7 +18,7 @@ trait HandlesOrderSubmit
     {
         $this->orderId = $id;
 
-        $pesanan = Pesanan::with(['items.menu', 'discount'])->findOrFail($id);
+        $pesanan = Pesanan::with(['items.menu', 'items.variants', 'discount'])->findOrFail($id);
         $this->mejas_id = $pesanan->mejas_id;
         $this->metode_pembayaran = $pesanan->metode_pembayaran;
         $this->status = $pesanan->status;
@@ -29,16 +29,21 @@ trait HandlesOrderSubmit
         $this->kembalian = $pesanan->kembalian;
         $this->discount = $pesanan->discount->kode_diskon ?? null;
 
-        
-        // 👉 TAMBAHKAN KODE INI: 
         // Jika ada kode diskon dari DB, otomatis anggap sudah diverifikasi
         if ($this->discount) {
             $this->isDiscountVerified = true;
         }
 
         $this->pesanan = $pesanan->items->mapWithKeys(function ($item) {
+            $optionIds = $item->variants->pluck('id')->toArray();
+            sort($optionIds);
+            
+            // Generate Key yang konsisten dengan sistem cartKey di HandlesCartInput
+            $optionSlug = count($optionIds) > 0 ? '_' . md5(json_encode($optionIds)) : '';
+            $cartKey = $item->menus_id . $optionSlug;
+
             return [
-                $item->menus_id => [
+                $cartKey => [
                     'id' => $item->menus_id,
                     'nama_menu' => $item->menu->nama_menu ?? '',
                     'harga' => (int) $item->harga_satuan,
@@ -46,6 +51,8 @@ trait HandlesOrderSubmit
                     'qty' => $item->qty,
                     'catatan' => $item->catatan_item,
                     'status' => $item->status,
+                    'selected_options' => $optionIds,
+                    'display_options' => $item->variants->pluck('nama_opsi')->toArray(),
                 ],
             ];
         })->toArray();
@@ -108,7 +115,8 @@ trait HandlesOrderSubmit
                 $menu = Menu::find($p['id']);
                 if (!$menu) continue;
 
-                $hargaJual = $menu->h_promo > 0 ? $menu->h_promo : $menu->harga;
+                // Gunakan harga dari cart ($p['harga']) yang sudah include extra price dari varian
+                $hargaJual = $p['harga'];
                 $profitPerItem = ($hargaJual - $menu->h_pokok) * $p['qty'];
 
                 $pesanan->items()->create([
@@ -212,7 +220,8 @@ trait HandlesOrderSubmit
                 $menu = Menu::find($p['id']);
                 if (! $menu) continue;
 
-                $hargaJual = $menu->h_promo > 0 ? $menu->h_promo : $menu->harga;
+                // Gunakan harga dari cart ($p['harga']) yang sudah include extra price dari varian
+                $hargaJual = $p['harga'];
                 $profitPerItem = ($hargaJual - $menu->h_pokok) * $p['qty'];
 
                 $existingItem = $pesanan->items()->where('menus_id', $p['id'])->first();
@@ -225,7 +234,7 @@ trait HandlesOrderSubmit
                         'profit' => ($hargaJual - $menu->h_pokok) * $newQty,
                     ]);
                 } else {
-                    $pesanan->items()->create([
+                    $newItem = $pesanan->items()->create([
                         'menus_id' => $p['id'],
                         'qty' => $p['qty'],
                         'harga_satuan' => $hargaJual,
@@ -233,6 +242,11 @@ trait HandlesOrderSubmit
                         'profit' => $profitPerItem,
                         'catatan_item' => null,
                     ]);
+
+                    // Simpan pilihan varian ke tabel pivot
+                    if (!empty($p['selected_options'])) {
+                        $newItem->variants()->sync($p['selected_options']);
+                    }
                 }
             }
 
@@ -265,16 +279,16 @@ trait HandlesOrderSubmit
                 }
             }
 
-            $totalAfterDiscount = max(0, $total);
+            $totalAfterDiscount = max(0, $total - $discountAmount);
 
             $pesanan->update([
                 'discount_id' => $this->discountId,
                 'nama' => $this->nama_costumer,
                 'discount_value' => $discountAmount,
-                'total' => $totalAfterDiscount,
+                'total' => $total,
                 'total_profit' => $totalProfit,
                 'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
-                'kembalian' => $this->isCash ? $this->uang_tunai - $this->total : 0,
+                'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
             ]);
 
             DB::commit();
@@ -292,10 +306,11 @@ trait HandlesOrderSubmit
                 $this->dispatch('open-modal', name: 'order-success');
             }
         } catch (\Exception $e) {
-            DB::rollBack();
-            $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
+                DB::rollBack();
+                $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
         }
     }
+    
 
     private function reduceStock(Pesanan $pesanan)
     {

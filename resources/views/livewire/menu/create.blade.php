@@ -39,10 +39,10 @@
             </label>
         </div>
 
-        {{-- Harga --}}
-        <div class="md:col-span-4 col-span-12">
+        {{-- Harga Pokok (Global) --}}
+        <div class="md:col-span-12 col-span-12">
             <x-ui.input 
-                label="Harga Pokok" 
+                label="Harga Pokok (Produksi)" 
                 type="number" 
                 step="0.01" 
                 wire:model="h_pokok" 
@@ -51,26 +51,40 @@
                 required 
             />
         </div>
-        <div class="md:col-span-4 col-span-12">
-            <x-ui.input 
-                label="Harga Jual" 
-                type="number" 
-                step="0.01" 
-                wire:model="harga" 
-                prefix="Rp" 
-                placeholder="0.00" 
-                required 
-            />
-        </div>
-        <div class="md:col-span-4 col-span-12">
-            <x-ui.input 
-                label="Harga Promo" 
-                type="number" 
-                step="0.01" 
-                wire:model="h_promo" 
-                prefix="Rp" 
-                placeholder="0.00" 
-            />
+
+        {{-- Section: Harga Per Tier --}}
+        <div class="col-span-12 mt-4">
+            <h4 class="text-md font-bold text-neutral-800 dark:text-neutral-200 mb-4 border-b pb-2 flex items-center gap-2">
+                <iconify-icon icon="solar:tag-price-bold-duotone" class="text-xl text-blue-500"></iconify-icon>
+                Pengaturan Harga Jual (Berdasarkan Tier)
+            </h4>
+            <div class="grid grid-cols-12 gap-6">
+                @foreach ($tiers as $tier)
+                    <div class="md:col-span-12 lg:col-span-6 col-span-12 p-4 bg-neutral-100 dark:bg-neutral-800/50 rounded-2xl border border-neutral-200 dark:border-neutral-700">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="font-bold text-neutral-700 dark:text-neutral-300">{{ $tier->nama_tier }}</span>
+                            <span class="text-[10px] px-2 py-1 bg-blue-100 text-blue-600 rounded-lg font-bold">POS ACTIVE</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <x-ui.input 
+                                label="Harga Jual" 
+                                type="number" 
+                                wire:model="tieredPrices.{{ $tier->id }}.harga" 
+                                prefix="Rp" 
+                                placeholder="0" 
+                                required 
+                            />
+                            <x-ui.input 
+                                label="Harga Promo" 
+                                type="number" 
+                                wire:model="tieredPrices.{{ $tier->id }}.h_promo" 
+                                prefix="Rp" 
+                                placeholder="0" 
+                            />
+                        </div>
+                    </div>
+                @endforeach
+            </div>
         </div>
 
         {{-- Deskripsi --}}

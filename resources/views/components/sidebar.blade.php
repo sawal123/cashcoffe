@@ -72,26 +72,23 @@
                 </a>
             </li>
 
+            @role('superadmin')
             <li>
                 <a href="/menu" wire:navigate>
                     <iconify-icon icon="solar:book-broken" class="menu-icon"></iconify-icon>
                     <span>Menu</span>
                 </a>
             </li>
+            @endrole
 
+            @unlessrole(['kasir','superadmin'])
             <li>
-                <a href="/menu-ingredient" wire:navigate>
-                    <iconify-icon icon="solar:chef-hat-broken" class="menu-icon"></iconify-icon>
-                    <span>Kompisi Menu</span>
+                <a href="/menu-cabang" wire:navigate>
+                    <iconify-icon icon="solar:checklist-minimalistic-broken" class="menu-icon"></iconify-icon>
+                    <span>Ketersediaan Menu</span>
                 </a>
             </li>
-
-            <li>
-                <a href="/category" wire:navigate>
-                    <iconify-icon icon="solar:tag-broken" class="menu-icon"></iconify-icon>
-                    <span>Category</span>
-                </a>
-            </li>
+            @endunlessrole
 
 
             <li class="menu-title">
@@ -114,6 +111,7 @@
                 </a>
             </li>
 
+            @unlessrole('kasir')
             <li>
                 <a href="/omset" wire:navigate>
                     <iconify-icon icon="solar:graph-up-bold" class="menu-icon"></iconify-icon>
@@ -127,73 +125,120 @@
                     <span>Pengeluaran</span>
                 </a>
             </li>
+            @endunlessrole
 
+            @role('superadmin')
+            <li>
+                <a href="/discount" wire:navigate>
+                    <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
+                    <span>Discount</span>
+                </a>
+            </li>
+            @endrole
             @unlessrole('kasir')
-                <li>
-                    <a href="/discount" wire:navigate>
-                        <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
-                        <span>Discount</span>
-                    </a>
-                </li>
-                <!-- GROUP: Gudang -->
-                <li class="menu-title">
-                    <a href="#" class="menu-title-link" onclick="return false;">
-                        <span class="color">Gudang</span>
-                    </a>
+            <!-- GROUP: Gudang -->
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">Gudang</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/stock-dapur" wire:navigate>
-                        <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
-                        <span>Stock Dapur</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/stock-dapur" wire:navigate>
+                    <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
+                    <span>Stock Dapur</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/riwayat-stock" wire:navigate>
-                        <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
-                        <span>Riwayat Stock</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/riwayat-stock" wire:navigate>
+                    <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
+                    <span>Riwayat Stock</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/gudang" wire:navigate>
-                        <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
-                        <span>Gudang</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/gudang" wire:navigate>
+                    <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
+                    <span>Gudang</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/riwayat-gudang" wire:navigate>
-                        <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
-                        <span>Riwayat Gudang</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/riwayat-gudang" wire:navigate>
+                    <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
+                    <span>Riwayat Gudang</span>
+                </a>
+            </li>
             @endunlessrole
             <!-- GROUP: User -->
             @unlessrole('kasir')
-                <li class="menu-title">
-                    <a href="#" class="menu-title-link" onclick="return false;">
-                        <span class="color">Absensi</span>
-                    </a>
-                <li>
-                    <a href="/absense" wire:navigate>
-                        <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
-                        <span>Absensi</span>
-                    </a>
-                </li>
-
-
-                <li class="menu-title">
-                    <a href="#" class="menu-title-link" onclick="return false;">
-                        <span class="color">User Management</span>
-                    </a>
-                <li>
-                    <a href="/user" wire:navigate>
-                        <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
-                        <span>User</span>
-                    </a>
-                </li>
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">Absensi</span>
+                </a>
+            </li>
+            <li>
+                <a href="/absense" wire:navigate>
+                    <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
+                    <span>Absensi</span>
+                </a>
+            </li>
             @endunlessrole
+
+
+            @role('superadmin')
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">User Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="/user" wire:navigate>
+                    <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
+                    <span>User</span>
+                </a>
+            </li>
+            @endrole
+
+            @role('superadmin')
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">Konfigurasi</span>
+                </a>
+            </li>
+            <li>
+                <a href="/category" wire:navigate>
+                    <iconify-icon icon="solar:tag-broken" class="menu-icon"></iconify-icon>
+                    <span>Category</span>
+                </a>
+            </li>
+            <li>
+                <a href="/variant-group" wire:navigate>
+                    <iconify-icon icon="solar:tuning-square-2-linear" class="menu-icon"></iconify-icon>
+                    <span>Varian</span>
+                </a>
+            </li>
+            <li>
+                <a href="/menu-ingredient" wire:navigate>
+                    <iconify-icon icon="solar:chef-hat-broken" class="menu-icon"></iconify-icon>
+                    <span>Komposisi Menu</span>
+                </a>
+            </li>
+            <li>
+                <a href="/price-tier" wire:navigate>
+                    <iconify-icon icon="solar:tag-price-bold" class="menu-icon"></iconify-icon>
+                    <span>Tier Harga</span>
+                </a>
+            </li>
+            <li>
+                <a href="/branch" wire:navigate>
+                    <iconify-icon icon="solar:shop-bold" class="menu-icon"></iconify-icon>
+                    <span>Cabang</span>
+                </a>
+            </li>
+            @endrole
+
             <hr class="my-4 opacity-50">
             <li>
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" class="hidden">

@@ -13,6 +13,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        // dd("tes");
         $omset = Pesanan::where('status', 'selesai')
             ->where('metode_pembayaran', '!=', 'komplemen')
             ->whereDate('created_at', Carbon::today())
@@ -31,25 +32,25 @@ class DashboardController extends Controller
             [
                 'title' => 'Total Orders',
                 'value' => $totalOrder,
-                'icon'  => 'gridicons:multiple-users',
+                'icon' => 'gridicons:multiple-users',
                 'color' => 'bg-blue-600',
             ],
             [
                 'title' => 'Menu Terjual',
                 'value' => $sellMenu,
-                'icon'  => 'fa-solid:award',
+                'icon' => 'fa-solid:award',
                 'color' => 'bg-cyan-600',
             ],
             [
                 'title' => 'Belum Bayar',
                 'value' => $proses,
-                'icon'  => 'solar:wallet-bold',
+                'icon' => 'solar:wallet-bold',
                 'color' => 'bg-success-600',
             ],
             [
                 'title' => 'Omset',
                 'value' => "Rp" . number_format($omset, 0, ',', '.'),
-                'icon'  => 'fa6-solid:file-invoice-dollar',
+                'icon' => 'fa6-solid:file-invoice-dollar',
                 'color' => 'bg-purple-600',
             ],
         ];
@@ -68,11 +69,13 @@ class DashboardController extends Controller
             ->orderBy('tanggal', 'asc')
             ->get();
         // dd($omsetPerTanggal);
-        $menuTerlaris = Menu::withSum(['pesananItems as jumlah_terjual' => function ($q) {
-            $q->whereHas('pesanan', function ($p) {
-                $p->where('status', 'selesai');
-            });
-        }], 'qty')
+        $menuTerlaris = Menu::withSum([
+            'pesananItems as jumlah_terjual' => function ($q) {
+                $q->whereHas('pesanan', function ($p) {
+                    $p->where('status', 'selesai');
+                });
+            }
+        ], 'qty')
             ->orderByDesc('jumlah_terjual')
             ->limit(10)
             ->get();

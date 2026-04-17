@@ -85,8 +85,28 @@
                         @enderror
                     </div>
 
+                    {{-- BRANCH --}}
+                    @if(auth()->user()->hasRole('superadmin'))
+                    <div class="md:col-span-12 col-span-12">
+                        <label class="form-label block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                            Penempatan Cabang <span class="text-red-500">*</span>
+                        </label>
+                        <select wire:model="branch_id"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200 focus:ring-primary-500 focus:border-primary-500 transition">
+                            <option value="">-- Pilih Cabang --</option>
+                            @foreach ($branches as $branch)
+                                <option value="{{ $branch->id }}">{{ $branch->nama_cabang }} ({{ $branch->kode_cabang }})</option>
+                            @endforeach
+                        </select>
+                        <p class="text-[10px] text-neutral-400 mt-1">*Pilih cabang tempat user ini akan bertugas.</p>
+                        @error('branch_id')
+                            <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    @endif
+
                     {{-- ROLE --}}
-                    <div class="md:col-span-6 col-span-12">
+                    <div class="md:col-span-12 col-span-12">
                         <label class="form-label block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
                             Role Access <span class="text-red-500">*</span>
                         </label>

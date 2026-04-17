@@ -87,6 +87,11 @@
                         Email
                     </th>
 
+                    {{-- Cabang --}}
+                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
+                        Cabang
+                    </th>
+
                     {{-- Role --}}
                     <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
                         Role
@@ -132,6 +137,19 @@
                         <td
                             class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-neutral-600 dark:text-neutral-400">
                             {{ $user->email }}
+                        </td>
+
+                        {{-- Cabang --}}
+                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
+                            @if ($user->branch)
+                                <span class="px-2 py-1 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                                    {{ $user->branch->nama_cabang }}
+                                </span>
+                            @else
+                                <span class="px-2 py-1 text-[10px] font-bold rounded-lg bg-neutral-100 text-neutral-500 border border-neutral-200 uppercase">
+                                    HQ / PUSAT
+                                </span>
+                            @endif
                         </td>
 
                         {{-- Role --}}

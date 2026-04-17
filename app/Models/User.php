@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -24,6 +23,7 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'branch_id',
     ];
 
     /**
@@ -57,7 +57,12 @@ class User extends Authenticatable
         return $this->hasMany(Pesanan::class, 'user_id');
     }
     public function absensis()
-{
-    return $this->hasMany(Absensi::class);
-}
+    {
+        return $this->hasMany(Absensi::class);
+    }
+    
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
 }

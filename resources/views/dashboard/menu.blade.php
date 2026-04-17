@@ -10,7 +10,9 @@
                     <div class="xl:col-span-12 2xl:col-span-12">
                         <div class="card-body p-6">
                            <div class="flex justify-end">
+                             @hasrole('superadmin')
                              <x-a url='/menu/create' active='blue' wire:navigate>+ Tambah Menu</x-a>
+                             @endhasrole
                            </div>
                             <livewire:menu.table-menu>
                         </div>

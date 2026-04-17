@@ -1,33 +1,37 @@
 <?php
 
-use Illuminate\Http\Request;
 use App\Exports\OrdersExport;
 use App\Http\Controllers\AbsenseController;
-use App\Livewire\Absensi\Home;
-use App\Livewire\Absensi\Login;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
-use Maatwebsite\Excel\Facades\Excel;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\BranchMenuController;
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiscountController;
+use App\Http\Controllers\GudangController;
+use App\Http\Controllers\ManageMenuVariantController;
 use App\Http\Controllers\MejaController;
+use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MenuController;
-use App\Http\Controllers\UserController;
+use App\Http\Controllers\MenuIngredientController;
 use App\Http\Controllers\OmsetController;
 use App\Http\Controllers\OrderController;
-use App\Http\Controllers\GudangController;
-use App\Http\Controllers\MemberController;
-use App\Http\Controllers\StruckController;
-use App\Http\Controllers\CategoryController;
-use App\Http\Controllers\DiscountController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\TransaksiController;
-use App\Http\Controllers\StockDapurController;
 use App\Http\Controllers\PengeluaranController;
-use App\Http\Controllers\RiwayatStockController;
+use App\Http\Controllers\PriceTierController;
 use App\Http\Controllers\RiwayatGudangController;
-use App\Http\Controllers\MenuIngredientController;
+use App\Http\Controllers\RiwayatStockController;
+use App\Http\Controllers\StockDapurController;
+use App\Http\Controllers\StruckController;
+use App\Http\Controllers\TransaksiController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\VariantGroupController;
 use App\Livewire\Absensi\ClockIn as AbsensiClockIn;
-
+use App\Livewire\Absensi\Home;
+use App\Livewire\Absensi\Login;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Facades\Excel;
 
 Route::view('/', 'welcome');
 
@@ -45,7 +49,7 @@ Route::prefix('absen')
         Route::get('/clock-in', AbsensiClockIn::class)->name('clock.in');
     });
 
-Route::middleware(['auth', 'role:kasir|admin'])->group(function () {
+Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () {
     Route::controller(DashboardController::class)->group(function () {
         Route::get('/dashboard', 'index')->name('dashboard.index');
     });
@@ -53,7 +57,6 @@ Route::middleware(['auth', 'role:kasir|admin'])->group(function () {
     Route::resource('menu', MenuController::class);
     Route::resource('order', OrderController::class);
     Route::resource('meja', MejaController::class);
-    Route::resource('category', CategoryController::class);
     Route::resource('discount', DiscountController::class);
     Route::resource('gudang', GudangController::class);
     Route::resource('member', MemberController::class);
@@ -63,7 +66,6 @@ Route::middleware(['auth', 'role:kasir|admin'])->group(function () {
     Route::resource('riwayat-gudang', RiwayatGudangController::class);
     Route::resource('stock-dapur', StockDapurController::class);
     Route::resource('riwayat-stock', RiwayatStockController::class);
-    Route::resource('menu-ingredient', MenuIngredientController::class);
     Route::resource('absense', AbsenseController::class);
     Route::resource('user', UserController::class);
     // Route::get('stock-dapur/add', [StockDapurController::class, 'add'])->name('stock-dapur.add');
@@ -72,9 +74,20 @@ Route::middleware(['auth', 'role:kasir|admin'])->group(function () {
     Route::get('/orders/export', function () {
         return Excel::download(new OrdersExport, 'laporan-orders.xlsx');
     })->name('orders.export');
-    Route::middleware(['role:admin'])->group(function () {});
-});
 
+    Route::middleware(['role:superadmin'])->group(function () {
+        Route::resource('branch', BranchController::class);
+        Route::resource('price-tier', PriceTierController::class);
+        Route::resource('category', CategoryController::class);
+        Route::resource('menu-ingredient', MenuIngredientController::class);
+        Route::resource('variant-group', VariantGroupController::class);
+        Route::get('/menu/{id}/variants', [ManageMenuVariantController::class, 'show'])->name('menu.variants');
+    });
+
+    Route::middleware(['role:manager'])->group(function () {
+        Route::resource('menu-cabang', BranchMenuController::class);
+    });
+});
 
 // routes/web.php
 
@@ -84,22 +97,20 @@ Route::post('/logout', function () {
     return redirect('/login');
 })->name('logout');
 
-require __DIR__ . '/auth.php';
-
-
+require __DIR__.'/auth.php';
 
 Route::get('/reverse-geocode', function (Request $request) {
 
     if (! $request->lat || ! $request->lon) {
         return response()->json([
-            'error' => 'Latitude & longitude wajib'
+            'error' => 'Latitude & longitude wajib',
         ], 400);
     }
 
-    $url = "https://nominatim.openstreetmap.org/reverse";
+    $url = 'https://nominatim.openstreetmap.org/reverse';
 
     $response = Http::withHeaders([
-        'User-Agent' => 'absensi-app/1.0 (admin@localhost)'
+        'User-Agent' => 'absensi-app/1.0 (admin@localhost)',
     ])->get($url, [
         'format' => 'json',
         'lat' => $request->lat,
