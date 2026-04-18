@@ -47,7 +47,11 @@ class PengeluaranController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        return view('dashboard.pengeluaran.pengeluaran-create', [
+            'pengeluaranId' => $id,
+            'title' => 'Pengeluaran / Edit',
+            'url' => $this->url,
+        ]);
     }
 
     /**

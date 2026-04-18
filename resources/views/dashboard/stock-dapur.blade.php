@@ -13,7 +13,7 @@
                                 <x-a url='/riwayat-stock/create' active='blue' wire:navigate>+ Tambah Stock</x-a>
                                 <x-a url='/stock-dapur/create' active='secondary' wire:navigate>+ Tambah Bahan</x-a>
                             </div>
-                            <livewire:stock.stock-dapur  />
+                            <livewire:stock.stock-dapur />
                         </div>
                     </div>
                 </div>

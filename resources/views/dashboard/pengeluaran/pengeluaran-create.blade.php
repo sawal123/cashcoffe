@@ -13,7 +13,7 @@
                 <div class="grid grid-cols-1 2xl:grid-cols-12">
                     <div class="xl:col-span-12 2xl:col-span-12">
                         <div class="card-body">
-                            <livewire:pengeluaran.create :order-id="$pengeluaranId" />
+                            <livewire:pengeluaran.create :pengeluaran-id="$pengeluaranId" />
                         </div>
                     </div>
                 </div>

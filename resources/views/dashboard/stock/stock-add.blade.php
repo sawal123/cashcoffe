@@ -9,7 +9,15 @@
     </div>
     <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
         <div class="md:col-span-12 2xl:col-span-12">
-            <livewire:stock.stock-add :stock-id="$stockId" :submit="$submit" />
+            <div class="card rounded-lg border-0">
+                <div class="grid grid-cols-1 2xl:grid-cols-12">
+                    <div class="xl:col-span-12 2xl:col-span-12">
+                        <div class="card-body">
+                            <livewire:stock.stock-add :stock-id="$stockId" :submit="$submit" />
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </x-app-layout>

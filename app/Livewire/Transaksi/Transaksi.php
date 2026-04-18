@@ -198,9 +198,9 @@ class Transaksi extends Component
         $this->dispatch('close-modal', name: 'edit-status-order');
         $id = base64_decode($encodedId);
         $this->detailOrder = Pesanan::with([
-            'items:id,pesanans_id,menus_id,varian_id,qty,harga_satuan,subtotal',
+            'items:id,pesanans_id,menus_id,qty,harga_satuan,subtotal',
             'items.menus:id,nama_menu',
-            'items.varian:id,nama_varian',
+            'items.variants',
         ])->findOrFail($id);
 
         $this->selectedOrderItems = $this->detailOrder->items;

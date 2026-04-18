@@ -17,7 +17,7 @@ class RiwayatStock extends Component
     public $filterType = 'semua';
     public $selectedId;
 
-    protected $queryString = ['search', 'filterType', 'perPage',  'tanggal' => ['except' => ''],];
+    protected $queryString = ['search', 'filterType', 'perPage', 'tanggal' => ['except' => ''],];
 
     public function updatingSearch()
     {
@@ -58,7 +58,7 @@ class RiwayatStock extends Component
         $this->dispatch('showToast', type: 'success', message: 'Riwayat berhasil dihapus');
     }
     public $tanggal;
-   
+
     public function mount()
     {
         $this->tanggal = request()->query('tanggal')
@@ -72,8 +72,11 @@ class RiwayatStock extends Component
     {
         $riwayats = ModelsRiwayatStock::with('ingredient')
             ->when($this->search, function ($q) {
-                $q->whereHas('ingredient', function ($s) {
-                    $s->where('nama_bahan', 'like', '%' . $this->search . '%');
+                $q->where(function ($sub) {
+                    $sub->where('kode', 'like', '%' . $this->search . '%')
+                        ->orWhereHas('ingredient', function ($s) {
+                            $s->where('nama_bahan', 'like', '%' . $this->search . '%');
+                        });
                 });
             })
             ->when($this->filterType !== 'semua', function ($q) {
