@@ -284,6 +284,15 @@ class CreateOrder extends Component
 
         $this->kembalian = $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0;
 
+        $availableDiscounts = Discount::where('is_active', true)
+            ->whereDate('tanggal_mulai', '<=', now())
+            ->whereDate('tanggal_akhir', '>=', now())
+            ->where(function ($q) use ($user) {
+                $q->where('scope', 'global')
+                    ->orWhere('branch_id', $user->branch_id);
+            })
+            ->get();
+
         return view('livewire.order.create-order', [
             'menus' => $menus,
             'orderId' => $this->orderId,
@@ -300,6 +309,7 @@ class CreateOrder extends Component
             'isMember' => $cekMember !== null,
             'memberFavorites' => $memberFavorites,
             'memberPoints' => $cekMember ? $cekMember->points : 0,
+            'availableDiscountsList' => $availableDiscounts,
         ]);
     }
 }

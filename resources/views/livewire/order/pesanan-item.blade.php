@@ -154,7 +154,7 @@
                             <button wire:click="decrement('{{ $index }}')"
                                 @if ($status === 'selesai') disabled @endif
                                 class="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-red-600 hover:text-white hover:border-red-600 transition shadow-sm active:scale-90">
-                                <iconify-icon icon="mingcute:minus-line" class="text-sm"></iconify-icon>
+                                <iconify-icon icon="mingcute:minimize-line" class="text-sm"></iconify-icon>
                             </button>
                         </div>
                     </li>
@@ -257,9 +257,39 @@
                             <iconify-icon icon="mingcute:ticket-line" class="text-3xl"></iconify-icon>
                         </div>
                         <h3 class="text-xl font-black text-neutral-900 dark:text-white mb-2">Gunakan Voucher</h3>
-                        <p class="text-sm text-neutral-500 mb-6">Masukkan kode promo untuk mendapatkan diskon.</p>
+                        <p class="text-sm text-neutral-500 mb-6">Masukkan kode promo atau pilih dari daftar.</p>
                         <x-ui.input wire:model.live.debounce.500ms="discount" placeholder="KODEPROMO2024"
                             :readonly="$status === 'selesai'" />
+
+                        {{-- Available Vouchers List --}}
+                        @if ($status !== 'selesai' && isset($availableDiscountsList) && $availableDiscountsList->count() > 0)
+                            <div class="mt-4 mb-2 flex items-center gap-2">
+                                <span class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Voucher Tersedia</span>
+                                <div class="h-px flex-1 bg-neutral-100 dark:bg-neutral-700"></div>
+                            </div>
+                            <div class="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                                @foreach ($availableDiscountsList as $v)
+                                    <button type="button" 
+                                        wire:click="$set('discount', '{{ $v->kode_diskon }}')"
+                                        class="w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left group
+                                            {{ $discount === $v->kode_diskon 
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
+                                                : 'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-900 hover:bg-white dark:hover:bg-neutral-800' }}">
+                                        <div>
+                                            <span class="block text-[11px] font-black uppercase tracking-tight {{ $discount === $v->kode_diskon ? 'text-white' : 'text-neutral-900 dark:text-white' }}">{{ $v->nama_diskon }}</span>
+                                            <span class="text-[9px] font-bold {{ $discount === $v->kode_diskon ? 'text-blue-100' : 'text-neutral-400' }}">Kode: {{ $v->kode_diskon }}</span>
+                                        </div>
+                                        <div class="text-xs font-black {{ $discount === $v->kode_diskon ? 'text-white' : 'text-blue-600 dark:text-blue-400' }}">
+                                            @if($v->jenis_diskon === 'persentase')
+                                                {{ (int)$v->nilai_diskon }}%
+                                            @else
+                                                Rp{{ number_format($v->nilai_diskon, 0, ',', '.') }}
+                                            @endif
+                                        </div>
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
 
                         <div class="mt-4 mb-6">
                             @if ($discMessage && $status !== 'selesai')
