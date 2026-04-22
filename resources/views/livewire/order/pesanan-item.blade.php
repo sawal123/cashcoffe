@@ -78,7 +78,7 @@
     @endif
 
     <div id="pesan"
-        class="bg-white dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-[2.5rem] shadow-2xl p-6 h-fit max-h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar transition-all duration-300 relative"
+        class="bg-white dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl p-6 h-fit max-h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar transition-all duration-300 relative"
         :class="showCartMobile ? 'mobile-fullscreen-cart' : 'mobile-hide-cart'">
 
         {{-- Header Cart --}}
@@ -193,7 +193,7 @@
                             $icon = 'mingcute:wallet-line';
                         }
                         if (strtolower($pay) == 'qris') {
-                            $icon = 'mingcute:qr-code-line';
+                            $icon = 'mingcute:qrcode-line';
                         }
                         if (strtolower($pay) == 'transfer') {
                             $icon = 'mingcute:transfer-line';
@@ -227,11 +227,19 @@
                     class="text-xs font-bold uppercase tracking-widest group-hover:text-neutral-900 dark:group-hover:text-white">Voucher</span>
             </button>
             <button type="button" @click="openModal = 'member'"
-                class="flex items-center justify-center gap-2 h-12 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 hover:border-blue-200 transition-all shadow-sm group">
+                class="relative flex items-center justify-center gap-2 h-12 rounded-2xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-100 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800 hover:border-blue-200 transition-all shadow-sm group">
                 <iconify-icon icon="mingcute:user-star-line"
                     class="text-lg text-neutral-400 group-hover:text-blue-600"></iconify-icon>
                 <span
                     class="text-xs font-bold uppercase tracking-widest group-hover:text-neutral-900 dark:group-hover:text-white">Member</span>
+
+                @if(isset($isMember) && $isMember && isset($memMessage))
+                    @php
+                        preg_match('/\((.*?)\)/', $memMessage, $matches);
+                        $badgeName = $matches[1] ?? 'Verified';
+                    @endphp
+                    <span class="absolute -bottom-2 bg-green-100 text-green-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border border-green-200 shadow-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[90%]">{{ $badgeName }}</span>
+                @endif
             </button>
 
             {{-- Voucher/Member Selection Popups --}}
@@ -263,7 +271,7 @@
                             @endif
                         </div>
 
-                        @if (isset($disc) && $disc['type'] === 'private' && !$isDiscountVerified)
+                        @if (isset($disc) && $disc['type'] === 'private' && !$isDiscountVerified && !isset($isMember) || (isset($disc) && $disc['type'] === 'private' && !$isDiscountVerified && isset($isMember) && !$isMember))
                             <x-ui.button
                                 wire:click="$dispatch('open-modal', { name: 'verify-discount-modal' }); openModal = null"
                                 class="w-full !py-4">Otorisasi Diskon</x-ui.button>
@@ -282,11 +290,34 @@
                         <x-ui.input wire:model.live="member" placeholder="0812xxxx" :readonly="$status === 'selesai'" />
 
                         <div class="mt-4 mb-6">
-                            @if ($memMessage)
-                                <div class="flex items-center gap-2 text-green-600">
-                                    <iconify-icon icon="mingcute:check-circle-line" class="text-lg"></iconify-icon>
+                            @if (isset($memMessage) && $memMessage)
+                                <div class="flex items-center gap-2 {{ str_contains($memMessage, 'Tersedia') ? 'text-green-600' : 'text-amber-600' }}">
+                                    <iconify-icon icon="mingcute:information-line" class="text-lg"></iconify-icon>
                                     <span class="text-[11px] font-bold">{{ $memMessage }}</span>
                                 </div>
+                                
+                                {{-- Menampilkan Poin dan Favorit Member --}}
+                                @if(isset($isMember) && $isMember)
+                                <div class="mt-4 p-4 bg-green-50 rounded-2xl border border-green-100">
+                                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-green-200">
+                                        <span class="text-xs font-bold text-green-800">Total Poin:</span>
+                                        <span class="text-lg font-black text-green-600">{{ $memberPoints ?? 0 }} pts</span>
+                                    </div>
+                                    @if(isset($memberFavorites) && $memberFavorites->count() > 0)
+                                        <p class="text-[11px] font-bold text-green-700 mb-2 uppercase tracking-wide">Menu Favorit:</p>
+                                        <ul class="space-y-1">
+                                            @foreach($memberFavorites as $fav)
+                                            <li class="text-xs text-green-900 flex justify-between items-center bg-white rounded-lg px-2 py-1 shadow-sm">
+                                                <span>{{ $fav->menu->nama_menu ?? 'Unknown' }}</span>
+                                                <span class="font-bold text-green-600 px-1">{{ $fav->total_qty }}x</span>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    @else
+                                        <p class="text-xs text-green-600 italic">Belum ada riwayat pesanan.</p>
+                                    @endif
+                                </div>
+                                @endif
                             @endif
                         </div>
                         <x-ui.button @click="openModal = null" color="purple" class="w-full !py-4">Verifikasi
@@ -300,7 +331,7 @@
         @if (
             $status !== 'selesai' &&
                 $discount &&
-                ($disc === null || $disc['type'] === 'general' || ($disc['type'] === 'private' && $isDiscountVerified)))
+                ($disc === null || $disc['type'] === 'general' || ($disc['type'] === 'private' && ($isDiscountVerified || (isset($isMember) && $isMember)))))
             <div
                 class="flex items-center justify-between p-3 mb-6 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-2xl animate-pulse-slow">
                 <div class="flex items-center gap-2">

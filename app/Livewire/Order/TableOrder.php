@@ -61,6 +61,19 @@ class TableOrder extends Component
 
         // 🔥 Jika status baru saja berubah jadi selesai
         if ($pesanan->status === 'selesai') {
+            
+            // LOGIKA POINTS: Tambah poin ke member
+            if ($pesanan->member_id) {
+                // total_after_discount calculation:
+                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
+                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
+                
+                $member = \App\Models\Member::find($pesanan->member_id);
+                if ($member) {
+                    $member->increment('points', $earnedPoints);
+                    $member->increment('total_pengeluaran', $totalAfterDiscount);
+                }
+            }
 
             // 1. PERBAIKAN DISKON: Gunakan increment() agar aman & menghindari error null
             // if ($pesanan->discount_id && $pesanan->discount) {

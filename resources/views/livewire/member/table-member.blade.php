@@ -41,6 +41,7 @@
                 </td>
                 <td class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
+                        <x-ui.action-detail wire:click="viewMemberDetails('{{ base64_encode($item->id) }}')" /> 
                         <x-ui.action-edit href="/member/{{ base64_encode($item->id) }}/edit" wire:navigate />
                         <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
                     </div>
@@ -83,6 +84,61 @@
                     Ya, Hapus
                 </x-ui.button>
             </div>
+        </div>
+    </x-mdal>
+
+    {{-- Modal Detail Member --}}
+    <x-mdal name="detail-member-modal">
+        <div class="px-6 py-6 border-b border-neutral-100 dark:border-neutral-700 flex justify-between items-center bg-neutral-50 rounded-t-[2.5rem]">
+            <h3 class="text-xl font-black text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
+                <iconify-icon icon="mingcute:user-star-line" class="text-blue-600 text-2xl"></iconify-icon>
+                Detail & Poin Member
+            </h3>
+            <button type="button" x-on:click="$dispatch('close-modal', { name: 'detail-member-modal' })" class="text-neutral-400 hover:text-rose-500 transition">
+                <iconify-icon icon="mingcute:close-line" class="text-2xl"></iconify-icon>
+            </button>
+        </div>
+
+        <div class="p-6 max-h-[60vh] overflow-y-auto">
+            @if($selectedMemberDetail)
+                <!-- Stats Row -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-blue-50 dark:bg-neutral-800 p-4 rounded-2xl border border-blue-100 dark:border-neutral-700 flex flex-col items-center justify-center">
+                        <span class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">Total Poin</span>
+                        <span class="text-3xl font-black text-blue-700">{{ $selectedMemberDetail->points }}</span>
+                    </div>
+                    <div class="bg-green-50 dark:bg-neutral-800 p-4 rounded-2xl border border-green-100 dark:border-neutral-700 flex flex-col items-center justify-center text-center">
+                        <span class="text-xs font-bold text-green-500 uppercase tracking-widest mb-1">Pengeluaran</span>
+                        <span class="text-lg font-black text-green-700">Rp {{ number_format($selectedMemberDetail->total_pengeluaran, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <h4 class="text-sm font-bold text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b pb-2 mb-3 border-neutral-100">10 Transaksi Terakhir</h4>
+                    @if(count($memberTransactions) > 0)
+                        <div class="space-y-3">
+                            @foreach($memberTransactions as $trx)
+                                <div class="flex flex-col p-3 rounded-xl border border-neutral-100 bg-white shadow-sm gap-2">
+                                    <div class="flex justify-between items-center border-b border-neutral-50 pb-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-[10px] font-bold text-neutral-400 bg-neutral-100 px-2 rounded">{{ \Carbon\Carbon::parse($trx->created_at)->format('d M Y') }}</span>
+                                            <span class="text-xs font-bold text-blue-600">ID: {{ $trx->kode }}</span>
+                                        </div>
+                                        <span class="text-xs font-black text-emerald-600">Rp {{ number_format($trx->total - $trx->discount_value, 0, ',', '.') }}</span>
+                                    </div>
+                                    <div class="text-[11px] text-neutral-500">
+                                        {{ $trx->items->pluck('menu.nama_menu')->join(', ') }}
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="p-6 text-center text-neutral-400 italic bg-neutral-50 rounded-xl border border-neutral-100 shadow-inner">Belum ada riwayat transaksi.</div>
+                    @endif
+                </div>
+            @else
+                <div class="p-10 text-center"><iconify-icon icon="line-md:loading-twotone-loop" class="text-3xl text-neutral-400"></iconify-icon></div>
+            @endif
         </div>
     </x-mdal>
 </div>

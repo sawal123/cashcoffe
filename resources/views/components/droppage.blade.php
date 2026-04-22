@@ -13,7 +13,7 @@
 
     <!-- Dropdown menu -->
     <div id="paginateDropdown"
-        class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-2xl w-44 dark:bg-gray-700">
+        class="z-50 hidden bg-white divide-y divide-gray-100 rounded-lg shadow-2xl w-44 dark:bg-gray-700">
         <ul class="py-2 text-base text-gray-700 dark:text-gray-200">
             @foreach ([5, 10, 50, 100] as $size)
                 <li>

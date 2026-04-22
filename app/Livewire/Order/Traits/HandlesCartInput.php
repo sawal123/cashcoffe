@@ -228,9 +228,10 @@ trait HandlesCartInput
             'adminPassword' => 'required'
         ]);
 
-        // Cari user admin (Sesuaikan dengan nama kolom role di tabel users Anda)
-        // Asumsinya Anda punya kolom role = 'admin' atau is_admin = 1
-        $admins = User::role('admin')->get();
+        // Cari user admin atau superadmin (Menggunakan whereHas agar tidak error jika role tidak ada)
+        $admins = User::whereHas('roles', function ($query) {
+            $query->whereIn('name', ['superadmin', 'admin']);
+        })->get();
         $isPasswordCorrect = false;
         // Cek kecocokan password
         foreach ($admins as $admin) {
@@ -295,7 +296,10 @@ trait HandlesCartInput
         $this->isWaitingApproval = true; // Mengubah UI jadi mode Loading
 
 
-        $adminIds = \App\Models\User::role('admin')->pluck('id')->map(fn($id) => (string)$id)->toArray();
+        // Cari user admin atau superadmin untuk mengirim notifikasi
+        $adminIds = \App\Models\User::whereHas('roles', function ($query) {
+            $query->whereIn('name', ['superadmin', 'admin']);
+        })->pluck('id')->map(fn($id) => (string)$id)->toArray();
 
         if (count($adminIds) > 0) {
             try {

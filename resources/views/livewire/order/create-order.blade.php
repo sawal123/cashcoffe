@@ -3,29 +3,18 @@
 
     {{-- Kiri: Produk --}}
     <div class="flex-1 min-w-0" id="menu">
-        {{-- Search & Controls --}}
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div class="flex items-center gap-2">
-                <x-droppage perPage="{{ $perPage }}" />
-                <div class="w-full sm:w-[300px]">
-                    <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari menu favorit..."
-                        class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
-                </div>
+        {{-- Search & Category Filter --}}
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-6 relative z-10">
+            <div class="shrink-0">
+                <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari menu favorit..."
+                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700"
+                    prefix='<iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>' />
             </div>
-        </div>
 
-        {{-- Category Tabs --}}
-        <div class="flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
-            <button wire:click="$set('selectedCategoryId', null)"
-                class="shrink-0 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all active:scale-95 shadow-sm border {{ !$selectedCategoryId ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/30' : 'bg-white border-neutral-200 text-neutral-600 hover:border-blue-300 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400' }}">
-                Semua Menu
-            </button>
-            @foreach ($categories as $category)
-                <button wire:click="filterByCategory({{ $category->id }})"
-                    class="shrink-0 px-5 py-2.5 rounded-2xl text-sm font-bold transition-all active:scale-95 shadow-sm border {{ $selectedCategoryId === $category->id ? 'bg-blue-600 border-blue-600 text-white shadow-blue-500/30' : 'bg-white border-neutral-200 text-neutral-600 hover:border-blue-300 dark:bg-neutral-800 dark:border-neutral-700 dark:text-neutral-400' }}">
-                    {{ $category->nama }}
-                </button>
-            @endforeach
+            <div class="flex justify-end">
+                <x-ui.select-modern model="selectedCategoryId" :options="$categories" :activeValue="$selectedCategoryId"
+                    placeholder="Semua Menu" />
+            </div>
         </div>
 
         @php
@@ -39,14 +28,14 @@
                         <div class="flex items-center gap-3 mb-4">
                             <div class="w-1 h-6 bg-blue-600 rounded-full"></div>
                             <h2 class="text-xl font-black text-neutral-800 dark:text-white tracking-tight">
-                                {{ $category->nama }}</h2>
+                                {{ $category->nama }}
+                            </h2>
                             <span
                                 class="text-xs font-bold text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-2 py-0.5 rounded-lg">{{ $category->menus->count() }}
                                 Items</span>
                         </div>
 
-                        <div
-                            class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                             @foreach ($category->menus as $item)
                                 @php
                                     $harga = $item->h_promo == 0 ? $item->harga : $item->h_promo;
@@ -119,7 +108,8 @@
                         class="w-20 h-20 rounded-[1.5rem] object-cover shadow-lg border-2 border-white dark:border-neutral-800">
                     <div>
                         <h3 class="font-black text-xl text-neutral-900 dark:text-white mb-1">
-                            {{ $selectedMenuForVariant['nama_menu'] }}</h3>
+                            {{ $selectedMenuForVariant['nama_menu'] }}
+                        </h3>
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-neutral-400 uppercase tracking-widest">Base
                                 Price:</span>
@@ -164,38 +154,38 @@
 
                             <div class="grid grid-cols-2 gap-3">
                                 @foreach ($group->options as $option)
-                                    @php
-                                        $isSelected =
-                                            isset($tempSelectedOptions[$group->id]) &&
-                                            in_array($option->id, $tempSelectedOptions[$group->id]);
-                                    @endphp
-                                    <button type="button"
-                                        wire:click="selectOption({{ $group->id }}, {{ $option->id }}, '{{ $group->selection_type }}')"
-                                        class="relative flex flex-col p-4 rounded-[1.5rem] border-2 transition-all text-left overflow-hidden group
-                                            {{ $isSelected
-                                                ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20 text-white'
-                                                : 'bg-white border-neutral-100 hover:border-blue-300 dark:bg-neutral-800 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300' }}">
+                                            @php
+                                                $isSelected =
+                                                    isset($tempSelectedOptions[$group->id]) &&
+                                                    in_array($option->id, $tempSelectedOptions[$group->id]);
+                                            @endphp
+                                            <button type="button"
+                                                wire:click="selectOption({{ $group->id }}, {{ $option->id }}, '{{ $group->selection_type }}')"
+                                                class="relative flex flex-col p-4 rounded-[1.5rem] border-2 transition-all text-left overflow-hidden group
+                                                                                                                                                                                                                                                    {{ $isSelected
+                                    ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20 text-white'
+                                    : 'bg-white border-neutral-100 hover:border-blue-300 dark:bg-neutral-800 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300' }}">
 
-                                        <div class="flex items-center justify-between mb-1">
-                                            <span class="text-sm font-black leading-tight">
-                                                {{ $option->nama_opsi }}
-                                            </span>
-                                            @if ($isSelected)
-                                                <iconify-icon icon="mingcute:check-circle-fill"
-                                                    class="text-xl text-white"></iconify-icon>
-                                            @endif
-                                        </div>
+                                                <div class="flex items-center justify-between mb-1">
+                                                    <span class="text-sm font-black leading-tight">
+                                                        {{ $option->nama_opsi }}
+                                                    </span>
+                                                    @if ($isSelected)
+                                                        <iconify-icon icon="mingcute:check-circle-fill"
+                                                            class="text-xl text-white"></iconify-icon>
+                                                    @endif
+                                                </div>
 
-                                        @if ($option->extra_price > 0)
-                                            <span
-                                                class="text-[11px] font-bold {{ $isSelected ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400' }}">
-                                                +Rp {{ number_format($option->extra_price, 0, ',', '.') }}
-                                            </span>
-                                        @else
-                                            <span
-                                                class="text-[11px] font-medium {{ $isSelected ? 'text-blue-100' : 'text-neutral-400' }}">Gratis</span>
-                                        @endif
-                                    </button>
+                                                @if ($option->extra_price > 0)
+                                                    <span
+                                                        class="text-[11px] font-bold {{ $isSelected ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400' }}">
+                                                        +Rp {{ number_format($option->extra_price, 0, ',', '.') }}
+                                                    </span>
+                                                @else
+                                                    <span
+                                                        class="text-[11px] font-medium {{ $isSelected ? 'text-blue-100' : 'text-neutral-400' }}">Gratis</span>
+                                                @endif
+                                            </button>
                                 @endforeach
                             </div>
                         </div>
@@ -217,8 +207,8 @@
                             class="flex-1 px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-700 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition">
                             Batal
                         </button>
-                        <x-ui.button type="button" wire:click="confirmVariant" color="blue"
-                            class="flex-[2] !py-4 shadow-xl" wire:loading.attr="disabled">
+                        <x-ui.button type="button" wire:click="confirmVariant" color="blue" class="flex-[2] !py-4 shadow-xl"
+                            wire:loading.attr="disabled">
                             <span wire:loading.remove>Tambahkan ke Pesanan</span>
                             <span wire:loading.flex class="items-center justify-center gap-2">
                                 <iconify-icon icon="mingcute:loading-fill" class="animate-spin text-xl"></iconify-icon>

@@ -27,20 +27,20 @@ class CreateMember extends Component
     public function update($id)
     {
         $validated = $this->validate([
-            'name'    => 'required',
-            'email'   => 'nullable|email',
-            'phone'   => 'nullable',
-            'address' => 'nullable',
+            'name'    => 'required|string|max:255',
+            'email'   => 'nullable|email|max:255',
+            'phone'   => 'required|string|max:20',
+            'address' => 'nullable|string|max:255',
         ]);
 
         $member = Member::with('user')->find(\base64_decode($id));
-        // dd($id);
         // update user
         if ($member->user) {
-            $member->user->update([
-                'name'  => $this->name,
-                'email' => $this->email,
-            ]);
+            $userUpdate = ['name' => $this->name];
+            if ($this->email) {
+                $userUpdate['email'] = $this->email;
+            }
+            $member->user->update($userUpdate);
         }
 
         // update member
@@ -58,18 +58,21 @@ class CreateMember extends Component
         // Validasi
         $validated = $this->validate([
             'name'     => 'required|string|max:255',
-            'phone'    => 'nullable|string|max:20',
+            'email'    => 'nullable|email|max:255',
+            'phone'    => 'required|string|max:20',
             'address'  => 'nullable|string|max:255',
         ]);
+        $email = $this->email ?: 'member_' . time() . '_' . uniqid() . '@member.com';
+
         $user = User::create([
             'name'     => $this->name,
-            'email'    => $this->email ?? null,
+            'email'    => $email,
             'password' => Hash::make('member123'),
         ]);
         Member::create([
-            'user_id' => $user->id ?? null,
+            'user_id' => $user->id,
             'phone'   => $this->phone,
-            'address' => $this->address ?? null,
+            'address' => $this->address,
         ]);
 
         $this->reset(['name', 'email', 'password', 'phone', 'address']);

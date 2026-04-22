@@ -28,6 +28,7 @@ trait HandlesOrderSubmit
         $this->uang_tunai = $pesanan->uang_tunai;
         $this->kembalian = $pesanan->kembalian;
         $this->discount = $pesanan->discount->kode_diskon ?? null;
+        $this->member = $pesanan->member->phone ?? null;
 
         // Jika ada kode diskon dari DB, otomatis anggap sudah diverifikasi
         if ($this->discount) {
@@ -76,6 +77,17 @@ trait HandlesOrderSubmit
         // Jadi jika pesanan masih 'diproses' dan dibatalkan, kita tidak boleh menambah stok (karena belum dipotong).
         if ($statusSebelumnya === 'selesai') {
             $this->restoreStock($pesanan);
+
+            // DEDUCT POINTS if member exists
+            if ($pesanan->member_id) {
+                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
+                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
+                $member = \App\Models\Member::find($pesanan->member_id);
+                if ($member) {
+                    $member->decrement('points', $earnedPoints);
+                    $member->decrement('total_pengeluaran', $totalAfterDiscount);
+                }
+            }
         }
 
         // 3. Kurangi penggunaan diskon jika pesanan menggunakan diskon
@@ -194,6 +206,7 @@ trait HandlesOrderSubmit
             $pesanan->update([
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
+                'member_id' => $this->member ? (\App\Models\Member::where('phone', $this->member)->value('id')) : null,
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,
                 'discount_id' => $this->discount_id,
                 'discount_value' => $discountAmount,
@@ -240,6 +253,7 @@ trait HandlesOrderSubmit
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
                 'user_id' => Auth::id(),
+                'member_id' => $this->member ? (\App\Models\Member::where('phone', $this->member)->value('id')) : null,
                 'discount_id' => $this->discountId,
                 'discount_value' => 0,
                 'metode_pembayaran' => $this->metode_pembayaran ?? null,

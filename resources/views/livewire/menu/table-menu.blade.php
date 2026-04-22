@@ -6,41 +6,26 @@
         <div class="flex flex-wrap items-center gap-2">
             <x-droppage perPage="{{ $perPage }}" />
             
-            <div class="sm:w-[250px]">
-                <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari menu..." class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
+            <div class="w-full lg:max-w-[300px]  flex-none">
+                <x-ui.input 
+                    wire:model.live.debounce.300ms="search" 
+                    placeholder="Cari menu..." 
+                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" 
+                    prefix='<iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>' />
             </div>
 
             {{-- Category Filter --}}
-            <div class="relative" x-data="{ open: false }">
-                <button @click="open = !open" 
-                    class="h-[46px] px-5 flex items-center gap-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:border-blue-500 transition-all active:scale-95 shadow-sm">
-                    <iconify-icon icon="mingcute:filter-line" class="text-lg text-neutral-400"></iconify-icon>
-                    <span>{{ $category ? $categories->where('id', $category)->first()->nama : 'Semua Kategori' }}</span>
-                    <iconify-icon icon="mingcute:down-line" class="text-neutral-400 transition-transform" :class="open ? 'rotate-180' : ''"></iconify-icon>
-                </button>
-
-                <div x-show="open" @click.outside="open = false" x-transition:enter="transition ease-out duration-100"
-                    x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
-                    class="z-50 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-xl w-56 absolute mt-2 left-0 overflow-hidden">
-                    <div class="p-1">
-                        <button wire:click="$set('category', '')" @click="open = false"
-                            class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors {{ !$category ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'text-neutral-600 dark:text-neutral-400' }}">
-                            Semua Kategori
-                        </button>
-                        <div class="my-1 border-t border-neutral-100 dark:border-neutral-700"></div>
-                        @foreach ($categories as $cat)
-                            <button wire:click="$set('category', {{ $cat->id }})" @click="open = false"
-                                class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors {{ $category == $cat->id ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'text-neutral-600 dark:text-neutral-400' }}">
-                                {{ $cat->nama }}
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
+            <div class=" flex justify-end">
+                <x-ui.select-modern 
+                    model="category" 
+                    :options="$categories" 
+                    :activeValue="$category"
+                    placeholder="Semua Kategori" />
             </div>
         </div>
 
         @hasrole('superadmin')
-        <div class="flex gap-2">
+        <div class="flex justify-end gap-2">
             <x-ui.button-link href="/menu/create" icon="mingcute:add-circle-line">
                 Tambah Menu
             </x-ui.button-link>

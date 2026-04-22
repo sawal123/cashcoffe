@@ -88,11 +88,31 @@ class Transaksi extends Component
         // dari diproses -> selesai (KURANGI STOK)
         if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
             $this->reduceStock($pesanan);
+
+            if ($pesanan->member_id) {
+                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
+                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
+                $member = \App\Models\Member::find($pesanan->member_id);
+                if ($member) {
+                    $member->increment('points', $earnedPoints);
+                    $member->increment('total_pengeluaran', $totalAfterDiscount);
+                }
+            }
         }
 
         // dari selesai -> diproses ATAU dibatalkan (KEMBALIKAN STOK)
         if ($oldStatus === 'selesai' && in_array($newStatus, ['diproses', 'dibatalkan'])) {
             $this->restoreStock($pesanan);
+
+            if ($pesanan->member_id) {
+                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
+                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
+                $member = \App\Models\Member::find($pesanan->member_id);
+                if ($member) {
+                    $member->decrement('points', $earnedPoints);
+                    $member->decrement('total_pengeluaran', $totalAfterDiscount);
+                }
+            }
         }
         
 

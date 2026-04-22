@@ -16,8 +16,8 @@
 ]) }}>
 
         @if ($prefix)
-            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400">
-                {{ $prefix }}
+            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-neutral-400 flex items-center">
+                {!! $prefix !!}
             </span>
         @endif
 

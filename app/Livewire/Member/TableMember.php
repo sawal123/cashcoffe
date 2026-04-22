@@ -17,9 +17,24 @@ class TableMember extends Component
     // agar pagination tidak reset ketika mengetik
     protected $updatesQueryString = ['search'];
 
+    public $selectedMemberDetail = null;
+    public $memberTransactions = [];
 
-
-    // proses hapus
+    public function viewMemberDetails($id)
+    {
+        $memberId = base64_decode($id);
+        $this->selectedMemberDetail = Member::with('user')->find($memberId);
+        
+        if ($this->selectedMemberDetail) {
+            $this->memberTransactions = \App\Models\Pesanan::where('member_id', $memberId)
+                ->with(['items.menu'])
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+                
+            $this->dispatch('open-modal', name: 'detail-member-modal');
+        }
+    }    // proses hapus
     public function deleteMember($id)
     {
         // dd($id);

@@ -101,6 +101,17 @@ class CreateOrder extends Component
         $this->mejas = Meja::all();
     }
 
+    public function updatedMember($value)
+    {
+        if ($value) {
+            $member = Member::where('phone', $value)->first();
+            if ($member && $member->user) {
+                // Hanya timpa nama_costumer jika belum diisi, ATAU pengguna ingin memudahkan
+                $this->nama_costumer = $member->user->name;
+            }
+        }
+    }
+
     public function render()
     {
         $menus = Menu::where('is_active', 1)
@@ -111,6 +122,8 @@ class CreateOrder extends Component
         $discountValue = 0;
         $result = null; 
         $itemDiscounts = []; // UI display
+
+        $cekMember = $this->member ? Member::where('phone', $this->member)->first() : null;
 
         // Hitung total awal
         $total = collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
@@ -135,7 +148,10 @@ class CreateOrder extends Component
             ];
 
             // 3. Cek apakah private dan belum diverifikasi
-            if ($disc->type === 'private' && ! $this->isDiscountVerified) {
+            // JALUR LLOYALTY BYPASS: Jika member valid, tidak perlu isDiscountVerified
+            $isBypassed = ($disc->type === 'private' && $cekMember);
+
+            if ($disc->type === 'private' && ! $this->isDiscountVerified && ! $isBypassed) {
                 $discMessage = 'Diskon private. Membutuhkan PIN/Password Admin.';
                 $discountValue = 0;
 
@@ -218,10 +234,22 @@ class CreateOrder extends Component
 
         // ... sisa kode render ...
 
-        $cekMember = Member::where('phone', $this->member)->first();
+        $memberFavorites = collect();
         if ($cekMember) {
             $memMessage = 'Member Tersedia ('.$cekMember->user->name.')';
-            $this->dispatch('showToast', message: $memMessage, type: 'success', title: 'Success');
+            // $this->dispatch('showToast', message: $memMessage, type: 'success', title: 'Success');
+            
+            // Get favorite items
+            $memberFavorites = \App\Models\PesananItem::whereHas('pesanan', function ($q) use ($cekMember) {
+                $q->where('member_id', $cekMember->id)->where('status', 'selesai');
+            })
+            ->select('menus_id', \Illuminate\Support\Facades\DB::raw('sum(qty) as total_qty'))
+            ->groupBy('menus_id')
+            ->orderByDesc('total_qty')
+            ->limit(3)
+            ->with('menu')
+            ->get();
+            
         } else {
             $memMessage = $this->member ? 'Member Tidak Tersedia ' : '';
         }
@@ -269,6 +297,9 @@ class CreateOrder extends Component
             'memMessage' => $memMessage ?? null,
             'kembalian' => $this->kembalian,
             'itemDiscounts' => $itemDiscounts,
+            'isMember' => $cekMember !== null,
+            'memberFavorites' => $memberFavorites,
+            'memberPoints' => $cekMember ? $cekMember->points : 0,
         ]);
     }
 }
