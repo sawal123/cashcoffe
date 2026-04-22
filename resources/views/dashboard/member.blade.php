@@ -9,9 +9,6 @@
                 <div class="grid grid-cols-1 2xl:grid-cols-12">
                     <div class="xl:col-span-12 2xl:col-span-12">
                         <div class="card-body p-6">
-                            <div class="flex justify-end">
-                                <x-a url='/member/create' active='blue' wire:navigate>+ Tambah Member</x-a>
-                            </div>
                             <livewire:member.table-member>
                         </div>
                     </div>

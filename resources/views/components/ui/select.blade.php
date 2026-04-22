@@ -10,7 +10,7 @@
         <select
             {{ $attributes->merge([
                 'class' =>
-                    'w-full bg-neutral-50 dark:bg-neutral-900 border-0 rounded-2xl px-4 py-3 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 text-neutral-800 dark:text-neutral-200 appearance-none',
+                    'w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl px-4 py-3 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 text-neutral-800 dark:text-neutral-200 appearance-none',
             ]) }}>
             {{ $slot }}
         </select>

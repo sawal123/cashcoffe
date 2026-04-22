@@ -17,12 +17,12 @@
             <div class="w-64">
                 <label class="form-label text-sm font-semibold mb-1">Cari Menu</label>
                 <div class="relative">
-                    <input type="text" wire:model.live="search"
-                        class="form-control pl-10 rounded-lg border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm"
-                        placeholder="Ketik nama menu...">
-                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-neutral-400 pointer-events-none">
                         <iconify-icon icon="lucide:search"></iconify-icon>
                     </span>
+                    <input type="text" wire:model.live="search"
+                        class="form-control !pl-10 rounded-lg border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm w-full"
+                        placeholder="Ketik nama menu...">
                 </div>
             </div>
         </div>
@@ -65,14 +65,15 @@
                                     <div>
                                         <p class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $menu->nama_menu }}
                                         </p>
-                                        <p class="text-xs text-neutral-500">Global ID: #{{ $menu->id }}</p>
+                                        <p class="text-xs text-neutral-500 mb-1">{{ $category->nama_kategori }} • Global ID: #{{ $menu->id }}</p>
+                                        <p class="text-sm font-semibold text-primary-600">Rp {{ number_format($menu->menuPrices->first()->harga ?? 0, 0, ',', '.') }}</p>
                                     </div>
                                 </div>
 
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input type="checkbox" wire:click="toggleAvailability({{ $menu->id }})" class="sr-only peer" {{ $menu->branch_available ? 'checked' : '' }}>
                                     <div
-                                        class="w-11 h-6 bg-neutral-300 peer-focus:outline-none rounded-full peer dark:bg-neutral-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-neutral-600 peer-checked:bg-success-500">
+                                        class="w-11 h-6 bg-neutral-300 peer-focus:outline-none rounded-full peer dark:bg-neutral-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-neutral-600 peer-checked:bg-blue-500">
                                     </div>
                                 </label>
                             </div>

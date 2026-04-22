@@ -14,13 +14,15 @@ class CreateMember extends Component
 
     public function mount()
     {
-        // dd(\base64_decode($this->memberId));
-        $member = Member::with('user')->find(\base64_decode($this->memberId));
-        // dd($member);
-        $this->name    = $member->user->name ?? '';
-        $this->email   = $member->user->email ?? '';
-        $this->phone   = $member->phone;
-        $this->address = $member->address;
+        if ($this->memberId) {
+            $member = Member::with('user')->find(\base64_decode($this->memberId));
+            if ($member) {
+                $this->name    = $member->user->name ?? '';
+                $this->email   = $member->user->email ?? '';
+                $this->phone   = $member->phone;
+                $this->address = $member->address;
+            }
+        }
     }
     public function update($id)
     {

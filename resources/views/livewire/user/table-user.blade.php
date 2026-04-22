@@ -8,26 +8,20 @@
         <div class="flex gap-2">
             <x-droppage perPage="{{ $perPage }}" />
             <div class="sm:w-[300px]">
-                <x-input wire:model.live.debounce.300ms="search" placeholder="Cari user..." />
+                <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari user..."
+                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
             </div>
         </div>
 
-        {{-- Bagian Kanan: Button Add Role --}}
+        {{-- Bagian Kanan: Button Add Role & Add User --}}
         <div class="flex gap-2">
-            <div>
-                <button @click="$dispatch('open-modal', { name: 'add-role' })"
-                    class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition">
-                    <iconify-icon icon="mingcute:add-circle-line" class="mr-2 text-lg"></iconify-icon>
-                    Tambah Role
-                </button>
-            </div>
-            <div>
-                <a href="/user/create" wire:navigate
-                    class="inline-flex items-center justify-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition">
-                    <iconify-icon icon="mingcute:add-circle-line" class="mr-2 text-lg"></iconify-icon>
-                    Tambah User
-                </a>
-            </div>
+            <x-ui.button @click="$dispatch('open-modal', { name: 'add-role' })" color="blue" class="!px-5 !py-2.5">
+                <iconify-icon icon="mingcute:add-circle-line" class="mr-2 text-lg align-middle"></iconify-icon>
+                Tambah Role
+            </x-ui.button>
+            <x-ui.button-link href="/user/create" icon="mingcute:add-circle-line">
+                Tambah User
+            </x-ui.button-link>
         </div>
     </div>
 
@@ -38,17 +32,13 @@
 
             @forelse ($all_roles as $role)
                 <div
-                    class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm whitespace-nowrap group hover:border-primary-500 transition-colors">
-
-                    {{-- Nama Role --}}
+                    class="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-sm whitespace-nowrap group hover:border-blue-500 transition-colors">
                     <span class="text-sm font-medium text-neutral-700 dark:text-neutral-200">
                         {{ ucfirst($role->name) }}
                     </span>
 
-                    {{-- Tombol Hapus (X) --}}
-                    {{-- Kita sembunyikan tombol X jika itu 'super-admin' (opsional, demi keamanan) --}}
                     @if ($role->name !== 'admin')
-                        <button type="button" {{-- Trigger AlpineJS untuk membuka modal & set ID --}}
+                        <button type="button"
                             @click="$dispatch('open-modal', { name: 'delete-role', id: {{ json_encode(base64_encode($role->id)) }} })"
                             class="ml-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors focus:outline-none"
                             title="Hapus Role">
@@ -63,179 +53,115 @@
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table basic-border-table mb-2">
-            <thead>
-                <tr>
-                    {{-- # --}}
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 w-10 text-center">
-                        #
-                    </th>
+    <x-ui.table :headers="[
+        ['name' => '#', 'align' => 'center'],
+        ['name' => 'Avatar', 'align' => 'center'],
+        'Nama',
+        'Email',
+        ['name' => 'Cabang', 'align' => 'center'],
+        ['name' => 'Role', 'align' => 'center'],
+        ['name' => 'Action', 'align' => 'center'],
+    ]">
+        @forelse ($users as $user)
+            <tr wire:key="{{ $user->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
+                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                    {{ ($users->currentPage() - 1) * $users->perPage() + $loop->iteration }}
+                </td>
 
-                    {{-- Avatar --}}
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 w-16 text-center">
-                        Avatar
-                    </th>
+                <td class="px-6 py-4 text-center">
+                    @if ($user->avatar)
+                        <img src="{{ asset('storage/' . $user->avatar) }}" alt="Avatar"
+                            class="w-10 h-10 rounded-full object-cover mx-auto border border-neutral-300">
+                    @else
+                        <div
+                            class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mx-auto font-bold border border-blue-200">
+                            {{ substr($user->name, 0, 1) }}
+                        </div>
+                    @endif
+                </td>
 
-                    {{-- Nama --}}
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-left">
-                        Nama
-                    </th>
+                <td class="px-6 py-4">
+                    <span class="font-semibold text-neutral-800 dark:text-neutral-200">
+                        {{ $user->name }}
+                    </span>
+                </td>
 
-                    {{-- Email --}}
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-left">
-                        Email
-                    </th>
+                <td class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                    {{ $user->email }}
+                </td>
 
-                    {{-- Cabang --}}
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
-                        Cabang
-                    </th>
+                <td class="px-6 py-4 text-center">
+                    @if ($user->branch)
+                        <span
+                            class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                            {{ $user->branch->nama_cabang }}
+                        </span>
+                    @else
+                        <span
+                            class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-neutral-100 text-neutral-500 border border-neutral-200 uppercase">
+                            HQ / PUSAT
+                        </span>
+                    @endif
+                </td>
 
-                    {{-- Role --}}
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
-                        Role
-                    </th>
-
-                    {{-- Action --}}
-                    <th class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center w-32">
-                        Action
-                    </th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($users as $user)
-                    <tr wire:key="{{ $user->id }}">
-                        {{-- # --}}
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
-                            {{ ($users->currentPage() - 1) * $users->perPage() + $loop->iteration }}
-                        </td>
-
-                        {{-- Avatar --}}
-                        <td
-                            class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center py-2">
-                            @if ($user->avatar)
-                                <img src="{{ asset('storage/' . $user->avatar) }}" alt="Avatar"
-                                    class="w-10 h-10 rounded-full object-cover mx-auto border border-neutral-300">
-                            @else
-                                {{-- Fallback jika tidak ada avatar (Inisial) --}}
-                                <div
-                                    class="w-10 h-10 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center mx-auto font-bold border border-primary-200">
-                                    {{ substr($user->name, 0, 1) }}
-                                </div>
-                            @endif
-                        </td>
-
-                        {{-- Nama --}}
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0">
-                            <span class="font-semibold text-neutral-800 dark:text-neutral-200">
-                                {{ $user->name }}
+                <td class="px-6 py-4 text-center">
+                    <div class="flex flex-wrap justify-center gap-1">
+                        @forelse ($user->roles as $role)
+                            <span
+                                class="px-2 py-1 text-[10px] font-bold rounded-full bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 uppercase">
+                                {{ ucfirst($role->name) }}
                             </span>
-                        </td>
+                        @empty
+                            <span class="text-[10px] uppercase text-neutral-400 italic">No Role</span>
+                        @endforelse
+                    </div>
+                </td>
 
-                        {{-- Email --}}
-                        <td
-                            class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-neutral-600 dark:text-neutral-400">
-                            {{ $user->email }}
-                        </td>
+                <td class="px-6 py-4 text-center">
+                    <div class="flex justify-center gap-2">
+                        <x-ui.action-edit href="/user/{{ base64_encode($user->id) }}/edit" wire:navigate />
+                        <x-ui.action-delete
+                            @click="$dispatch('open-modal', { name: 'delete-user', id: {{ json_encode(base64_encode($user->id)) }} })" />
+                    </div>
+                </td>
+            </tr>
+        @empty
+            <tr>
+                <td colspan="7" class="text-center py-12 text-neutral-500">
+                    <div class="flex flex-col items-center justify-center gap-3">
+                        <iconify-icon icon="mingcute:ghost-line" class="text-4xl"></iconify-icon>
+                        <span class="text-sm">Tidak ada data user ditemukan.</span>
+                    </div>
+                </td>
+            </tr>
+        @endforelse
+    </x-ui.table>
 
-                        {{-- Cabang --}}
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
-                            @if ($user->branch)
-                                <span class="px-2 py-1 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-600 border border-blue-100 uppercase">
-                                    {{ $user->branch->nama_cabang }}
-                                </span>
-                            @else
-                                <span class="px-2 py-1 text-[10px] font-bold rounded-lg bg-neutral-100 text-neutral-500 border border-neutral-200 uppercase">
-                                    HQ / PUSAT
-                                </span>
-                            @endif
-                        </td>
-
-                        {{-- Role --}}
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
-                            <div class="flex flex-wrap justify-center gap-1">
-                                @forelse ($user->roles as $role)
-                                    <span
-                                        class="px-2 py-1 text-xs font-medium rounded-full bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
-                                        {{ ucfirst($role->name) }}
-                                    </span>
-                                @empty
-                                    <span class="text-xs text-neutral-400 italic">No Role</span>
-                                @endforelse
-                            </div>
-                        </td>
-
-                        {{-- Action --}}
-                        <td class="border-r border-neutral-200 dark:border-neutral-600 last:border-r-0 text-center">
-                            <div class="flex justify-center gap-2">
-                                {{-- Tombol Edit --}}
-                                <a href="/user/{{ base64_encode($user->id) }}/edit" wire:navigate
-                                    class="w-8 h-8 bg-warning-100 dark:bg-warning-600/25 text-warning-600 dark:text-warning-400 rounded-full inline-flex items-center justify-center transition hover:scale-110"
-                                    title="Edit User">
-                                    <iconify-icon icon="mingcute:edit-line"></iconify-icon>
-                                </a>
-
-                                {{-- Tombol Delete --}}
-                                <button
-                                    @click="$dispatch('open-modal', { name: 'delete-user', id: {{ json_encode(base64_encode($user->id)) }} })"
-                                    class="w-8 h-8 bg-danger-100 dark:bg-danger-600/25 text-danger-600 dark:text-danger-400 rounded-full inline-flex items-center justify-center transition hover:scale-110"
-                                    title="Hapus User">
-                                    <iconify-icon icon="mingcute:delete-2-line"></iconify-icon>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="text-center py-8 text-neutral-500">
-                            <div class="flex flex-col items-center justify-center">
-                                <iconify-icon icon="mingcute:ghost-line" class="text-4xl mb-2"></iconify-icon>
-                                <span>Tidak ada data user ditemukan.</span>
-                            </div>
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-
-        {{-- Pagination --}}
+    {{-- Pagination --}}
+    <div class="mt-4">
         {{ $users->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}
     </div>
 
     <x-mdal name="add-role">
         <div class="px-6 py-4">
-            <h3 class="font-semibold text-lg text-center mb-1">Tambah Role Baru</h3>
+            <h3 class="font-bold text-lg text-center mb-1 text-neutral-900">Tambah Role Baru</h3>
             <p class="text-neutral-500 text-sm text-center mb-6">Buat hak akses baru untuk sistem.</p>
 
             <form wire:submit.prevent="createRole">
                 <div class="space-y-4">
-                    {{-- Input Nama Role --}}
-                    <div>
-                        <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
-                            Nama Role <span class="text-red-500">*</span>
-                        </label>
-                        <x-input wire:model="newRoleName" placeholder="Contoh: supervisor, admin-gudang" />
-                        @error('newRoleName')
-                            <span class="text-xs text-danger-600 mt-1 block">{{ $message }}</span>
-                        @enderror
-                    </div>
+                    <x-ui.input wire:model="newRoleName" label="Nama Role *"
+                        placeholder="Contoh: supervisor, admin-gudang" class="!bg-white border border-neutral-200" />
                 </div>
 
-                {{-- Action Buttons --}}
-                <div class="mt-8 flex justify-end gap-3 pt-4">
-                    {{-- Tombol Batal (Menutup Modal) --}}
-                    <button type="button" x-on:click="modalIsOpen = false"
-                        class="px-4 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 text-sm font-medium transition">
+                <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-neutral-100">
+                    <button type="button" x-on:click="$dispatch('close-modal', { name: 'add-role' })"
+                        class="px-5 py-2.5 rounded-2xl border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 text-sm font-bold transition">
                         Batal
                     </button>
 
-                    {{-- Tombol Simpan --}}
-                    <button type="submit"
-                        class="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 text-sm font-medium transition inline-flex items-center">
-                        <iconify-icon icon="mingcute:check-line" class="mr-1"></iconify-icon>
-                        Simpan Role
-                    </button>
+                    <x-ui.button type="submit" color="blue" class="!px-5 !py-2.5">
+                        <iconify-icon icon="mingcute:check-line" class="mr-1"></iconify-icon> Simpan Role
+                    </x-ui.button>
                 </div>
             </form>
         </div>
@@ -243,72 +169,54 @@
 
     <x-mdal name="delete-role">
         <div class="px-6 py-6 text-center">
-
-            {{-- Icon Peringatan --}}
             <div
-                class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-500">
-                <iconify-icon icon="mingcute:warning-line" class="text-2xl"></iconify-icon>
+                class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
+                <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
             </div>
 
-            <h3 class="mb-1 text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-                Hapus Role Ini?
-            </h3>
-
+            <h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-neutral-100">Hapus Role Ini?</h3>
             <p class="mb-6 text-sm text-neutral-500 dark:text-neutral-400">
-                Tindakan ini tidak dapat dibatalkan. Role akan hilang dari sistem.
+                Tindakan ini tidak dapat dibatalkan. Role akan hilang dari sistem secara permanen.
             </p>
 
-            {{-- Action Buttons --}}
-            <div class="flex justify-center gap-3 border-t pt-4 border-neutral-100 dark:border-neutral-700">
-
-                {{-- Tombol Cancel --}}
-                <button type="button" x-on:click="modalIsOpen = false"
-                    class="px-4 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 text-sm font-medium transition">
+            <div class="flex justify-center gap-3 border-t pt-6 border-neutral-100 dark:border-neutral-700">
+                <button type="button" x-on:click="$dispatch('close-modal', { name: 'delete-role' })"
+                    class="px-5 py-2.5 rounded-2xl border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 text-sm font-bold transition">
                     Batal
                 </button>
 
-                {{-- Tombol Delete --}}
-                {{-- Mengirim selectedId (dari Alpine) ke fungsi Livewire --}}
-                <button type="button" x-on:click="$wire.deleteRole(selectedId); modalIsOpen = false"
-                    class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition inline-flex items-center">
-                    Ya, Hapus
-                </button>
+                <x-ui.button type="button" color="danger"
+                    @click="$wire.deleteRole(selectedId); $dispatch('close-modal', { name: 'delete-role' })"
+                    class="!px-5 !py-2.5">
+                    Ya, Hapus Role
+                </x-ui.button>
             </div>
         </div>
     </x-mdal>
 
     <x-mdal name="delete-user">
         <div class="px-6 py-6 text-center">
-
-            {{-- Icon Peringatan --}}
             <div
-                class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-500">
-                <iconify-icon icon="mingcute:warning-line" class="text-2xl"></iconify-icon>
+                class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
+                <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
             </div>
 
-            <h3 class="mb-1 text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-                Hapus User Ini?
-            </h3>
-
+            <h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-neutral-100">Hapus User Ini?</h3>
             <p class="mb-6 text-sm text-neutral-500 dark:text-neutral-400">
-                Tindakan ini tidak dapat dibatalkan. User akan hilang dari sistem.
+                Tindakan ini tidak dapat dibatalkan. User akan dihapus dari sistem beserta akses loginnya.
             </p>
 
-            {{-- Action Buttons --}}
-            <div class="flex justify-center gap-3 border-t pt-4 border-neutral-100 dark:border-neutral-700">
-
-                {{-- Tombol Cancel --}}
-                <button type="button" x-on:click="modalIsOpen = false"
-                    class="px-4 py-2 rounded-lg border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 text-sm font-medium transition">
+            <div class="flex justify-center gap-3 border-t pt-6 border-neutral-100 dark:border-neutral-700">
+                <button type="button" x-on:click="$dispatch('close-modal', { name: 'delete-user' })"
+                    class="px-5 py-2.5 rounded-2xl border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 text-sm font-bold transition">
                     Batal
                 </button>
 
-                {{-- Tombol Delete --}}
-                {{-- Mengirim selectedId (dari Alpine) ke fungsi Livewire --}}
-                <button type="button" x-on:click="$wire.deleteUser(selectedId); modalIsOpen = false"
-                    class="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-medium transition inline-flex items-center">
-                    Ya, Hapus
-                </button>
+                <x-ui.button type="button" color="danger"
+                    @click="$wire.deleteUser(selectedId); $dispatch('close-modal', { name: 'delete-user' })"
+                    class="!px-5 !py-2.5">
+                    Ya, Hapus User
+                </x-ui.button>
             </div>
         </div>
     </x-mdal>

@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     Route::resource('order', OrderController::class);
     Route::resource('meja', MejaController::class);
     Route::resource('discount', DiscountController::class);
+    Route::resource('discount-approval', App\Http\Controllers\DiscountApprovalController::class);
     Route::resource('gudang', GudangController::class);
     Route::resource('member', MemberController::class);
     Route::resource('omset', OmsetController::class);

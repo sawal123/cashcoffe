@@ -109,7 +109,8 @@ class CreateOrder extends Component
 
         $discMessage = null;
         $discountValue = 0;
-        $result = null; // 1. Deklarasikan nilai default di awal agar tidak error
+        $result = null; 
+        $itemDiscounts = []; // UI display
 
         // Hitung total awal
         $total = collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
@@ -136,31 +137,73 @@ class CreateOrder extends Component
             // 3. Cek apakah private dan belum diverifikasi
             if ($disc->type === 'private' && ! $this->isDiscountVerified) {
                 $discMessage = 'Diskon private. Membutuhkan PIN/Password Admin.';
-                $discountValue = 0; // Tahan diskon di angka 0
+                $discountValue = 0;
 
-                // Jangan set $this->discountId dulu sampai diverifikasi
                 $this->discountId = null;
                 $this->discount_id = null;
             } else {
-                // 4. JIKA GENERAL ATAU SUDAH DIVERIFIKASI, terapkan nilai diskon
                 if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
                     $discMessage = 'Diskon sudah mencapai batas penggunaan.';
-                } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
-                    $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp '.number_format($disc->minimum_transaksi, 0, ',', '.');
                 } else {
-                    if ($disc->jenis_diskon === 'persentase') {
-                        $discountValue = $total * ($disc->nilai_diskon / 100);
-                        if ($disc->maksimum_diskon && $discountValue > $disc->maksimum_diskon) {
-                            $discountValue = $disc->maksimum_diskon;
+                    $itemScopeDiscounts = 0;
+                    
+                    // Loop pesanan u/ cek discount item/category
+                    if ($disc->scope !== 'global') {
+                        // lazy load items
+                        $disc->loadMissing('discountItems');
+                        foreach ($this->pesanan as $key => $p) {
+                            $menuDisplay = Menu::find($p['id']);
+                            if(!$menuDisplay) continue;
+                            
+                            $isEligible = false;
+                            foreach ($disc->discountItems as $di) {
+                                if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menuDisplay->id) {
+                                    $isEligible = true; break;
+                                }
+                                if ($di->model_type === 'App\Models\Category' && $di->model_id == $menuDisplay->categories_id) {
+                                    $isEligible = true; break;
+                                }
+                            }
+                            
+                            if ($isEligible) {
+                                $potonganPerItem = 0;
+                                if ($disc->jenis_diskon === 'persentase') {
+                                    $potongan = ($p['harga'] * $p['qty']) * ($disc->nilai_diskon / 100);
+                                    if ($disc->maksimum_diskon && $potongan > $disc->maksimum_diskon) {
+                                        $potongan = $disc->maksimum_diskon;
+                                    }
+                                    $potonganPerItem = $potongan;
+                                } elseif ($disc->jenis_diskon === 'nominal') {
+                                    $potonganPerItem = $disc->nilai_diskon * $p['qty'];
+                                }
+                                $itemDiscounts[$key] = $potonganPerItem;
+                                $itemScopeDiscounts += $potonganPerItem;
+                            }
                         }
-                    } elseif ($disc->jenis_diskon === 'nominal') {
-                        $discountValue = $disc->nilai_diskon;
+                        
+                        $discountValue = $itemScopeDiscounts;
+                        $discMessage = 'Diskon Terpilih (Item/Kategori) berhasil diterapkan.';
+                    } else {
+                        // Scope Global
+                        if ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
+                            $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp '.number_format($disc->minimum_transaksi, 0, ',', '.');
+                        } else {
+                            if ($disc->jenis_diskon === 'persentase') {
+                                $discountValue = $total * ($disc->nilai_diskon / 100);
+                                if ($disc->maksimum_diskon && $discountValue > $disc->maksimum_diskon) {
+                                    $discountValue = $disc->maksimum_diskon;
+                                }
+                            } elseif ($disc->jenis_diskon === 'nominal') {
+                                $discountValue = $disc->nilai_diskon;
+                            }
+                            $discMessage = 'Diskon berhasil diterapkan.';
+                        }
                     }
-                    $discMessage = 'Diskon berhasil diterapkan.';
 
-                    // Set ID diskon karena sudah valid & bisa digunakan
-                    $this->discountId = $disc->id;
-                    $this->discount_id = $disc->id;
+                    if ($discMessage !== 'Diskon sudah mencapai batas penggunaan.' && strpos($discMessage, 'Minimal') === false) {
+                        $this->discountId = $disc->id;
+                        $this->discount_id = $disc->id;
+                    }
                 }
             }
         } else {
@@ -225,6 +268,7 @@ class CreateOrder extends Component
             'totalAfterDiscount' => $totalAfterDiscount,
             'memMessage' => $memMessage ?? null,
             'kembalian' => $this->kembalian,
+            'itemDiscounts' => $itemDiscounts,
         ]);
     }
 }

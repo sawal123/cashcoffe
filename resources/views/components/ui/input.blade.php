@@ -9,7 +9,7 @@
     <div class="relative">
         <input {{ $attributes->merge([
     'class' =>
-        'w-full bg-neutral-50 dark:bg-neutral-900 border-0 rounded-2xl py-3 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500',
+        'w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl py-3 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500',
     'style' =>
         ($prefix ? 'padding-left: 60px;' : 'padding-left: 1rem;') .
         ($suffix ? 'padding-right: 60px;' : 'padding-right: 1rem;'),

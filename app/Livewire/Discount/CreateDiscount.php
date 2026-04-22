@@ -14,6 +14,15 @@ class CreateDiscount extends Component
     public $nama_diskon, $jenis_diskon, $nilai_diskon, $minimum_transaksi, $limit, $type = 'general';
     public $maksimum_diskon, $kode_diskon, $tanggal_mulai, $tanggal_akhir;
     public $is_active = 1;
+    public $scope = 'global';
+    public $branch_id = null;
+    public $price_tier_id = null;
+    public $selectedItems = [];
+
+    public $menus = [];
+    public $categories = [];
+    public $branches = [];
+    public $priceTiers = [];
 
     protected $rules = [
         'nama_diskon' => 'required|string|max:255',
@@ -25,13 +34,19 @@ class CreateDiscount extends Component
         'tanggal_mulai' => 'nullable|date',
         'tanggal_akhir' => 'nullable|date|after_or_equal:tanggal_mulai',
         'is_active' => 'required|boolean',
+        'scope' => 'required|in:global,category,item',
+        'branch_id' => 'nullable|exists:branches,id',
+        'price_tier_id' => 'nullable|exists:price_tiers,id',
     ];
 
     public function mount($id = null)
     {
-        // dd(base64_decode($this->discountId));
+        $this->menus = \App\Models\Menu::where('is_active', 1)->get();
+        $this->categories = \App\Models\Category::all();
+        $this->branches = \App\Models\Branch::all();
+        $this->priceTiers = \App\Models\PriceTier::all();
+        
         if ($this->discountId) {
-            // $this->discountId = $id;
             $this->button = "Update";
             $this->loadData();
         }
@@ -52,13 +67,27 @@ class CreateDiscount extends Component
         $this->limit = $diskon->limit;
         $this->is_active = $diskon->is_active;
         $this->type = $diskon->type;
+        $this->scope = $diskon->scope;
+        $this->branch_id = $diskon->branch_id;
+        $this->price_tier_id = $diskon->price_tier_id;
+        
+        if ($diskon->scope !== 'global') {
+            $this->selectedItems = $diskon->discountItems->map(fn($item) => $item->model_id)->toArray();
+        }
+    }
+
+    public function updatedScope($value)
+    {
+        if ($value === 'item' || $value === 'category') {
+            $this->dispatch('open-modal', name: 'scope-modal');
+        }
     }
 
     public function simpan()
     {
         $this->validate();
 
-        Discount::create([
+        $discount = Discount::create([
 
             'nama_diskon' => $this->nama_diskon,
             'jenis_diskon' => $this->jenis_diskon,
@@ -71,7 +100,21 @@ class CreateDiscount extends Component
             'limit' => $this->limit,
             'is_active' => $this->is_active,
             'type' => $this->type,
+            'scope' => $this->scope,
+            'branch_id' => $this->branch_id ?: null,
+            'price_tier_id' => $this->price_tier_id ?: null,
         ]);
+
+        if ($this->scope !== 'global' && !empty($this->selectedItems)) {
+            $modelType = $this->scope === 'item' ? 'App\Models\Menu' : 'App\Models\Category';
+            foreach ($this->selectedItems as $itemId) {
+                \App\Models\DiscountItem::create([
+                    'discount_id' => $discount->id,
+                    'model_type' => $modelType,
+                    'model_id' => $itemId,
+                ]);
+            }
+        }
 
         $this->resetForm();
          $this->dispatch('showToast', message: 'Discount Berhasil Ditambah', type: 'success', title: 'Success');
@@ -95,7 +138,22 @@ class CreateDiscount extends Component
             'limit' => $this->limit,
             'is_active' => $this->is_active,
             'type' => $this->type,
+            'scope' => $this->scope,
+            'branch_id' => $this->branch_id ?: null,
+            'price_tier_id' => $this->price_tier_id ?: null,
         ]);
+
+        \App\Models\DiscountItem::where('discount_id', $diskon->id)->delete();
+        if ($this->scope !== 'global' && !empty($this->selectedItems)) {
+            $modelType = $this->scope === 'item' ? 'App\Models\Menu' : 'App\Models\Category';
+            foreach ($this->selectedItems as $itemId) {
+                \App\Models\DiscountItem::create([
+                    'discount_id' => $diskon->id,
+                    'model_type' => $modelType,
+                    'model_id' => $itemId,
+                ]);
+            }
+        }
 
        $this->dispatch('showToast', message: 'Discount Berhasil Diupdate', type: 'success', title: 'Success');
     }
@@ -117,6 +175,10 @@ class CreateDiscount extends Component
         $this->is_active = 1;
         $this->limit = null;
         $this->type = '';
+        $this->scope = 'global';
+        $this->branch_id = null;
+        $this->price_tier_id = null;
+        $this->selectedItems = [];
     }
 
     public function render()

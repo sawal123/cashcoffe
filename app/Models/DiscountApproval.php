@@ -13,6 +13,8 @@ class DiscountApproval extends Model
         'kasir_id',
         'discount_id',
         'status',
+        'approved_by',
+        'keterangan',
     ];
 
     // Relasi ke tabel Users (Kasir)
@@ -25,5 +27,10 @@ class DiscountApproval extends Model
     public function discount()
     {
         return $this->belongsTo(Discount::class, 'discount_id');
+    }
+
+    public function approver()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

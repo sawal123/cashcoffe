@@ -7,12 +7,7 @@
         <div class="md:col-span-12 2xl:col-span-12">
             <div class="card rounded-lg border-0">
                 <div class="card-body p-6">
-                    <div class="flex justify-end mb-4">
-                        <x-ui.button-link href="/discount/create" icon="mingcute:add-circle-line">
-                            Tambah Discount
-                        </x-ui.button-link>
-                    </div>
-                    <livewire:discount.table-discount>
+                    <livewire:discount.approval-list />
                 </div>
             </div>
         </div>

@@ -1,25 +1,30 @@
 <x-mdal name="confirm-cancel-modal">
-    <div class="px-6 py-4 mb-4">
-        <div class="text-center mb-6">
-            <iconify-icon icon="mingcute:warning-fill" class="text-5xl text-red-500 mb-2"></iconify-icon>
-            <h3 class="font-semibold text-lg text-slate-800 dark:text-white">Konfirmasi Pembatalan</h3>
-            <p class="text-sm mt-2 text-slate-600 dark:text-slate-400">
-                Apakah Anda yakin ingin membatalkan pesanan ini?<br>
-                Stok bahan yang sudah terpotong akan dikembalikan ke gudang dan kuota voucher akan di-reset.
-            </p>
+    <div class="p-8">
+        <div class="w-16 h-16 rounded-3xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 mb-6 mx-auto">
+            <iconify-icon icon="mingcute:warning-line" class="text-3xl"></iconify-icon>
         </div>
+        
+        <h3 class="font-black text-2xl text-center mb-2 text-neutral-900 dark:text-white">
+            Batalkan Pesanan?
+        </h3>
+        <p class="text-sm text-center mb-10 text-neutral-500 dark:text-neutral-400 max-w-xs mx-auto">
+            Seluruh data belanja akan dihapus, stok bahan akan dikembalikan, dan kuota voucher akan di-reset.
+        </p>
 
-        <div class="flex justify-center gap-3 mt-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <button @click="$dispatch('close-modal', { name: 'confirm-cancel-modal' })" type="button"
-                class="px-4 py-2 text-sm rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600 transition">
+                class="w-full px-6 py-4 text-xs font-black uppercase tracking-widest rounded-2xl bg-neutral-100 text-neutral-500 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 transition-all active:scale-95">
                 Tidak, Kembali
             </button>
 
-            <button wire:click="batalkanPesanan('{{ $orderId }}')" wire:loading.attr="disabled" type="button"
-                class="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700 transition flex items-center gap-2">
+            <x-ui.button wire:click="batalkanPesanan('{{ $orderId }}')" wire:loading.attr="disabled" color="danger" 
+                class="w-full !py-4 shadow-red-500/30">
                 <span wire:loading.remove wire:target="batalkanPesanan">Ya, Batalkan</span>
-                <span wire:loading wire:target="batalkanPesanan">Memproses...</span>
-            </button>
+                <span wire:loading wire:target="batalkanPesanan" class="flex items-center gap-2 justify-center">
+                    <iconify-icon icon="mingcute:loading-fill" class="animate-spin text-xl"></iconify-icon>
+                    <span>Memproses...</span>
+                </span>
+            </x-ui.button>
         </div>
     </div>
 </x-mdal>

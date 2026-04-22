@@ -111,32 +111,64 @@ trait HandlesOrderSubmit
 
             $pesanan->items()->delete();
 
+            $total = 0;
+            $totalProfit = 0;
+            $discountAmount = 0;
+
+            $disc = null;
+            if ($this->discount_id) {
+                $disc = Discount::with('discountItems')->find($this->discount_id);
+            }
+
             foreach ($this->pesanan as $p) {
                 $menu = Menu::find($p['id']);
                 if (!$menu) continue;
 
-                // Gunakan harga dari cart ($p['harga']) yang sudah include extra price dari varian
                 $hargaJual = $p['harga'];
-                $profitPerItem = ($hargaJual - $menu->h_pokok) * $p['qty'];
+                $qty = $p['qty'];
+                $subtotalItem = $hargaJual * $qty;
+                $profitPerItem = ($hargaJual - $menu->h_pokok) * $qty;
+
+                $itemDiscountValue = 0;
+
+                if ($disc && $disc->is_active && $disc->scope !== 'global') {
+                    $isEligible = false;
+                    foreach ($disc->discountItems as $di) {
+                        if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
+                            $isEligible = true; break;
+                        }
+                        if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
+                            $isEligible = true; break;
+                        }
+                    }
+                    if ($isEligible) {
+                        if ($disc->jenis_diskon === 'persentase') {
+                            $itemDiscountValue = $subtotalItem * ($disc->nilai_diskon / 100);
+                            if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
+                                $itemDiscountValue = $disc->maksimum_diskon;
+                            }
+                        } elseif ($disc->jenis_diskon === 'nominal') {
+                            $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                        }
+                    }
+                }
 
                 $pesanan->items()->create([
                     'menus_id' => $p['id'],
-                    'qty' => $p['qty'],
+                    'qty' => $qty,
                     'harga_satuan' => $hargaJual,
-                    'subtotal' => $hargaJual * $p['qty'],
+                    'subtotal' => $subtotalItem,
+                    'discount_value' => $itemDiscountValue,
                     'profit' => $profitPerItem,
                     'catatan_item' => $p['catatan'] ?? null,
                 ]);
+
+                $total += $subtotalItem - $itemDiscountValue;
+                $totalProfit += $profitPerItem - $itemDiscountValue;
             }
 
-            $total = $pesanan->items()->sum('subtotal');
-            $totalProfit = $pesanan->items()->sum('profit');
-            $discountAmount = 0;
-
-            if ($this->discount_id) {
-                $disc = Discount::find($this->discount_id);
+            if ($disc && $disc->is_active && $disc->scope === 'global') {
                 if (
-                    $disc && $disc->is_active &&
                     (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                     (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                 ) {
@@ -216,48 +248,80 @@ trait HandlesOrderSubmit
                 'catatan' => null,
             ]);
 
+            $total = 0;
+            $totalProfit = 0;
+            $discountAmount = 0;
+
+            $disc = null;
+            if ($this->discountId) {
+                $disc = Discount::with('discountItems')->find($this->discountId);
+            }
+
             foreach ($this->pesanan as $p) {
                 $menu = Menu::find($p['id']);
                 if (! $menu) continue;
 
-                // Gunakan harga dari cart ($p['harga']) yang sudah include extra price dari varian
                 $hargaJual = $p['harga'];
-                $profitPerItem = ($hargaJual - $menu->h_pokok) * $p['qty'];
+                $qty = $p['qty'];
+                $subtotalItem = $hargaJual * $qty;
+                $profitPerItem = ($hargaJual - $menu->h_pokok) * $qty;
+
+                $itemDiscountValue = 0;
+
+                if ($disc && $disc->is_active && $disc->scope !== 'global') {
+                    $isEligible = false;
+                    foreach ($disc->discountItems as $di) {
+                        if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
+                            $isEligible = true; break;
+                        }
+                        if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
+                            $isEligible = true; break;
+                        }
+                    }
+                    if ($isEligible) {
+                        if ($disc->jenis_diskon === 'persentase') {
+                            $itemDiscountValue = $subtotalItem * ($disc->nilai_diskon / 100);
+                            if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
+                                $itemDiscountValue = $disc->maksimum_diskon;
+                            }
+                        } elseif ($disc->jenis_diskon === 'nominal') {
+                            $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                        }
+                    }
+                }
 
                 $existingItem = $pesanan->items()->where('menus_id', $p['id'])->first();
 
                 if ($existingItem) {
-                    $newQty = $existingItem->qty + $p['qty'];
+                    $newQty = $existingItem->qty + $qty;
                     $existingItem->update([
                         'qty' => $newQty,
-                        'subtotal' => $newQty * $hargaJual,
-                        'profit' => ($hargaJual - $menu->h_pokok) * $newQty,
+                        'subtotal' => ($newQty * $hargaJual) - $itemDiscountValue, // recalculating assuming all in same batch
+                        'discount_value' => $itemDiscountValue, // simplify, this shouldn't really happen since cart keys are unique
+                        'profit' => (($hargaJual - $menu->h_pokok) * $newQty) - $itemDiscountValue,
                     ]);
                 } else {
                     $newItem = $pesanan->items()->create([
                         'menus_id' => $p['id'],
-                        'qty' => $p['qty'],
+                        'qty' => $qty,
                         'harga_satuan' => $hargaJual,
-                        'subtotal' => $hargaJual * $p['qty'],
-                        'profit' => $profitPerItem,
+                        'subtotal' => $subtotalItem - $itemDiscountValue,
+                        'discount_value' => $itemDiscountValue,
+                        'profit' => $profitPerItem - $itemDiscountValue,
                         'catatan_item' => null,
                     ]);
 
-                    // Simpan pilihan varian ke tabel pivot
                     if (!empty($p['selected_options'])) {
                         $newItem->variants()->sync($p['selected_options']);
                     }
                 }
+
+                $total += $subtotalItem - $itemDiscountValue;
+                $totalProfit += $profitPerItem - $itemDiscountValue;
             }
 
-            $total = $pesanan->items()->sum('subtotal');
-            $totalProfit = $pesanan->items()->sum('profit');
-            $discountAmount = 0;
-
-            if ($this->discountId) {
-                $disc = Discount::find($this->discountId);
+            if ($disc && $disc->is_active && $disc->scope === 'global') {
                 if (
-                    $disc && $disc->is_active &&
                     (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                     (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                 ) {
