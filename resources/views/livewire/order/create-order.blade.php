@@ -38,8 +38,12 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                             @foreach ($category->menus as $item)
                                 @php
-                                    $harga = $item->h_promo == 0 ? $item->harga : $item->h_promo;
+                                    $tieredPrice = $item->menuPrices->first();
+                                    $harga = $tieredPrice 
+                                        ? ($tieredPrice->h_promo > 0 ? $tieredPrice->h_promo : $tieredPrice->harga)
+                                        : ($item->h_promo == 0 ? $item->harga : $item->h_promo);
                                     $hasVariants = $item->variantGroups && $item->variantGroups->count() > 0;
+                                    $isPromo = $tieredPrice ? ($tieredPrice->h_promo > 0) : ($item->h_promo > 0);
                                 @endphp
                                 <article wire:click="addPesanan({{ $item->id }})"
                                     class="group relative flex flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden dark:border-neutral-700 dark:bg-neutral-800">
@@ -60,7 +64,7 @@
                                             </div>
                                         @endif
 
-                                        @if ($item->h_promo > 0)
+                                        @if ($isPromo)
                                             <div
                                                 class="absolute top-3 left-3 bg-red-600 text-white text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest shadow-lg shadow-red-500/30">
                                                 Promo

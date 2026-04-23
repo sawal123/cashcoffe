@@ -58,6 +58,7 @@ class Create extends Component
                     'h_promo' => $priceData['h_promo'] ?? 0,
                 ]);
             }
+            $this->dispatch('refresh-menu');
             $this->dispatch('reset-upload');
             $this->dispatch('showToast', message: 'Menu Berhasil Dibuat', type: 'success', title: 'Success');
             $this->resetForm();
@@ -115,6 +116,7 @@ class Create extends Component
                     ]
                 );
             }
+            $this->dispatch('refresh-menu');
             // $this->dispatch('reset-upload');
             $this->dispatch('showToast', message: 'Menu Berhasil Diupdate', type: 'success', title: 'Success');
         } catch (\Exception $e) {

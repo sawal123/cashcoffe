@@ -155,7 +155,7 @@ trait HandlesOrderSubmit
                     }
                     if ($isEligible) {
                         if ($disc->jenis_diskon === 'persentase') {
-                            $itemDiscountValue = $subtotalItem * ($disc->nilai_diskon / 100);
+                            $itemDiscountValue = round($subtotalItem * ($disc->nilai_diskon / 100));
                             if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
                                 $itemDiscountValue = $disc->maksimum_diskon;
                             }
@@ -190,7 +190,7 @@ trait HandlesOrderSubmit
                         // tidak memenuhi minimum transaksi
                     } else {
                         if ($disc->jenis_diskon === 'persentase') {
-                            $discountAmount = $total * ($disc->nilai_diskon / 100);
+                            $discountAmount = round($total * ($disc->nilai_diskon / 100));
                             if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
                                 $discountAmount = $disc->maksimum_diskon;
                             }
@@ -294,7 +294,7 @@ trait HandlesOrderSubmit
                     }
                     if ($isEligible) {
                         if ($disc->jenis_diskon === 'persentase') {
-                            $itemDiscountValue = $subtotalItem * ($disc->nilai_diskon / 100);
+                            $itemDiscountValue = round($subtotalItem * ($disc->nilai_diskon / 100));
                             if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
                                 $itemDiscountValue = $disc->maksimum_diskon;
                             }
@@ -345,7 +345,7 @@ trait HandlesOrderSubmit
                         // Tidak memenuhi minimal transaksi
                     } else {
                         if ($disc->jenis_diskon === 'persentase') {
-                            $discountAmount = $total * ($disc->nilai_diskon / 100);
+                            $discountAmount = round($total * ($disc->nilai_diskon / 100));
                             if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
                                 $discountAmount = $disc->maksimum_diskon;
                             }

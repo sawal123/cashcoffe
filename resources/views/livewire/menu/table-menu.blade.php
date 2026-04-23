@@ -63,7 +63,13 @@
                     </span>
                 </td>
                 <td class="px-6 py-4">
-                    <span class="font-bold text-neutral-900 dark:text-white">Rp {{ number_format($item->harga, 0, ',', '.') }}</span>
+                    @php
+                        $tieredPrice = $item->menuPrices->first();
+                        $hargaDisplay = $tieredPrice 
+                            ? ($tieredPrice->h_promo > 0 ? $tieredPrice->h_promo : $tieredPrice->harga)
+                            : ($item->h_promo == 0 ? $item->harga : $item->h_promo);
+                    @endphp
+                    <span class="font-bold text-neutral-900 dark:text-white">Rp {{ number_format($hargaDisplay, 0, ',', '.') }}</span>
                 </td>
                 <td class="px-6 py-4 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
                     {{ number_format($item->jumlah_terjual ?? 0, 0, ',', '.') }}

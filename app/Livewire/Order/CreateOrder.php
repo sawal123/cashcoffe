@@ -188,7 +188,7 @@ class CreateOrder extends Component
                                     if ($disc->maksimum_diskon && $potongan > $disc->maksimum_diskon) {
                                         $potongan = $disc->maksimum_diskon;
                                     }
-                                    $potonganPerItem = $potongan;
+                                    $potonganPerItem = round($potongan);
                                 } elseif ($disc->jenis_diskon === 'nominal') {
                                     $potonganPerItem = $disc->nilai_diskon * $p['qty'];
                                 }
@@ -205,7 +205,7 @@ class CreateOrder extends Component
                             $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp '.number_format($disc->minimum_transaksi, 0, ',', '.');
                         } else {
                             if ($disc->jenis_diskon === 'persentase') {
-                                $discountValue = $total * ($disc->nilai_diskon / 100);
+                                $discountValue = round($total * ($disc->nilai_diskon / 100));
                                 if ($disc->maksimum_diskon && $discountValue > $disc->maksimum_diskon) {
                                     $discountValue = $disc->maksimum_diskon;
                                 }
@@ -254,7 +254,7 @@ class CreateOrder extends Component
             $memMessage = $this->member ? 'Member Tidak Tersedia ' : '';
         }
 
-        $totalAfterDiscount = max(0, $total - $discountValue);
+        $totalAfterDiscount = round(max(0, $total - $discountValue));
         $this->total1 = $totalAfterDiscount;
 
         $user = auth()->user();
@@ -278,7 +278,9 @@ class CreateOrder extends Component
                                 ->where('is_available', false);
                         });
                     })
-                    ->with('ingredients');
+                    ->with(['ingredients', 'menuPrices' => function($q) use ($priceTierId) {
+                        $q->where('price_tier_id', $priceTierId);
+                    }]);
             },
         ])->get();
 

@@ -131,7 +131,7 @@
                                 @if (isset($itemDiscounts[$index]) && $itemDiscounts[$index] > 0)
                                     @php
                                         $hargaItemAsli = $p['harga'];
-                                        $hargaDiscounted = $hargaItemAsli - $itemDiscounts[$index] / $p['qty'];
+                                        $hargaDiscounted = round($hargaItemAsli - $itemDiscounts[$index] / $p['qty']);
                                     @endphp
                                     <span
                                         class="text-[10px] text-neutral-400 line-through">Rp{{ number_format($hargaItemAsli, 0, ',', '.') }}</span>

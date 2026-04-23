@@ -7,10 +7,15 @@ use Livewire\Component;
 use App\Models\Category;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\On;
 
 class TableMenu extends Component
 {
     use WithPagination;
+
+    #[On('refresh-menu')]
+    public function refresh() {}
+
     public $search = '';
     public $perPage = 20; // default
     protected $paginationTheme = 'tailwind';
@@ -36,12 +41,18 @@ class TableMenu extends Component
 
     public function render()
     {
+        $user = auth()->user();
+        $priceTierId = $user->branch ? $user->branch->price_tier_id : 1;
+
         $menu = Menu::query()
             ->withSum(['pesananItems as jumlah_terjual' => function ($q) {
                 $q->whereHas('pesanan', function ($p) {
                     $p->where('status', 'selesai');
                 });
             }], 'qty')
+            ->with(['menuPrices' => function($q) use ($priceTierId) {
+                $q->where('price_tier_id', $priceTierId);
+            }])
             ->when($this->category !== '', function ($query) {
                 $query->where('categories_id', $this->category);
             })
