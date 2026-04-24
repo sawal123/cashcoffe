@@ -19,6 +19,11 @@ class TableMenu extends Component
     public $search = '';
     public $perPage = 20; // default
     protected $paginationTheme = 'tailwind';
+    public function updatingCategory()
+    {
+        $this->resetPage();
+    }
+
     public function updatingSearch()
     {
         $this->resetPage();
@@ -42,7 +47,7 @@ class TableMenu extends Component
     public function render()
     {
         $user = auth()->user();
-        $priceTierId = $user->branch ? $user->branch->price_tier_id : 1;
+        $priceTierId = $user->branch ? $user->branch->price_tier_id : (\App\Models\PriceTier::first()?->id ?? 1);
 
         $menu = Menu::query()
             ->withSum(['pesananItems as jumlah_terjual' => function ($q) {
@@ -53,7 +58,7 @@ class TableMenu extends Component
             ->with(['menuPrices' => function($q) use ($priceTierId) {
                 $q->where('price_tier_id', $priceTierId);
             }])
-            ->when($this->category !== '', function ($query) {
+            ->when(!empty($this->category), function ($query) {
                 $query->where('categories_id', $this->category);
             })
             ->when(!empty($this->search), function ($query) {

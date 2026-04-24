@@ -14,6 +14,7 @@ class StruckController extends Controller
     {
         // dd($id);
         $pesanan = Pesanan::with('items.menu', 'items.variants', 'meja')->findOrFail(base64_decode($id));
+
         return view('dashboard.struk', compact('pesanan'));
     }
 

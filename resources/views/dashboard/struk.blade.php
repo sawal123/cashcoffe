@@ -18,8 +18,16 @@
             font-size: 12px;
             line-height: 1.2;
             width: 58mm;
-            /* Sesuaikan dengan lebar kertas (biasanya 58mm atau 80mm) */
-            padding: 2mm;
+            padding: 0;
+            margin: 0;
+        }
+
+        .receipt-wrapper {
+            width: 52mm;
+            /* Area cetak aman untuk kertas 58mm */
+            margin: 0 auto;
+            padding: 2mm 0;
+            overflow: hidden;
         }
 
         .center {
@@ -69,12 +77,15 @@
         @media print {
             @page {
                 size: 58mm auto;
-                /* Biarkan tinggi otomatis */
                 margin: 0;
             }
 
             body {
                 width: 58mm;
+                margin: 0;
+                padding: 0;
+                height: auto;
+                overflow: hidden;
             }
 
             .no-print {
@@ -84,99 +95,108 @@
     </style>
 </head>
 
-<body onload="window.print();">
-    <div class="center">
-        <img src="{{ asset('logo/logo.png') }}" style="max-width:60px; filter: grayscale(1);"><br>
-        <div class="bold">Temuan Space</div>
-        <div style="font-size: 10px;">Jl. Tenis No.30, Ps. Merah Bar., Medan</div>
-        <div>{{ date('d/m/Y H:i') }}</div>
-    </div>
+<body class="bg-white">
+    <div class="receipt-wrapper">
+        <div class="center">
+            <img src="{{ asset('logo/logo.png') }}" style="max-width:60px; filter: grayscale(1);"><br>
+            <div class="bold">Temuan Space</div>
+            <div style="font-size: 10px;">Jl. Tenis No.30, Ps. Merah Bar., Medan</div>
+            <div>{{ date('d/m/Y H:i') }}</div>
+        </div>
 
-    <div class="separator"></div>
-
-    <table>
-        <tr>
-            <td>Inv</td>
-            <td>: {{ $pesanan->kode }}</td>
-        </tr>
-        <tr>
-            <td>Kasir</td>
-            <td>: {{ $pesanan->user->name }}</td>
-        </tr>
-        <tr>
-            <td>Cust</td>
-            <td>: {{ $pesanan->nama ?? '-' }}</td>
-        </tr>
-    </table>
-
-    <div class="separator"></div>
-
-    <table>
-        {{-- {{ $pesanan->items }} --}}
-        @foreach ($pesanan->items as $item)
-            <tr>
-                <td class="col-nama">{{ $item->menu->nama_menu }}</td>
-                <td class="col-qty">{{ $item->qty }}</td>
-                <td class="col-harga">{{ number_format($item->subtotal) }}</td>
-            </tr>
-            {{-- Tampilkan variant jika ada --}}
-            @if ($item->variants->count() > 0)
-                <tr>
-                    <td colspan="3" style="padding-left: 5px; font-size: 10px; color: #555;">
-                        @foreach ($item->variants as $variant)
-                            <div>◦ {{ $variant->nama_opsi }}
-                                @if($variant->extra_price > 0)
-                                    +{{ number_format($variant->extra_price) }}
-                                @endif
-                            </div>
-                        @endforeach
-                    </td>
-                </tr>
-            @endif
-        @endforeach
-    </table>
-
-    <div class="separator"></div>
-
-    <table>
-        <tr>
-            <td class="bold">Sub Total</td>
-            <td class="right">{{ number_format($pesanan->total) }}</td>
-        </tr>
-        @if ($pesanan->discount_value > 0)
-            <tr>
-                <td>Discount</td>
-                <td class="right">-{{ number_format($pesanan->discount_value) }}</td>
-            </tr>
-        @endif
-        <tr>
-            <td class="bold" style="font-size: 14px;">TOTAL</td>
-            <td class="right bold" style="font-size: 14px;">
-                {{ number_format($pesanan->total - $pesanan->discount_value) }}</td>
-        </tr>
-        <tr>
-            <td>Bayar</td>
-            <td class="right">{{ strtoupper($pesanan->metode_pembayaran) }}</td>
-        </tr>
-    </table>
-
-    @if ($pesanan->metode_pembayaran === 'tunai')
         <div class="separator"></div>
+
         <table>
             <tr>
-                <td>Cash</td>
-                <td class="right">{{ number_format($pesanan->uang_tunai) }}</td>
+                <td>Inv</td>
+                <td>: {{ $pesanan->kode }}</td>
             </tr>
             <tr>
-                <td>Kembali</td>
-                <td class="right">{{ number_format($pesanan->kembalian) }}</td>
+                <td>Kasir</td>
+                <td>: {{ $pesanan->user->name }}</td>
+            </tr>
+            <tr>
+                <td>Cust</td>
+                <td>: {{ $pesanan->nama ?? '-' }}</td>
             </tr>
         </table>
-    @endif
 
-    <div class="separator"></div>
-    <div class="center" style="margin-top: 10px;">*** Terima Kasih ***</div>
-    <br>
+        <div class="separator"></div>
+
+        <table>
+            @foreach ($pesanan->items as $item)
+                <tr>
+                    <td class="col-nama">{{ $item->menu->nama_menu }}</td>
+                    <td class="col-qty">{{ $item->qty }}</td>
+                    <td class="col-harga">{{ number_format($item->subtotal) }}</td>
+                </tr>
+                @if ($item->variants->count() > 0)
+                    <tr>
+                        <td colspan="3" style="padding-left: 5px; font-size: 10px; color: #555;">
+                            @foreach ($item->variants as $variant)
+                                <div>◦ {{ $variant->nama_opsi }}
+                                    @if ($variant->extra_price > 0)
+                                        +{{ number_format($variant->extra_price) }}
+                                    @endif
+                                </div>
+                            @endforeach
+                        </td>
+                    </tr>
+                @endif
+            @endforeach
+        </table>
+
+        <div class="separator"></div>
+
+        <table>
+            <tr>
+                <td class="bold">Sub Total</td>
+                <td class="right">{{ number_format($pesanan->total) }}</td>
+            </tr>
+            @if ($pesanan->discount_value > 0)
+                <tr>
+                    <td>Discount</td>
+                    <td class="right">-{{ number_format($pesanan->discount_value) }}</td>
+                </tr>
+            @endif
+            <tr>
+                <td class="bold" style="font-size: 14px;">TOTAL</td>
+                <td class="right bold" style="font-size: 14px;">
+                    {{ number_format($pesanan->total - $pesanan->discount_value) }}
+                </td>
+            </tr>
+            <tr>
+                <td>Bayar</td>
+                <td class="right">{{ strtoupper($pesanan->metode_pembayaran) }}</td>
+            </tr>
+        </table>
+
+        @if ($pesanan->metode_pembayaran === 'tunai')
+            <div class="separator"></div>
+            <table>
+                <tr>
+                    <td>Cash</td>
+                    <td class="right">{{ number_format($pesanan->uang_tunai) }}</td>
+                </tr>
+                <tr>
+                    <td>Kembali</td>
+                    <td class="right">{{ number_format($pesanan->kembalian) }}</td>
+                </tr>
+            </table>
+        @endif
+
+        <div class="separator"></div>
+        <div class="center" style="margin-top: 10px;">*** Terima Kasih ***</div>
+    </div>
+
+    <script>
+        window.onload = function () {
+            window.print();
+        };
+        window.onafterprint = function () {
+            window.history.back();
+        };
+    </script>
 </body>
 
 </html>

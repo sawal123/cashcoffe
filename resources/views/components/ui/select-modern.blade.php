@@ -34,7 +34,7 @@
         x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
         class="z-50 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl shadow-xl w-56 absolute mt-2 left-0 overflow-hidden" style="display: none;">
         <div class="p-1 max-h-[300px] overflow-y-auto">
-            <button type="button" wire:click="$set('{{ $model }}', null)" @click="open = false"
+            <button type="button" wire:click="$set('{{ $model }}', '')" @click="open = false"
                 class="w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors {{ !$activeValue ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : 'text-neutral-600 dark:text-neutral-400' }}">
                 {{ $placeholder }}
             </button>

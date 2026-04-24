@@ -1,4 +1,5 @@
-<div x-data="{ showCartMobile: false }" class=" md:w-80 lg:w-[380px] shrink-0 order-2 md:order-2 md:sticky md:top-24 z-10 h-fit">
+<div x-data="{ showCartMobile: false }"
+    class=" md:w-80 lg:w-[380px] shrink-0 order-2 md:order-2 md:sticky md:top-24 z-10 h-fit">
 
     <style>
         @media (max-width: 639px) {
@@ -57,8 +58,7 @@
             x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
             <div class="flex justify-between items-center max-w-lg mx-auto gap-4">
                 <div class="flex flex-col">
-                    <span
-                        class="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">Total
+                    <span class="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">Total
                         Pembayaran</span>
                     <span class="text-lg font-black text-blue-600 dark:text-blue-400">Rp
                         {{ number_format($totalAfterDiscount, 0, ',', '.') }}</span>
@@ -146,13 +146,11 @@
                         </div>
 
                         <div class="flex flex-col items-center gap-1">
-                            <button wire:click="increment('{{ $index }}')"
-                                @if ($status === 'selesai') disabled @endif
+                            <button wire:click="increment('{{ $index }}')" @if ($status === 'selesai') disabled @endif
                                 class="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition shadow-sm active:scale-90">
                                 <iconify-icon icon="mingcute:add-line" class="text-sm"></iconify-icon>
                             </button>
-                            <button wire:click="decrement('{{ $index }}')"
-                                @if ($status === 'selesai') disabled @endif
+                            <button wire:click="decrement('{{ $index }}')" @if ($status === 'selesai') disabled @endif
                                 class="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-red-600 hover:text-white hover:border-red-600 transition shadow-sm active:scale-90">
                                 <iconify-icon icon="mingcute:minimize-line" class="text-sm"></iconify-icon>
                             </button>
@@ -187,32 +185,32 @@
 
             <div class="grid grid-cols-4 gap-2">
                 @foreach ($pembayaran as $pay)
-                    @php
-                        $icon = 'mingcute:bank-card-line';
-                        if (strtolower($pay) == 'tunai') {
-                            $icon = 'mingcute:wallet-line';
-                        }
-                        if (strtolower($pay) == 'qris') {
-                            $icon = 'mingcute:qrcode-line';
-                        }
-                        if (strtolower($pay) == 'transfer') {
-                            $icon = 'mingcute:transfer-line';
-                        }
-                        if (strtolower($pay) == 'debit') {
-                            $icon = 'mingcute:credit-card-line';
-                        }
-                    @endphp
-                    <button type="button" @if ($loop->index >= 4) x-show="expanded" x-transition @endif
-                        wire:click="$set('metode_pembayaran','{{ $pay }}')"
-                        @click="if('{{ strtolower($pay) }}' === 'tunai') $dispatch('open-tunai-modal')"
-                        class="flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all duration-300 group
-                            {{ $metode_pembayaran === $pay
-                                ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-95'
-                                : 'bg-white dark:bg-neutral-800 border-neutral-100 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-blue-300 dark:hover:border-blue-900 group-active:scale-95' }}">
-                        <iconify-icon icon="{{ $icon }}" class="text-xl mb-1"></iconify-icon>
-                        <span
-                            class="text-[9px] font-black uppercase tracking-tighter text-center leading-none">{{ $pay }}</span>
-                    </button>
+                            @php
+                                $icon = 'mingcute:bank-card-line';
+                                if (strtolower($pay) == 'tunai') {
+                                    $icon = 'mingcute:wallet-line';
+                                }
+                                if (strtolower($pay) == 'qris') {
+                                    $icon = 'mingcute:qrcode-line';
+                                }
+                                if (strtolower($pay) == 'transfer') {
+                                    $icon = 'mingcute:transfer-line';
+                                }
+                                if (strtolower($pay) == 'debit') {
+                                    $icon = 'mingcute:credit-card-line';
+                                }
+                            @endphp
+                            <button type="button" @if ($loop->index >= 4) x-show="expanded" x-transition @endif
+                                wire:click="$set('metode_pembayaran','{{ $pay }}')"
+                                @click="if('{{ strtolower($pay) }}' === 'tunai') $dispatch('open-tunai-modal')"
+                                class="flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all duration-300 group
+                                        {{ $metode_pembayaran === $pay
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-95'
+                    : 'bg-white dark:bg-neutral-800 border-neutral-100 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-blue-300 dark:hover:border-blue-900 group-active:scale-95' }}">
+                                <iconify-icon icon="{{ $icon }}" class="text-xl mb-1"></iconify-icon>
+                                <span
+                                    class="text-[9px] font-black uppercase tracking-tighter text-center leading-none">{{ $pay }}</span>
+                            </button>
                 @endforeach
             </div>
         </div>
@@ -238,7 +236,8 @@
                         preg_match('/\((.*?)\)/', $memMessage, $matches);
                         $badgeName = $matches[1] ?? 'Verified';
                     @endphp
-                    <span class="absolute -bottom-2 bg-green-100 text-green-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border border-green-200 shadow-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[90%]">{{ $badgeName }}</span>
+                    <span
+                        class="absolute -bottom-2 bg-green-100 text-green-700 text-[9px] font-black uppercase px-2 py-0.5 rounded-full border border-green-200 shadow-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[90%]">{{ $badgeName }}</span>
                 @endif
             </button>
 
@@ -264,29 +263,33 @@
                         {{-- Available Vouchers List --}}
                         @if ($status !== 'selesai' && isset($availableDiscountsList) && $availableDiscountsList->count() > 0)
                             <div class="mt-4 mb-2 flex items-center gap-2">
-                                <span class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Voucher Tersedia</span>
+                                <span class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Voucher
+                                    Tersedia</span>
                                 <div class="h-px flex-1 bg-neutral-100 dark:bg-neutral-700"></div>
                             </div>
                             <div class="space-y-2 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
                                 @foreach ($availableDiscountsList as $v)
-                                    <button type="button" 
-                                        wire:click="$set('discount', '{{ $v->kode_diskon }}')"
-                                        class="w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left group
-                                            {{ $discount === $v->kode_diskon 
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-md' 
-                                                : 'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-900 hover:bg-white dark:hover:bg-neutral-800' }}">
-                                        <div>
-                                            <span class="block text-[11px] font-black uppercase tracking-tight {{ $discount === $v->kode_diskon ? 'text-white' : 'text-neutral-900 dark:text-white' }}">{{ $v->nama_diskon }}</span>
-                                            <span class="text-[9px] font-bold {{ $discount === $v->kode_diskon ? 'text-blue-100' : 'text-neutral-400' }}">Kode: {{ $v->kode_diskon }}</span>
-                                        </div>
-                                        <div class="text-xs font-black {{ $discount === $v->kode_diskon ? 'text-white' : 'text-blue-600 dark:text-blue-400' }}">
-                                            @if($v->jenis_diskon === 'persentase')
-                                                {{ (int)$v->nilai_diskon }}%
-                                            @else
-                                                Rp{{ number_format($v->nilai_diskon, 0, ',', '.') }}
-                                            @endif
-                                        </div>
-                                    </button>
+                                                    <button type="button" wire:click="$set('discount', '{{ $v->kode_diskon }}')"
+                                                        class="w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-left group
+                                                                    {{ $discount === $v->kode_diskon
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-md'
+                                    : 'bg-neutral-50 dark:bg-neutral-900/50 border-neutral-100 dark:border-neutral-700 hover:border-blue-300 dark:hover:border-blue-900 hover:bg-white dark:hover:bg-neutral-800' }}">
+                                                        <div>
+                                                            <span
+                                                                class="block text-[11px] font-black uppercase tracking-tight {{ $discount === $v->kode_diskon ? 'text-white' : 'text-neutral-900 dark:text-white' }}">{{ $v->nama_diskon }}</span>
+                                                            <span
+                                                                class="text-[9px] font-bold {{ $discount === $v->kode_diskon ? 'text-blue-100' : 'text-neutral-400' }}">Kode:
+                                                                {{ $v->kode_diskon }}</span>
+                                                        </div>
+                                                        <div
+                                                            class="text-xs font-black {{ $discount === $v->kode_diskon ? 'text-white' : 'text-blue-600 dark:text-blue-400' }}">
+                                                            @if($v->jenis_diskon === 'persentase')
+                                                                {{ (int) $v->nilai_diskon }}%
+                                                            @else
+                                                                Rp{{ number_format($v->nilai_diskon, 0, ',', '.') }}
+                                                            @endif
+                                                        </div>
+                                                    </button>
                                 @endforeach
                             </div>
                         @endif
@@ -321,32 +324,35 @@
 
                         <div class="mt-4 mb-6">
                             @if (isset($memMessage) && $memMessage)
-                                <div class="flex items-center gap-2 {{ str_contains($memMessage, 'Tersedia') ? 'text-green-600' : 'text-amber-600' }}">
+                                <div
+                                    class="flex items-center gap-2 {{ str_contains($memMessage, 'Tersedia') ? 'text-green-600' : 'text-amber-600' }}">
                                     <iconify-icon icon="mingcute:information-line" class="text-lg"></iconify-icon>
                                     <span class="text-[11px] font-bold">{{ $memMessage }}</span>
                                 </div>
-                                
+
                                 {{-- Menampilkan Poin dan Favorit Member --}}
                                 @if(isset($isMember) && $isMember)
-                                <div class="mt-4 p-4 bg-green-50 rounded-2xl border border-green-100">
-                                    <div class="flex justify-between items-center mb-3 pb-3 border-b border-green-200">
-                                        <span class="text-xs font-bold text-green-800">Total Poin:</span>
-                                        <span class="text-lg font-black text-green-600">{{ $memberPoints ?? 0 }} pts</span>
+                                    <div class="mt-4 p-4 bg-green-50 rounded-2xl border border-green-100">
+                                        <div class="flex justify-between items-center mb-3 pb-3 border-b border-green-200">
+                                            <span class="text-xs font-bold text-green-800">Total Poin:</span>
+                                            <span class="text-lg font-black text-green-600">{{ $memberPoints ?? 0 }} pts</span>
+                                        </div>
+                                        @if(isset($memberFavorites) && $memberFavorites->count() > 0)
+                                            <p class="text-[11px] font-bold text-green-700 mb-2 uppercase tracking-wide">Menu
+                                                Favorit:</p>
+                                            <ul class="space-y-1">
+                                                @foreach($memberFavorites as $fav)
+                                                    <li
+                                                        class="text-xs text-green-900 flex justify-between items-center bg-white rounded-lg px-2 py-1 shadow-sm">
+                                                        <span>{{ $fav->menu->nama_menu ?? 'Unknown' }}</span>
+                                                        <span class="font-bold text-green-600 px-1">{{ $fav->total_qty }}x</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            <p class="text-xs text-green-600 italic">Belum ada riwayat pesanan.</p>
+                                        @endif
                                     </div>
-                                    @if(isset($memberFavorites) && $memberFavorites->count() > 0)
-                                        <p class="text-[11px] font-bold text-green-700 mb-2 uppercase tracking-wide">Menu Favorit:</p>
-                                        <ul class="space-y-1">
-                                            @foreach($memberFavorites as $fav)
-                                            <li class="text-xs text-green-900 flex justify-between items-center bg-white rounded-lg px-2 py-1 shadow-sm">
-                                                <span>{{ $fav->menu->nama_menu ?? 'Unknown' }}</span>
-                                                <span class="font-bold text-green-600 px-1">{{ $fav->total_qty }}x</span>
-                                            </li>
-                                            @endforeach
-                                        </ul>
-                                    @else
-                                        <p class="text-xs text-green-600 italic">Belum ada riwayat pesanan.</p>
-                                    @endif
-                                </div>
                                 @endif
                             @endif
                         </div>
@@ -359,9 +365,10 @@
 
         {{-- Active Voucher Tag --}}
         @if (
-            $status !== 'selesai' &&
+                $status !== 'selesai' &&
                 $discount &&
-                ($disc === null || $disc['type'] === 'general' || ($disc['type'] === 'private' && ($isDiscountVerified || (isset($isMember) && $isMember)))))
+                ($disc === null || $disc['type'] === 'general' || ($disc['type'] === 'private' && ($isDiscountVerified || (isset($isMember) && $isMember))))
+            )
             <div
                 class="flex items-center justify-between p-3 mb-6 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-2xl animate-pulse-slow">
                 <div class="flex items-center gap-2">
@@ -369,8 +376,7 @@
                     <span class="text-xs font-black text-green-700 dark:text-green-400">Voucher Aktif:
                         {{ $discount }}</span>
                 </div>
-                <button wire:click="removeDiscount"
-                    class="text-red-500 hover:scale-125 transition-transform"><iconify-icon
+                <button wire:click="removeDiscount" class="text-red-500 hover:scale-125 transition-transform"><iconify-icon
                         icon="mingcute:close-circle-line" class="text-lg"></iconify-icon></button>
             </div>
         @endif
@@ -380,20 +386,20 @@
         {{-- Cash Modal Logic --}}
         @if ($this->isCash)
             <div x-data="{
-                open: true,
-                uang: '',
-                minTunai: {{ $totalAfterDiscount }},
-                sync() {
-                    let clean = this.uang.replace(/\D/g, '');
-                    clean = clean.replace(/^0+/, '');
-                    this.uang = clean;
-                    $wire.set('uang_tunai', clean === '' ? null : parseInt(clean));
-                },
-                get isValid() { return this.uang && parseInt(this.uang) >= this.minTunai; }
-            }" x-init="if ($wire.uang_tunai) {
-                uang = String($wire.uang_tunai);
-                open = false;
-            }" @open-tunai-modal.window="open = true">
+                    open: true,
+                    uang: '',
+                    minTunai: {{ $totalAfterDiscount }},
+                    sync() {
+                        let clean = this.uang.replace(/\D/g, '');
+                        clean = clean.replace(/^0+/, '');
+                        this.uang = clean;
+                        $wire.set('uang_tunai', clean === '' ? null : parseInt(clean));
+                    },
+                    get isValid() { return this.uang && parseInt(this.uang) >= this.minTunai; }
+                }" x-init="if ($wire.uang_tunai) {
+                    uang = String($wire.uang_tunai);
+                    open = false;
+                }" @open-tunai-modal.window="open = true">
 
                 <div x-show="open" style="display: none;"
                     class="fixed inset-0 z-[100] flex items-center justify-center bg-neutral-900/40 backdrop-blur-sm p-4">
@@ -406,8 +412,8 @@
                         <h3 class="text-xl font-black text-neutral-900 dark:text-white mb-2">Pembayaran Tunai</h3>
                         <p class="text-sm text-neutral-500 mb-6">Masukkan jumlah uang yang diterima dari pelanggan.</p>
 
-                        <x-ui.input label="Jumlah Uang" x-model="uang" x-on:input="sync" inputmode="numeric"
-                            type="text" placeholder="50.000" />
+                        <x-ui.input label="Jumlah Uang" x-model="uang" x-on:input="sync" inputmode="numeric" type="text"
+                            placeholder="50.000" />
 
                         <div class="mt-4 min-h-[20px] mb-6">
                             <template x-if="!isValid">
@@ -478,10 +484,9 @@
                     <button type="button" wire:click="{{ $submit }}"
                         class="w-full px-8 py-4 text-lg bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/30 font-bold transition-all active:scale-95"
                         :disabled="$wire.metode_pembayaran === 'tunai' && (!$wire.uang_tunai || $wire.uang_tunai <
-                            {{ $totalAfterDiscount }})"
-                        :class="($wire.metode_pembayaran === 'tunai' && (!$wire.uang_tunai || $wire.uang_tunai <
-                            {{ $totalAfterDiscount }})) ? 'opacity-50 grayscale cursor-not-allowed' :
-                        'hover:bg-blue-700 animate-pulse-slow'">
+                                {{ $totalAfterDiscount }})" :class="($wire.metode_pembayaran === 'tunai' && (!$wire.uang_tunai || $wire.uang_tunai <
+                                {{ $totalAfterDiscount }})) ? 'opacity-50 grayscale cursor-not-allowed' :
+                            'hover:bg-blue-700 animate-pulse-slow'">
                         {{ $teks }} Pesanan
                     </button>
                 @endif

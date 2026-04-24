@@ -112,6 +112,16 @@ class CreateOrder extends Component
         }
     }
 
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSelectedCategoryId()
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
         $menus = Menu::where('is_active', 1)
@@ -258,7 +268,7 @@ class CreateOrder extends Component
         $this->total1 = $totalAfterDiscount;
 
         $user = auth()->user();
-        $priceTierId = $user->branch ? $user->branch->price_tier_id : null;
+        $priceTierId = $user->branch ? $user->branch->price_tier_id : (\App\Models\PriceTier::first()?->id ?? 1);
 
         $categories = Category::with([
             'menus' => function ($query) use ($priceTierId, $user) {

@@ -82,13 +82,13 @@
                 <td class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         @hasrole('superadmin')
-                            <a href="{{ route('menu.variants', $item->id) }}" wire:navigate
+                            <a wire:key="var-{{ $item->id }}" href="{{ route('menu.variants', $item->id) }}" wire:navigate
                                 title="Kelola Varian"
                                 class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all">
-                                <iconify-icon icon="solar:tuning-square-2-linear" class="text-lg"></iconify-icon>
+                                <iconify-icon wire:ignore wire:key="icon-var-{{ $item->id }}" icon="solar:tuning-square-2-linear" class="text-lg"></iconify-icon>
                             </a>
-                            <x-ui.action-edit href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                            <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                            <x-ui.action-edit wire:key="edit-{{ $item->id }}" href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate />
+                            <x-ui.action-delete wire:key="del-{{ $item->id }}" @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
                         @else
                             <span class="text-[10px] text-neutral-400 font-bold uppercase tracking-tighter">Centralized</span>
                         @endhasrole
