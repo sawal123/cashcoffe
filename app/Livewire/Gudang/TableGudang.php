@@ -25,6 +25,7 @@ class TableGudang extends Component
     }
     public function mount()
     {
+        abort_if(!auth()->user()->hasRole('superadmin'), 403);
         $this->search = '';
         $this->perPage = 10;
     }

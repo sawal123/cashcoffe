@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class PesananItem extends Model
 {
     use SoftDeletes;
-    //
+
     protected $guarded = [];
 
     public function pesanan()
     {
         return $this->belongsTo(Pesanan::class, 'pesanans_id');
     }
+
     public function menu()
     {
         return $this->belongsTo(Menu::class, 'menus_id');
@@ -30,7 +31,11 @@ class PesananItem extends Model
      */
     public function variants()
     {
-        return $this->belongsToMany(VariantOption::class, 'pesanan_item_variants')
-            ->withTimestamps();
+        return $this->belongsToMany(
+            VariantOption::class,
+            'pesanan_item_variants',
+            'pesanan_item_id',
+            'variant_option_id'
+        )->withTimestamps();
     }
 }

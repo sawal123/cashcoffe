@@ -158,23 +158,25 @@
                     </a>
                 </li>
 
-                <li>
-                    <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
-                        <span>Gudang</span>
-                    </a>
-                </li>
+                @role('superadmin')
+                    <li>
+                        <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
+                            <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
+                            <span>Gudang</span>
+                        </a>
+                    </li>
 
-                <li>
-                    <a href="/riwayat-gudang" wire:navigate
-                        class="{{ request()->is('riwayat-gudang*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
-                        <span>Riwayat Gudang</span>
-                    </a>
-                </li>
+                    <li>
+                        <a href="/riwayat-gudang" wire:navigate
+                            class="{{ request()->is('riwayat-gudang*') ? 'active-page' : '' }}">
+                            <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
+                            <span>Riwayat Gudang</span>
+                        </a>
+                    </li>
+                @endrole
             @endunlessrole
             <!-- GROUP: User -->
-            @unlessrole('kasir')
+            @role('superadmin')
                 <li class="menu-title">
                     <a href="#" class="menu-title-link" onclick="return false;">
                         <span class="color">Absensi</span>
@@ -186,7 +188,7 @@
                         <span>Absensi</span>
                     </a>
                 </li>
-            @endunlessrole
+            @endrole
 
 
             @role('superadmin')

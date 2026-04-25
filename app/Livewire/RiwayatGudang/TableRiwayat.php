@@ -11,6 +11,11 @@ class TableRiwayat extends Component
 {
     use WithPagination;
 
+    public function mount()
+    {
+        abort_if(!auth()->user()->hasRole('superadmin'), 403);
+    }
+
     public $search = '';
     public $filterType = 'semua'; // semua | masuk | keluar
     public $perPage = 10;

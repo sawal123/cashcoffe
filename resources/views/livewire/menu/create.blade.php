@@ -53,10 +53,10 @@
             <x-ui.input 
                 label="Harga Pokok (Produksi)" 
                 type="number" 
-                step="0.01" 
-                wire:model="h_pokok" 
+                step="1" 
+                wire:model.lazy="h_pokok" 
                 prefix="Rp" 
-                placeholder="0.00" 
+                placeholder="0" 
                 required 
             />
         </div>
@@ -78,7 +78,8 @@
                             <x-ui.input 
                                 label="Harga Jual" 
                                 type="number" 
-                                wire:model="tieredPrices.{{ $tier->id }}.harga" 
+                                step="1"
+                                wire:model.lazy="tieredPrices.tier_{{ $tier->id }}.harga" 
                                 prefix="Rp" 
                                 placeholder="0" 
                                 required 
@@ -86,7 +87,8 @@
                             <x-ui.input 
                                 label="Harga Promo" 
                                 type="number" 
-                                wire:model="tieredPrices.{{ $tier->id }}.h_promo" 
+                                step="1"
+                                wire:model.lazy="tieredPrices.tier_{{ $tier->id }}.h_promo" 
                                 prefix="Rp" 
                                 placeholder="0" 
                             />

@@ -28,7 +28,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     // Menu
     Route::get('/menu', App\Livewire\Menu\TableMenu::class)->name('menu.index');
     Route::get('/menu/create', App\Livewire\Menu\Create::class)->name('menu.create');
-    Route::get('/menu/{id}/edit', App\Livewire\Menu\Create::class)->name('menu.edit');
+    Route::get('/menu/{menuId}/edit', App\Livewire\Menu\Create::class)->name('menu.edit');
     Route::get('/menu/{id}/variants', App\Livewire\Variant\ManageMenuVariant::class)->name('menu.variants');
 
     // Order

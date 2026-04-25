@@ -14,28 +14,42 @@
         $submit = $categoryId ? 'update(' . $categoryId . ')' : 'simpan';
         $button = $categoryId ? 'Update' : 'Simpan';
     @endphp
-    <form wire:submit.prevent='{{ $submit }}' class="grid grid-cols-12 gap-4  items-center">
-        <div class="md:col-span-6 col-span-12">
-            {{-- <label class="form-label">Nama Category</label>
-            <input type="text" class="form-control" required wire:model='category'> --}}
-            <x-input wire:model="category" label="Nama Category" required  class="w-full" />
-        </div>
-        @if ($categoryId)
-            <div class="md:col-span-6 col-span-12">
-                <label class="flex items-center mt-6 cursor-pointer">
-                    <input type="checkbox" class="sr-only peer" wire:model='is_active' {{ $is_active ? 'checked' : '' }}>
-                    <span
-                        class="relative w-11 h-6 bg-gray-400 peer-focus:outline-none rounded-full peer dark:bg-gray-500 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></span>
-                    <span
-                        class="line-height-1 font-medium ms-3 peer-checked:text-primary-600 text-md text-gray-600 dark:text-gray-300">Is
-                        Acitve?</span>
-                </label>
+    <div class="bg-white dark:bg-neutral-800 rounded-3xl p-6 border border-neutral-200 dark:border-neutral-700 shadow-sm max-w-2xl">
+        <form wire:submit.prevent='{{ $submit }}' class="space-y-6">
+            <div class="space-y-4">
+                <x-ui.input 
+                    wire:model="category" 
+                    label="Nama Kategori" 
+                    placeholder="Contoh: Coffee, Non-Coffee, Snack" 
+                    required 
+                    class="!py-3"
+                />
+
+                @if ($categoryId)
+                    <div class="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                        <div>
+                            <span class="block font-bold text-neutral-800 dark:text-neutral-200 text-sm">Status Kategori</span>
+                            <span class="text-xs text-neutral-500">Tentukan apakah kategori ini aktif atau tidak</span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer" wire:model='is_active'>
+                            <div class="w-11 h-6 bg-neutral-200 peer-focus:outline-none rounded-full peer dark:bg-neutral-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-neutral-600 peer-checked:bg-primary-600"></div>
+                        </label>
+                    </div>
+                @endif
             </div>
-        @endif
-        <div class="col-span-12">
-            <button class="btn btn-primary-600" type="submit">{{ $button }}
-                Category</button>
-        </div>
-    </form>
+
+            <div class="flex items-center gap-3 pt-2">
+                <x-ui.button type="submit" color="primary" class="!px-8 !py-3">
+                    <iconify-icon icon="lucide:save" class="mr-2"></iconify-icon>
+                    {{ $button }} Kategori
+                </x-ui.button>
+                
+                <a href="{{ $backUrl }}" wire:navigate class="text-sm font-bold text-neutral-400 hover:text-neutral-600 transition-colors">
+                    Batal
+                </a>
+            </div>
+        </form>
+    </div>
 
 </div>

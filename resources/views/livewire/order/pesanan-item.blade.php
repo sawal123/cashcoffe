@@ -491,7 +491,8 @@
                     </button>
                 @endif
 
-                @if ($status !== 'dibatalkan')
+                {{-- Tombol Batal Pesanan: hanya tampil jika ada item di keranjang ATAU sedang edit order yang sudah ada --}}
+                @if ($status !== 'dibatalkan' && (count($pesanan) > 0 || $orderId))
                     <button @click="$dispatch('open-modal', { name: 'confirm-cancel-modal' })" type="button"
                         class="w-full py-4 rounded-2xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 font-bold uppercase tracking-widest text-[10px] hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center justify-center gap-2">
                         <iconify-icon icon="mingcute:delete-2-line" class="text-lg"></iconify-icon>

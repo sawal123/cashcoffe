@@ -84,45 +84,103 @@
                     {{ $item->created_at->format('H:i') }}
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <div class="flex justify-center gap-2">
-                        @role('admin')
-                            @if ($item->status == 'diproses')
-                                <button wire:click="saji('{{ base64_encode($item->id) }}')"
-                                    wire:loading.attr="disabled" wire:target="saji('{{ base64_encode($item->id) }}')"
-                                    class="w-8 h-8 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all"
-                                    title="Tandai Selesai">
-                                    <iconify-icon icon="mingcute:check-line"></iconify-icon>
+                    <div class="flex justify-center gap-1.5">
+
+                        {{-- ======================= --}}
+                        {{-- STATUS: DIPROSES --}}
+                        {{-- ======================= --}}
+                        @if ($item->status === 'diproses')
+                            {{-- Semua role bisa: Selesai --}}
+                            <button wire:click="saji('{{ base64_encode($item->id) }}')"
+                                wire:loading.attr="disabled" wire:target="saji('{{ base64_encode($item->id) }}')"
+                                title="Tandai Selesai"
+                                class="w-8 h-8 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all">
+                                <iconify-icon icon="mingcute:check-line" class="text-sm"></iconify-icon>
+                            </button>
+
+                            {{-- Semua role bisa: Print --}}
+                            <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
+                                title="Print Struk"
+                                class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                                <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
+                            </a>
+
+                            {{-- Semua role bisa: Edit --}}
+                            <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
+                                title="Edit Pesanan"
+                                class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
+                                <iconify-icon icon="mingcute:edit-line" class="text-sm"></iconify-icon>
+                            </a>
+
+                            {{-- Hanya Superadmin: Delete --}}
+                            @hasrole('superadmin')
+                                <button
+                                    @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })"
+                                    title="Hapus Pesanan"
+                                    class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all">
+                                    <iconify-icon icon="mingcute:delete-2-line" class="text-sm"></iconify-icon>
                                 </button>
-                            @endif
+                            @endhasrole
 
-                            <a href="{{ route('struk.print', base64_encode($item->id)) }}"
-                                class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all"
-                                title="Print Struk">
-                                <iconify-icon icon="lucide:printer" class="text-xs"></iconify-icon>
+                        {{-- ======================= --}}
+                        {{-- STATUS: SELESAI --}}
+                        {{-- ======================= --}}
+                        @elseif ($item->status === 'selesai')
+                            {{-- Semua role bisa: Detail --}}
+                            <button wire:click="showDetail('{{ base64_encode($item->id) }}')"
+                                title="Lihat Detail"
+                                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
+                                <iconify-icon icon="mingcute:eye-line" class="text-sm"></iconify-icon>
+                            </button>
+
+                            {{-- Semua role bisa: Print --}}
+                            <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
+                                title="Print Struk"
+                                class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                                <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
                             </a>
 
-                            <x-ui.action-edit href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate />
+                            {{-- Hanya Superadmin: Edit --}}
+                            @hasrole('superadmin')
+                                <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
+                                    title="Edit Pesanan"
+                                    class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
+                                    <iconify-icon icon="mingcute:edit-line" class="text-sm"></iconify-icon>
+                                </a>
+                            @endhasrole
 
-                            <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
-                        @endrole
+                        {{-- ======================= --}}
+                        {{-- STATUS: DIBATALKAN --}}
+                        {{-- ======================= --}}
+                        @elseif ($item->status === 'dibatalkan' || $item->status === 'batal')
+                            {{-- Semua role bisa: Detail --}}
+                            <button wire:click="showDetail('{{ base64_encode($item->id) }}')"
+                                title="Lihat Detail"
+                                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
+                                <iconify-icon icon="mingcute:eye-line" class="text-sm"></iconify-icon>
+                            </button>
 
-                        @unlessrole('admin')
-                            @if ($item->status !== 'selesai')
-                                @if ($item->status == 'diproses')
-                                    <button wire:click="saji('{{ base64_encode($item->id) }}')"
-                                        class="w-8 h-8 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all">
-                                        <iconify-icon icon="mingcute:check-line"></iconify-icon>
-                                    </button>
-                                @endif
-                                <x-ui.action-edit href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                            @endif
+                            {{-- Hanya Superadmin: Edit, Delete, Print --}}
+                            @hasrole('superadmin')
+                                <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
+                                    title="Edit Pesanan"
+                                    class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
+                                    <iconify-icon icon="mingcute:edit-line" class="text-sm"></iconify-icon>
+                                </a>
+                                <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
+                                    title="Print Struk"
+                                    class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                                    <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
+                                </a>
+                                <button
+                                    @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })"
+                                    title="Hapus Pesanan"
+                                    class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all">
+                                    <iconify-icon icon="mingcute:delete-2-line" class="text-sm"></iconify-icon>
+                                </button>
+                            @endhasrole
+                        @endif
 
-                            <a href="{{ route('struk.print', base64_encode($item->id)) }}"
-                                class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all"
-                                title="Print Struk">
-                                <iconify-icon icon="lucide:printer" class="text-xs"></iconify-icon>
-                            </a>
-                        @endunlessrole
                     </div>
                 </td>
             </tr>
@@ -142,6 +200,123 @@
         {{ $orders->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}
     </div>
 
+    {{-- ============================================ --}}
+    {{-- MODAL: DETAIL PESANAN --}}
+    {{-- ============================================ --}}
+    <x-mdal name="detail-order">
+        @if ($detailOrder ?? null)
+            <div class="px-6 py-6">
+                {{-- Header --}}
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-neutral-100 dark:border-neutral-700">
+                    <div>
+                        <span class="text-[10px] font-black text-neutral-400 uppercase tracking-widest block mb-1">Detail Pesanan</span>
+                        <h3 class="text-xl font-black text-neutral-900 dark:text-neutral-100">
+                            #{{ $detailOrder->kode }}
+                        </h3>
+                    </div>
+                    <div class="text-right">
+                        @php
+                            $sc = match($detailOrder->status) {
+                                'selesai'    => 'bg-green-100 text-green-700 border-green-200',
+                                'diproses'   => 'bg-amber-100 text-amber-700 border-amber-200',
+                                'dibatalkan','batal' => 'bg-rose-100 text-rose-700 border-rose-200',
+                                default      => 'bg-neutral-100 text-neutral-700 border-neutral-200',
+                            };
+                        @endphp
+                        <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $sc }}">
+                            {{ ucwords($detailOrder->status) }}
+                        </span>
+                        <p class="text-xs text-neutral-400 mt-2">{{ $detailOrder->created_at->format('d M Y, H:i') }}</p>
+                    </div>
+                </div>
+
+                {{-- Info Row --}}
+                <div class="grid grid-cols-2 gap-3 mb-5">
+                    <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
+                        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Pelanggan</span>
+                        <span class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $detailOrder->nama ?: '-' }}</span>
+                    </div>
+                    <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
+                        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Metode Bayar</span>
+                        <span class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ ucwords($detailOrder->metode_pembayaran ?? '-') }}</span>
+                    </div>
+                    <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
+                        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Kasir</span>
+                        <span class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $detailOrder->user->name ?? '-' }}</span>
+                    </div>
+                    <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
+                        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Diskon</span>
+                        <span class="text-sm font-bold text-green-600">-Rp{{ number_format($detailOrder->discount_value ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                </div>
+
+                {{-- Item List --}}
+                <div class="mb-5">
+                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                        <iconify-icon icon="mingcute:list-check-line" class="text-blue-600 text-base"></iconify-icon>
+                        Item Pesanan
+                    </h4>
+                    <div class="space-y-2 max-h-[240px] overflow-y-auto pr-1">
+                        @foreach ($selectedOrderItems as $oi)
+                            <div class="flex items-center justify-between p-3 bg-neutral-50 dark:bg-neutral-900 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold text-neutral-800 dark:text-neutral-200 line-clamp-1">
+                                        {{ $oi->menus->nama_menu ?? 'Menu Dihapus' }}
+                                    </p>
+                                    @if ($oi->variants && $oi->variants->count() > 0)
+                                        <p class="text-[10px] text-neutral-400 italic">
+                                            {{ $oi->variants->pluck('nama_opsi')->filter()->join(', ') }}
+                                        </p>
+                                    @endif
+                                    <p class="text-xs text-neutral-400 mt-0.5">
+                                        Rp{{ number_format($oi->harga_satuan ?? 0, 0, ',', '.') }} × {{ $oi->qty }}
+                                    </p>
+                                </div>
+                                <span class="text-sm font-black text-neutral-900 dark:text-white ml-3">
+                                    Rp{{ number_format($oi->subtotal ?? ($oi->harga_satuan * $oi->qty), 0, ',', '.') }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Footer Total --}}
+                <div class="border-t-2 border-dashed border-neutral-100 dark:border-neutral-700 pt-4 space-y-2">
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">Subtotal</span>
+                        <span class="font-bold text-neutral-700 dark:text-neutral-300">Rp{{ number_format($detailOrder->total ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm">
+                        <span class="text-neutral-400 font-bold uppercase tracking-widest text-[10px]">Diskon</span>
+                        <span class="font-bold text-green-600">-Rp{{ number_format($detailOrder->discount_value ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-3 border-t border-neutral-100 dark:border-neutral-700">
+                        <span class="font-black text-neutral-700 dark:text-neutral-300 uppercase text-sm">Total Akhir</span>
+                        <span class="text-xl font-black text-blue-700 dark:text-blue-400">
+                            Rp{{ number_format(max(0, ($detailOrder->total ?? 0) - ($detailOrder->discount_value ?? 0)), 0, ',', '.') }}
+                        </span>
+                    </div>
+                </div>
+
+                {{-- Action Footer --}}
+                <div class="flex gap-3 mt-6 pt-4 border-t border-neutral-100 dark:border-neutral-700">
+                    <button type="button" x-on:click="$dispatch('close-modal', { name: 'detail-order' })"
+                        class="flex-1 px-5 py-3 rounded-2xl border border-neutral-300 bg-white dark:bg-neutral-800 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 text-sm font-bold transition">
+                        Tutup
+                    </button>
+                    <a href="{{ route('struk.print', base64_encode($detailOrder->id)) }}" target="_blank"
+                        class="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
+                        <iconify-icon icon="lucide:printer" class="text-base"></iconify-icon>
+                        Print Struk
+                    </a>
+                </div>
+            </div>
+        @endif
+    </x-mdal>
+
+    {{-- ============================================ --}}
+    {{-- MODAL: KONFIRMASI HAPUS --}}
+    {{-- ============================================ --}}
     <x-mdal name="confirm-delete">
         <div class="px-6 py-6 text-center">
             <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
@@ -166,3 +341,4 @@
         </div>
     </x-mdal>
 </div>
+

@@ -47,7 +47,9 @@
                     <div class="flex justify-center gap-2">
                         <x-ui.action-detail wire:click="viewMemberDetails('{{ base64_encode($item->id) }}')" /> 
                         <x-ui.action-edit href="/member/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                        <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                        @role('superadmin')
+                            <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                        @endrole
                     </div>
                 </td>
             </tr>

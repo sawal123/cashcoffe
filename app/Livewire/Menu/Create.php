@@ -52,12 +52,13 @@ class Create extends Component
             ]);
 
             // Simpan Harga Bertingkat
-            foreach ($this->tieredPrices as $tierId => $priceData) {
+            foreach ($this->tieredPrices as $key => $priceData) {
+                $tierId = str_replace('tier_', '', $key);
                 \App\Models\MenuPrice::create([
                     'menu_id' => $menu->id,
                     'price_tier_id' => $tierId,
-                    'harga' => $priceData['harga'] ?? 0,
-                    'h_promo' => $priceData['h_promo'] ?? 0,
+                    'harga' => (int) round($priceData['harga'] ?? 0),
+                    'h_promo' => (int) round($priceData['h_promo'] ?? 0),
                 ]);
             }
             $this->dispatch('refresh-menu');
@@ -109,12 +110,13 @@ class Create extends Component
             ]);
 
             // Sync Harga Bertingkat
-            foreach ($this->tieredPrices as $tierId => $priceData) {
+            foreach ($this->tieredPrices as $key => $priceData) {
+                $tierId = str_replace('tier_', '', $key);
                 \App\Models\MenuPrice::updateOrCreate(
                     ['menu_id' => $menu->id, 'price_tier_id' => $tierId],
                     [
-                        'harga' => $priceData['harga'] ?? 0,
-                        'h_promo' => $priceData['h_promo'] ?? 0,
+                        'harga' => (int) round($priceData['harga'] ?? 0),
+                        'h_promo' => (int) round($priceData['h_promo'] ?? 0),
                     ]
                 );
             }
@@ -134,7 +136,7 @@ class Create extends Component
 
         // Inisialisasi tieredPrices dengan tier yang ada
         foreach ($tiers as $tier) {
-            $this->tieredPrices[$tier->id] = ['harga' => 0, 'h_promo' => 0];
+            $this->tieredPrices['tier_' . $tier->id] = ['harga' => 0, 'h_promo' => 0];
         }
 
         if ($menuId) {
@@ -149,10 +151,10 @@ class Create extends Component
                 $this->deskripsi = $menu->deskripsi;
 
                 // Load existing prices from menu_prices
-                foreach ($this->tieredPrices as $tierId => $val) {
-                    $mp = $menu->menuPrices()->where('price_tier_id', $tierId)->first();
+                foreach ($tiers as $tier) {
+                    $mp = $menu->menuPrices()->where('price_tier_id', $tier->id)->first();
                     if ($mp) {
-                        $this->tieredPrices[$tierId] = [
+                        $this->tieredPrices['tier_' . $tier->id] = [
                             'harga' => (int) $mp->harga,
                             'h_promo' => (int) $mp->h_promo,
                         ];
@@ -177,8 +179,8 @@ class Create extends Component
         $this->h_pokok = '';
         
         // Reset tiered prices
-        foreach ($this->tieredPrices as $tierId => $val) {
-            $this->tieredPrices[$tierId] = ['harga' => 0, 'h_promo' => 0];
+        foreach ($this->tieredPrices as $key => $val) {
+            $this->tieredPrices[$key] = ['harga' => 0, 'h_promo' => 0];
         }
     }
     public function render()

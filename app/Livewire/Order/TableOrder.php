@@ -21,6 +21,10 @@ class TableOrder extends Component
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
     protected $paginationTheme = 'tailwind';
+
+    public $detailOrder = null;
+    public $selectedOrderItems = [];
+
     public function resetSearch()
     {
         $this->reset('search');
@@ -118,6 +122,19 @@ class TableOrder extends Component
         $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
     }
 
+    public function showDetail($encodedId)
+    {
+        $id = base64_decode($encodedId);
+        $this->detailOrder = Pesanan::with([
+            'items:id,pesanans_id,menus_id,qty,harga_satuan,subtotal',
+            'items.menus:id,nama_menu',
+            'items.variants',
+            'user:id,name',
+        ])->findOrFail($id);
+
+        $this->selectedOrderItems = $this->detailOrder->items;
+        $this->dispatch('open-modal', name: 'detail-order');
+    }
 
     public function delPesanan($id)
     {
@@ -162,8 +179,10 @@ class TableOrder extends Component
             ->paginate($this->perPage);
 
         return view('livewire.order.table-order', [
-            'orders' => $order,
-            'title' => 'Daftar Pesanan Hari Ini'
+            'orders'             => $order,
+            'title'              => 'Daftar Pesanan Hari Ini',
+            'detailOrder'        => $this->detailOrder,
+            'selectedOrderItems' => $this->selectedOrderItems,
         ])->layout('layouts.app', ['title' => 'Pesanan']);
     }
 }

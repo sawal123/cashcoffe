@@ -118,9 +118,17 @@
                 </td>
                 <td class="px-6 py-5 text-sm text-center">
                     <div class="flex items-center justify-center gap-3">
-                        <x-ui.action-edit :href="route('riwayat-stock.edit', base64_encode($item->id))" wire:navigate />
-                        <x-ui.action-delete
-                            @click="$dispatch('open-modal', { name: 'confirm-delete', id: '{{ base64_encode($item->id) }}' })" />
+                        @hasrole('superadmin')
+                            <x-ui.action-edit :href="route('riwayat-stock.edit', base64_encode($item->id))" wire:navigate />
+                            <x-ui.action-delete
+                                @click="$dispatch('open-modal', { name: 'confirm-delete', id: '{{ base64_encode($item->id) }}' })" />
+                        @endhasrole
+
+                        @hasrole('manager')
+                            @if ($item->tipe === 'in')
+                                <x-ui.action-edit :href="route('riwayat-stock.edit', base64_encode($item->id))" wire:navigate />
+                            @endif
+                        @endhasrole
                     </div>
                 </td>
             </tr>

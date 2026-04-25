@@ -60,7 +60,7 @@ class CategoryCreate extends Component
         $title = $this->categoryId ? 'Edit Kategori Menu' : 'Tambah Kategori Baru';
         return view('livewire.category.category-create', [
             'title' => $title,
-            'backUrl' => '/categories'
+            'backUrl' => '/category'
         ])->layout('layouts.app', ['title' => $title]);
     }
 }
