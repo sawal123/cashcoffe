@@ -21,11 +21,12 @@ class TableCategory extends Component
     public function deleteCategory($id)
     {
         $category = Category::where('id', base64_decode($id))->first();
-        $category->delete();
-        $this->dispatch('showToast', message: 'Category Berhasil Dihapus.', type: 'success', title: 'Success');
-        // dd($category);
+        if ($category) {
+            $category->delete();
+            $this->dispatch('showToast', message: 'Category Berhasil Dihapus.', type: 'success', title: 'Success');
+        }
     }
-    // public function
+    
     public function render()
     {
         $category = Category::query()
@@ -34,7 +35,10 @@ class TableCategory extends Component
             })
             ->orderBy('created_at', 'desc')
             ->paginate($this->perPage);
-        // dd($category);
-        return view('livewire.category.table-category', ['category' => $category]);
+            
+        return view('livewire.category.table-category', [
+            'category' => $category,
+            'title' => 'Manajemen Kategori Menu'
+        ])->layout('layouts.app', ['title' => 'Kategori']);
     }
 }

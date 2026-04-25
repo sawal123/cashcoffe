@@ -16,28 +16,32 @@ class CreateGudang extends Component
     public $submit = 'simpan';
     public $button = 'Simpan';
     public $daftarBahan = [];
+    public $title = 'Tambah Stok Gudang';
+    public $backUrl = '/gudang';
 
-    public function mount()
+    public function mount($gudangId = null)
     {
         $this->daftarBahan = Gudang::pluck('nama_bahan')->toArray();
-        $gudang = GudangRiwayat::find(\base64_decode($this->gudangId));
+        
+        if ($gudangId) {
+            $this->gudangId = $gudangId;
+            $gudang = GudangRiwayat::find(\base64_decode($this->gudangId));
 
-        // dd($gudang->gudang->nama_bahan);
-        if (!$gudang) {
-            $this->dispatch('showToast', [
-                'type' => 'error',
-                'message' => 'Data bahan tidak ditemukan.'
-            ]);
-            return;
+            if ($gudang) {
+                $this->title = 'Edit Stok Gudang';
+                $this->button = 'Update';
+                $this->submit = 'update';
+                $this->nama_bahan = $gudang->gudang->nama_bahan;
+                $this->jumlah_masuk = $gudang->jumlah;
+                $this->satuan = $gudang->gudang->satuan;
+                $this->harga_satuan = $gudang->harga_satuan;
+                $this->minimum_stok = $gudang->minimum_stok;
+                $this->keterangan = $gudang->keterangan;
+                $this->tipe = $gudang->tipe;
+            } else {
+                $this->dispatch('showToast', type: 'error', message: 'Data bahan tidak ditemukan.');
+            }
         }
-        $this->gudangId = $gudang->id;
-        $this->nama_bahan = $gudang->gudang->nama_bahan;
-        $this->jumlah_masuk = $gudang->jumlah;
-        $this->satuan = $gudang->gudang->satuan;
-        $this->harga_satuan = $gudang->harga_satuan;
-        $this->minimum_stok = $gudang->minimum_stok;
-        $this->keterangan = $gudang->keterangan;
-        $this->tipe = $gudang->tipe;
     }
 
 
@@ -204,6 +208,9 @@ class CreateGudang extends Component
 
     public function render()
     {
-        return view('livewire.gudang.create-gudang');
+        return view('livewire.gudang.create-gudang', [
+            'title' => $this->title,
+            'backUrl' => $this->backUrl
+        ])->layout('layouts.app', ['title' => $this->title]);
     }
 }

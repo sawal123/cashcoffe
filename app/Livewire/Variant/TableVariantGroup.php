@@ -132,7 +132,8 @@ class TableVariantGroup extends Component
             'groups' => VariantGroup::where('nama_group', 'like', '%' . $this->search . '%')
                 ->withCount('options')
                 ->latest()
-                ->paginate(10)
-        ]);
+                ->paginate(10),
+            'title' => 'Daftar Grup Varian Produk'
+        ])->layout('layouts.app', ['title' => 'Grup Varian']);
     }
 }

@@ -1,4 +1,9 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Pengeluaran' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Pengeluaran'" />
+    </div>
+
     <x-toast />
 
     @php
@@ -125,6 +130,10 @@
             class="w-12 h-12 flex items-center justify-center bg-white dark:bg-neutral-900 rounded-2xl shadow-sm text-neutral-500 hover:text-blue-600 transition-all">
             <iconify-icon icon="lucide:sliders-horizontal" class="text-xl"></iconify-icon>
         </button>
+
+        <x-ui.button-link href="/pengeluaran/create" icon="mingcute:add-circle-line">
+            Tambah Pengeluaran
+        </x-ui.button-link>
     </div>
 
     {{-- Premium Table --}}

@@ -51,8 +51,11 @@ class ManageMenuVariant extends Component
 
     public function render()
     {
+        $title = 'Varian Menu: ' . $this->menu->nama_menu;
         return view('livewire.variant.manage-menu-variant', [
             'allGroups' => VariantGroup::latest()->get(),
-        ]);
+            'title' => $title,
+            'backUrl' => '/menu'
+        ])->layout('layouts.app', ['title' => $title]);
     }
 }

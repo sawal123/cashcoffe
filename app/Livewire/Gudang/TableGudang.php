@@ -65,7 +65,8 @@ class TableGudang extends Component
             ->orderBy('nama_bahan', 'asc')
             ->paginate($this->perPage);
         return view('livewire.gudang.table-gudang', [
-            'gudangs' => $gudangs
-        ]);
+            'gudangs' => $gudangs,
+            'title' => 'Stok Gudang (Bahan Mentah)'
+        ])->layout('layouts.app', ['title' => 'Stok Gudang']);
     }
 }

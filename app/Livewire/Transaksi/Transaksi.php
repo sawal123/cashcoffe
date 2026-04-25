@@ -287,6 +287,6 @@ class Transaksi extends Component
 
         return view('livewire.transaksi.transaksi', [
             'orders' => $orders
-        ]);
+        ])->layout('layouts.app', ['title' => 'Transaksi']);
     }
 }

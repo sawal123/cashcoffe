@@ -68,8 +68,11 @@ class IndexMeja extends Component
 
     public function render()
     {
-        $meja = Meja::all();
+        $mejas = Meja::all();
 
-        return view('livewire.meja.index-meja', ['meja' => $meja]);
+        return view('livewire.meja.index-meja', [
+            'mejas' => $mejas,
+            'title' => 'Pengaturan Meja'
+        ])->layout('layouts.app', ['title' => 'Meja']);
     }
 }

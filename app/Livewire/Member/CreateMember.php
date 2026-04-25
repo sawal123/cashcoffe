@@ -11,12 +11,16 @@ class CreateMember extends Component
 {
     public $name, $email, $password, $phone, $address;
     public $memberId;
+    public $title = 'Tambah Member Baru';
+    public $backUrl = '/member';
 
-    public function mount()
+    public function mount($memberId = null)
     {
-        if ($this->memberId) {
+        if ($memberId) {
+            $this->memberId = $memberId;
             $member = Member::with('user')->find(\base64_decode($this->memberId));
             if ($member) {
+                $this->title = 'Edit Member';
                 $this->name    = $member->user->name ?? '';
                 $this->email   = $member->user->email ?? '';
                 $this->phone   = $member->phone;
@@ -84,6 +88,9 @@ class CreateMember extends Component
     }
     public function render()
     {
-        return view('livewire.member.create-member');
+        return view('livewire.member.create-member', [
+            'title' => $this->title,
+            'backUrl' => $this->backUrl
+        ])->layout('layouts.app', ['title' => $this->title]);
     }
 }

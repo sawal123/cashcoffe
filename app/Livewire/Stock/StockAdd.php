@@ -22,7 +22,7 @@ class StockAdd extends Component
         $this->stockId = $stockId;
 
         if ($stockId) {
-            $riwayat = RiwayatStock::findOrFail($stockId);
+            $riwayat = RiwayatStock::findOrFail(base64_decode($stockId));
 
             $this->ingredient_id = $riwayat->ingredient_id;
             $this->qty = intval($riwayat->qty);
@@ -100,8 +100,11 @@ class StockAdd extends Component
 
     public function render()
     {
+        $title = $this->stockId ? 'Edit Input Stok' : 'Input Stok Masuk';
         return view('livewire.stock.stock-add', [
-            'ingredients' => Ingredients::orderBy('nama_bahan')->get()
-        ]);
+            'ingredients' => Ingredients::orderBy('nama_bahan')->get(),
+            'title' => $title,
+            'backUrl' => '/riwayat-stock'
+        ])->layout('layouts.app', ['title' => $title]);
     }
 }

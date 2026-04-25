@@ -18,12 +18,7 @@
         <!-- ..::  navbar end ::.. -->
         <div class="dashboard-main-body">
 
-            <!-- ..::  breadcrumb  start ::.. -->
-            <x-breadcrumb title='{{ isset($title) ? $title : '' }}'
-                subTitle='{{ isset($subTitle) ? $subTitle : '' }}' />
-            <!-- ..::  header area end ::.. -->
-
-            {{-- @yield('content') --}}
+            {{-- Page Header (Title & Breadcrumb) will be handled by each page --}}
             <div x-data="{ modalActive: false }">
                 <div :class="{ 'blur-sm scale-[0.99]': modalActive }" class="transition duration-300 ease-in-out">
                     {{-- Semua konten halaman --}}

@@ -43,12 +43,20 @@ trait HandlesCartInput
 
         // Jika menu punya varian, buka modal penyesuaian
         if ($item->variantGroups->count() > 0) {
+            $optionPrices = [];
+            foreach ($item->variantGroups as $group) {
+                foreach ($group->options as $opt) {
+                    $optionPrices[$opt->id] = (int) $opt->extra_price;
+                }
+            }
+
             $this->selectedMenuForVariant = [
                 'id' => $item->id,
                 'nama_menu' => $item->nama_menu,
                 'harga_base' => (int) $harga,
                 'gambar' => $item->gambar,
-                'groups' => $item->variantGroups
+                'groups' => $item->variantGroups,
+                'option_prices' => $optionPrices
             ];
             $this->tempSelectedOptions = [];
             $this->totalExtraPrice = 0;
@@ -98,20 +106,28 @@ trait HandlesCartInput
     private function recalculateExtraPrice()
     {
         $total = 0;
+        $allSelectedOptionIds = [];
         foreach ($this->tempSelectedOptions as $groupId => $optionIds) {
             foreach ($optionIds as $optId) {
-                $option = \App\Models\VariantOption::find($optId);
-                if ($option) {
-                    $total += (int) $option->extra_price;
-                }
+                $allSelectedOptionIds[] = $optId;
             }
         }
-        $this->totalExtraPrice = $total;
+
+        if (count($allSelectedOptionIds) > 0) {
+            $total = \App\Models\VariantOption::whereIn('id', $allSelectedOptionIds)->sum('extra_price');
+        }
+
+        $this->totalExtraPrice = (int) $total;
     }
 
-    public function confirmVariant()
+    public function confirmVariant($clientSelectedOptions = null)
     {
         if (!$this->selectedMenuForVariant) return;
+
+        if ($clientSelectedOptions) {
+            $this->tempSelectedOptions = json_decode($clientSelectedOptions, true);
+            $this->recalculateExtraPrice();
+        }
 
         $menu = $this->selectedMenuForVariant;
         

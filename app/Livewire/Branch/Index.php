@@ -23,7 +23,11 @@ class Index extends Component
     {
         $branches = Branch::with('priceTier')->get();
         $tiers = \App\Models\PriceTier::all();
-        return view('livewire.branch.index', compact('branches', 'tiers'));
+        return view('livewire.branch.index', [
+            'branches' => $branches,
+            'tiers' => $tiers,
+            'title' => 'Manajemen Cabang & Outlet'
+        ])->layout('layouts.app', ['title' => 'Cabang']);
     }
 
     public function create()

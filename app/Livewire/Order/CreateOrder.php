@@ -28,7 +28,8 @@ class CreateOrder extends Component
 
     public $orderId = null;
 
-    public $title = 'Order / Create';
+    public $title = 'Buat Pesanan Baru';
+    public $backUrl = '/order';
 
     public $submit = 'saveOrder';
 
@@ -96,6 +97,7 @@ class CreateOrder extends Component
         if ($this->orderId) {
             $this->submit = 'updateOrder';
             $this->teks = 'Update';
+            $this->title = 'Edit Pesanan';
             $this->editOrder(base64_decode($this->orderId));
         }
         $this->mejas = Meja::all();
@@ -124,16 +126,12 @@ class CreateOrder extends Component
 
     public function render()
     {
-        $menus = Menu::where('is_active', 1)
-            ->where('nama_menu', 'like', '%'.$this->search.'%')
-            ->paginate($this->perPage);
-
         $discMessage = null;
         $discountValue = 0;
         $result = null; 
         $itemDiscounts = []; // UI display
 
-        $cekMember = $this->member ? Member::where('phone', $this->member)->first() : null;
+        $cekMember = $this->member ? Member::with('user')->where('phone', $this->member)->first() : null;
 
         // Hitung total awal
         $total = collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
@@ -177,8 +175,13 @@ class CreateOrder extends Component
                     if ($disc->scope !== 'global') {
                         // lazy load items
                         $disc->loadMissing('discountItems');
+                        
+                        // Pre-fetch all menus in cart to avoid N+1
+                        $cartMenuIds = collect($this->pesanan)->pluck('id')->unique()->toArray();
+                        $cartMenus = Menu::whereIn('id', $cartMenuIds)->get()->keyBy('id');
+
                         foreach ($this->pesanan as $key => $p) {
-                            $menuDisplay = Menu::find($p['id']);
+                            $menuDisplay = $cartMenus->get($p['id']);
                             if(!$menuDisplay) continue;
                             
                             $isEligible = false;
@@ -270,15 +273,19 @@ class CreateOrder extends Component
         $user = auth()->user();
         $priceTierId = $user->branch ? $user->branch->price_tier_id : (\App\Models\PriceTier::first()?->id ?? 1);
 
-        $categories = Category::with([
+        $categories = Category::whereHas('menus', function($q) use ($priceTierId, $user) {
+            $q->where('is_active', true)
+              ->where('nama_menu', 'like', '%'.$this->search.'%')
+              ->whereHas('menuPrices', function ($p) use ($priceTierId) {
+                  $p->where('price_tier_id', $priceTierId);
+              });
+        })->with([
             'menus' => function ($query) use ($priceTierId, $user) {
                 $query->where('is_active', true)
                     ->where('nama_menu', 'like', '%'.$this->search.'%')
-                    // Syarat: Hanya menu yang sudah diset harganya di Tier Cabang ini (Dipilih Pusat)
                     ->whereHas('menuPrices', function ($q) use ($priceTierId) {
                         $q->where('price_tier_id', $priceTierId);
                     })
-                    // Syarat Tambahan: Belum dinonaktifkan oleh Cabang
                     ->where(function ($q) use ($user) {
                         $q->whereNotExists(function ($sub) use ($user) {
                             $sub->select(\Illuminate\Support\Facades\DB::raw(1))
@@ -288,7 +295,7 @@ class CreateOrder extends Component
                                 ->where('is_available', false);
                         });
                     })
-                    ->with(['ingredients', 'menuPrices' => function($q) use ($priceTierId) {
+                    ->with(['variantGroups', 'menuPrices' => function($q) use ($priceTierId) {
                         $q->where('price_tier_id', $priceTierId);
                     }]);
             },
@@ -306,7 +313,6 @@ class CreateOrder extends Component
             ->get();
 
         return view('livewire.order.create-order', [
-            'menus' => $menus,
             'orderId' => $this->orderId,
             'status' => $this->status,
             'disc' => $result,
@@ -322,6 +328,8 @@ class CreateOrder extends Component
             'memberFavorites' => $memberFavorites,
             'memberPoints' => $cekMember ? $cekMember->points : 0,
             'availableDiscountsList' => $availableDiscounts,
-        ]);
+            'title' => $this->title,
+            'backUrl' => $this->backUrl
+        ])->layout('layouts.app', ['title' => $this->title]);
     }
 }

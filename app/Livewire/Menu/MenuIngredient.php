@@ -77,6 +77,6 @@ class MenuIngredient extends Component
         return view('livewire.menu.menu-ingredient', [
             'menus' => Menu::all(),
             'ingredients' => Ingredients::all()
-        ]);
+        ])->layout('layouts.app', ['title' => 'Menu Ingredient']);
     }
 }

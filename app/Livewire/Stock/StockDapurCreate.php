@@ -28,7 +28,7 @@ class StockDapurCreate extends Component
         $this->stockId = $stockId;
         // dd($stockId);
         if ($stockId) {
-            $bahan = Ingredients::findOrFail($stockId);
+            $bahan = Ingredients::findOrFail(base64_decode($stockId));
             // dd($bahan->stok);
             $this->nama_bahan = $bahan->nama_bahan;
             $this->satuan_id = $bahan->satuan_id;
@@ -152,6 +152,10 @@ class StockDapurCreate extends Component
 
     public function render()
     {
-        return view('livewire.stock.stock-dapur-create');
+        $title = $this->stockId ? 'Edit Bahan Dapur' : 'Tambah Bahan Dapur';
+        return view('livewire.stock.stock-dapur-create', [
+            'title' => $title,
+            'backUrl' => '/stock-dapur'
+        ])->layout('layouts.app', ['title' => $title]);
     }
 }

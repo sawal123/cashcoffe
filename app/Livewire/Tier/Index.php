@@ -18,7 +18,10 @@ class Index extends Component
     public function render()
     {
         $tiers = PriceTier::all();
-        return view('livewire.tier.index', compact('tiers'));
+        return view('livewire.tier.index', [
+            'tiers' => $tiers,
+            'title' => 'Daftar Tier & Level Harga'
+        ])->layout('layouts.app', ['title' => 'Tier Harga']);
     }
 
     public function create()

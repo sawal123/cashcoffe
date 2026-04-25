@@ -55,7 +55,7 @@ class TableMenu extends Component
                     $p->where('status', 'selesai');
                 });
             }], 'qty')
-            ->with(['menuPrices' => function($q) use ($priceTierId) {
+            ->with(['category', 'menuPrices' => function($q) use ($priceTierId) {
                 $q->where('price_tier_id', $priceTierId);
             }])
             ->when(!empty($this->category), function ($query) {
@@ -69,7 +69,8 @@ class TableMenu extends Component
 
         return view('livewire.menu.table-menu', [
             'menu' => $menu,
-            'categories' => Category::all()
-        ]);
+            'categories' => Category::all(),
+            'title' => 'Daftar Menu & Produk'
+        ])->layout('layouts.app', ['title' => 'Menu']);
     }
 }

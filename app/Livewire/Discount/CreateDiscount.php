@@ -9,6 +9,8 @@ class CreateDiscount extends Component
 {
     public $discountId = null;
     public $button = "Simpan";
+    public $title = "Tambah Diskon Baru";
+    public $backUrl = "/discount";
 
     // Form fields
     public $nama_diskon, $jenis_diskon, $nilai_diskon, $minimum_transaksi, $limit, $type = 'general';
@@ -46,8 +48,10 @@ class CreateDiscount extends Component
         $this->branches = \App\Models\Branch::all();
         $this->priceTiers = \App\Models\PriceTier::all();
         
-        if ($this->discountId) {
+        if ($id) {
+            $this->discountId = $id;
             $this->button = "Update";
+            $this->title = "Edit Diskon";
             $this->loadData();
         }
     }
@@ -183,6 +187,9 @@ class CreateDiscount extends Component
 
     public function render()
     {
-        return view('livewire.discount.create-discount');
+        return view('livewire.discount.create-discount', [
+            'title' => $this->title,
+            'backUrl' => $this->backUrl
+        ])->layout('layouts.app', ['title' => $this->title]);
     }
 }

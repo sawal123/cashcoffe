@@ -1,19 +1,21 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Livewire\Dashboard;
 
 use App\Models\Menu;
 use App\Models\Pesanan;
 use App\Models\PesananItem;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
-class DashboardController extends Controller
+class Index extends Component
 {
-    public function index()
+    public $title = 'Dashboard';
+    public $subTitle = 'eCommerce';
+
+    public function render()
     {
-        // dd("tes");
         $omset = Pesanan::where('status', 'selesai')
             ->where('metode_pembayaran', '!=', 'komplemen')
             ->whereDate('created_at', Carbon::today())
@@ -28,6 +30,7 @@ class DashboardController extends Controller
 
         $totalOrder = Pesanan::where('status', 'selesai')->where('metode_pembayaran', '!=', 'komplemen')->whereDate('created_at', Carbon::today())->count();
         $proses = Pesanan::where('status', '!=', 'selesai')->where('status', '!=', 'dibatalkan')->whereDate('created_at', Carbon::today())->count();
+        
         $cards = [
             [
                 'title' => 'Total Orders',
@@ -56,19 +59,19 @@ class DashboardController extends Controller
         ];
 
         $omsetPerTanggal = DB::table('pesanans')
-            ->whereNull('deleted_at') // ⬅️ INI PENTING
+            ->whereNull('deleted_at')
             ->where('status', 'selesai')
             ->whereNotNull('metode_pembayaran')
             ->where('metode_pembayaran', '!=', 'komplemen')
             ->where('created_at', '>=', now()->subDays(9)->startOfDay())
             ->selectRaw('
-        DATE(created_at) as tanggal,
-        SUM(total - discount_value) as omset
-    ')
+                DATE(created_at) as tanggal,
+                SUM(total - discount_value) as omset
+            ')
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'asc')
             ->get();
-        // dd($omsetPerTanggal);
+
         $menuTerlaris = Menu::withSum([
             'pesananItems as jumlah_terjual' => function ($q) {
                 $q->whereHas('pesanan', function ($p) {
@@ -80,16 +83,21 @@ class DashboardController extends Controller
             ->limit(10)
             ->get();
 
+        $categories = $omsetPerTanggal->pluck('tanggal');
+        $data = $omsetPerTanggal->pluck('omset');
 
-        // Data untuk chart
-        $categories = $omsetPerTanggal->pluck('tanggal'); // untuk x-axis
-        $data = $omsetPerTanggal->pluck('omset'); // untuk y-axis
-        // dd($categories, $data);
-        return view('dashboard.dashboard', [
+        return view('livewire.dashboard.index', [
             'cards' => $cards,
             'categories' => $categories,
             'data' => $data,
-            'menuTerlaris' => $menuTerlaris
+            'menuTerlaris' => $menuTerlaris,
+            'title' => 'Dashboard Overview'
+        ])->layout('layouts.app', [
+            'title' => $this->title,
+            'subTitle' => $this->subTitle,
+            'data' => $data,
+            'categories' => $categories,
+            'script' => '<script src="' . asset('assets/js/homethreeChart.js') . '"></script>'
         ]);
     }
 }

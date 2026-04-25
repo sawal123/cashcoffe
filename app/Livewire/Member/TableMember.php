@@ -77,7 +77,8 @@ class TableMember extends Component
             ->paginate(10);
 
         return view('livewire.member.table-member', [
-            'members' => $members
-        ]);
+            'members' => $members,
+            'title' => 'Manajemen Member & Loyalitas'
+        ])->layout('layouts.app', ['title' => 'Member']);
     }
 }

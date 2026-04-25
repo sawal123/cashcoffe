@@ -1,4 +1,8 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Member' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Member'" />
+    </div>
     <x-toast />
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div class="flex gap-2">

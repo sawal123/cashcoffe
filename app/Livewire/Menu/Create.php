@@ -14,6 +14,8 @@ class Create extends Component
     public $h_pokok;
     public $tieredPrices = []; // [tier_id => ['harga' => X, 'h_promo' => Y]]
     public $menuId = null, $gambarUrl = null;
+    public $title = 'Tambah Menu Baru';
+    public $backUrl = '/menu';
 
     public function updatedGambar()
     {
@@ -136,6 +138,7 @@ class Create extends Component
         }
 
         if ($menuId) {
+            $this->title = 'Edit Menu';
             $menu = Menu::find(base64_decode($menuId));
             if ($menu) {
                 $this->menuId = $menu->id;
@@ -184,7 +187,9 @@ class Create extends Component
         $tiers = \App\Models\PriceTier::all();
         return view('livewire.menu.create', [
             'category' => $category,
-            'tiers' => $tiers
-        ]);
+            'tiers' => $tiers,
+            'title' => $this->title,
+            'backUrl' => $this->backUrl
+        ])->layout('layouts.app', ['title' => $this->title]);
     }
 }

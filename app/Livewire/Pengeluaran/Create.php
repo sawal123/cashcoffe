@@ -145,6 +145,10 @@ class Create extends Component
 
     public function render()
     {
-        return view('livewire.pengeluaran.create');
+        $pageTitle = $this->pengeluaranId ? 'Edit Pengeluaran' : 'Tambah Pengeluaran';
+        return view('livewire.pengeluaran.create', [
+            'title' => $pageTitle,
+            'backUrl' => '/pengeluaran'
+        ])->layout('layouts.app', ['title' => $pageTitle]);
     }
 }

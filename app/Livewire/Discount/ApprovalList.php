@@ -60,6 +60,6 @@ class ApprovalList extends Component
 
         return view('livewire.discount.approval-list', [
             'approvals' => $approvals
-        ]);
+        ])->layout('layouts.app', ['title' => 'Discount Approval']);
     }
 }

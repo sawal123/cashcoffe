@@ -1,35 +1,33 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Menu' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Menu'" />
+    </div>
     <x-toast />
-    
+
     {{-- Header Controls --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div class="flex flex-wrap items-center gap-2">
             <x-droppage perPage="{{ $perPage }}" />
-            
+
             <div class="w-full lg:max-w-[300px]  flex-none">
-                <x-ui.input 
-                    wire:model.live.debounce.300ms="search" 
-                    placeholder="Cari menu..." 
-                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" 
+                <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari menu..."
+                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700"
                     prefix='<iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>' />
             </div>
 
             {{-- Category Filter --}}
             <div class=" flex justify-end">
-                <x-ui.select-modern 
-                    model="category" 
-                    :options="$categories" 
-                    :activeValue="$category"
-                    placeholder="Semua Kategori" />
+                <x-ui.select-modern model="category" :options="$categories" :activeValue="$category" placeholder="Semua Kategori" />
             </div>
         </div>
 
         @hasrole('superadmin')
-        <div class="flex justify-end gap-2">
-            <x-ui.button-link href="/menu/create" icon="mingcute:add-circle-line">
-                Tambah Menu
-            </x-ui.button-link>
-        </div>
+            <div class="flex justify-end gap-2">
+                <x-ui.button-link href="/menu/create" icon="mingcute:add-circle-line">
+                    Tambah Menu
+                </x-ui.button-link>
+            </div>
         @endhasrole
     </div>
 
@@ -40,7 +38,7 @@
         'Harga',
         ['name' => 'Terjual', 'align' => 'center'],
         ['name' => 'Status', 'align' => 'center'],
-        ['name' => 'Action', 'align' => 'center']
+        ['name' => 'Action', 'align' => 'center'],
     ]">
         @forelse ($menu as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
@@ -53,44 +51,56 @@
                             class="shrink-0 rounded-2xl w-12 h-12 object-cover border border-neutral-100 dark:border-neutral-700 shadow-sm">
                         <div>
                             <p class="font-bold text-neutral-800 dark:text-neutral-200">{{ $item->nama_menu }}</p>
-                            <p class="text-[10px] text-neutral-500 uppercase tracking-widest">{{ $item->kode ?? 'MENU-'.$item->id }}</p>
+                            <p class="text-[10px] text-neutral-500 uppercase tracking-widest">
+                                {{ $item->kode ?? 'MENU-' . $item->id }}</p>
                         </div>
                     </div>
                 </td>
                 <td class="px-6 py-4">
-                    <span class="text-sm font-medium text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700 px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-600">
+                    <span
+                        class="text-sm font-medium text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700 px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-600">
                         {{ $item->category->nama ?? '-' }}
                     </span>
                 </td>
                 <td class="px-6 py-4">
                     @php
                         $tieredPrice = $item->menuPrices->first();
-                        $hargaDisplay = $tieredPrice 
-                            ? ($tieredPrice->h_promo > 0 ? $tieredPrice->h_promo : $tieredPrice->harga)
-                            : ($item->h_promo == 0 ? $item->harga : $item->h_promo);
+                        $hargaDisplay = $tieredPrice
+                            ? ($tieredPrice->h_promo > 0
+                                ? $tieredPrice->h_promo
+                                : $tieredPrice->harga)
+                            : ($item->h_promo == 0
+                                ? $item->harga
+                                : $item->h_promo);
                     @endphp
-                    <span class="font-bold text-neutral-900 dark:text-white">Rp {{ number_format($hargaDisplay, 0, ',', '.') }}</span>
+                    <span class="font-bold text-neutral-900 dark:text-white">Rp
+                        {{ number_format($hargaDisplay, 0, ',', '.') }}</span>
                 </td>
                 <td class="px-6 py-4 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
                     {{ number_format($item->jumlah_terjual ?? 0, 0, ',', '.') }}
                 </td>
                 <td class="px-6 py-4 text-center">
-                    <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200' }}">
+                    <span
+                        class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200' }}">
                         {{ $item->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
                 <td class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         @hasrole('superadmin')
-                            <a wire:key="var-{{ $item->id }}" href="{{ route('menu.variants', $item->id) }}" wire:navigate
-                                title="Kelola Varian"
+                            <a wire:key="var-{{ $item->id }}" href="{{ route('menu.variants', $item->id) }}"
+                                wire:navigate title="Kelola Varian"
                                 class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all">
-                                <iconify-icon wire:ignore wire:key="icon-var-{{ $item->id }}" icon="solar:tuning-square-2-linear" class="text-lg"></iconify-icon>
+                                <iconify-icon wire:ignore wire:key="icon-var-{{ $item->id }}"
+                                    icon="solar:tuning-square-2-linear" class="text-lg"></iconify-icon>
                             </a>
-                            <x-ui.action-edit wire:key="edit-{{ $item->id }}" href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                            <x-ui.action-delete wire:key="del-{{ $item->id }}" @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                            <x-ui.action-edit wire:key="edit-{{ $item->id }}"
+                                href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate />
+                            <x-ui.action-delete wire:key="del-{{ $item->id }}"
+                                @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
                         @else
-                            <span class="text-[10px] text-neutral-400 font-bold uppercase tracking-tighter">Centralized</span>
+                            <span
+                                class="text-[10px] text-neutral-400 font-bold uppercase tracking-tighter">Centralized</span>
                         @endhasrole
                     </div>
                 </td>
@@ -113,7 +123,8 @@
 
     <x-mdal name="confirm-delete">
         <div class="px-6 py-6 text-center">
-            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
+            <div
+                class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
                 <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
             </div>
 
@@ -128,7 +139,9 @@
                     Batal
                 </button>
 
-                <x-ui.button type="button" color="danger" @click="$wire.deletemenu(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })" class="!px-5 !py-2.5">
+                <x-ui.button type="button" color="danger"
+                    @click="$wire.deletemenu(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })"
+                    class="!px-5 !py-2.5">
                     Ya, Hapus
                 </x-ui.button>
             </div>

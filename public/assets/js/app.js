@@ -48,18 +48,25 @@ function initThemeToggle() {
 // }
 
 function highlightActiveMenu() {
-    const currentUrl = window.location.pathname; // ambil hanya path tanpa domain
+    const currentUrl = window.location.pathname;
     const links = document.querySelectorAll("ul#sidebar-menu a");
+    let activeLink = null;
 
-    links.forEach(function (link) {
+    links.forEach(function(link) {
+        // Reset state first
+        link.classList.remove("active-page");
+        if (link.parentElement) {
+            link.parentElement.classList.remove("active-page", "show", "open");
+        }
+        
         const linkPath = new URL(link.href).pathname;
 
-        // kalau currentUrl persis sama atau currentUrl masih dalam linkPath (contoh: /menu & /menu/create)
-        if (currentUrl === linkPath || currentUrl.startsWith(linkPath + "/")) {
+        if (currentUrl === linkPath || (linkPath !== '/' && currentUrl.startsWith(linkPath + "/"))) {
             link.classList.add("active-page");
+            activeLink = link;
 
             let parent = link.parentElement;
-            parent.classList.add("active-page");
+            if (parent) parent.classList.add("active-page");
 
             while (parent && parent.tagName !== "BODY") {
                 if (parent.tagName === "LI") {
@@ -69,6 +76,10 @@ function highlightActiveMenu() {
             }
         }
     });
+
+    if (activeLink) {
+        activeLink.scrollIntoView({ block: "nearest" });
+    }
 }
 
 function initMobileSidebar() {
@@ -132,6 +143,25 @@ function initSidebarDropdown() {
         sidebarMenu.setAttribute("data-listener", "true");
     }
 }
+function initSidebarScroll() {
+    const sidebarMenuArea = document.querySelector(".sidebar-menu-area");
+    if (!sidebarMenuArea) return;
+
+    // Restore scroll position
+    const scrollPos = localStorage.getItem("sidebar-scroll");
+    if (scrollPos) {
+        sidebarMenuArea.scrollTop = scrollPos;
+    }
+
+    // Save scroll position on scroll
+    if (!sidebarMenuArea.hasAttribute("data-scroll-listener")) {
+        sidebarMenuArea.addEventListener("scroll", function () {
+            localStorage.setItem("sidebar-scroll", sidebarMenuArea.scrollTop);
+        });
+        sidebarMenuArea.setAttribute("data-scroll-listener", "true");
+    }
+}
+
 document.addEventListener("livewire:navigated", function () {
     // console.log("appjs");
 
@@ -140,4 +170,5 @@ document.addEventListener("livewire:navigated", function () {
     initMobileSidebar();
     highlightActiveMenu();
     initThemeToggle();
+    initSidebarScroll();
 });

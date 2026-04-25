@@ -91,6 +91,7 @@ class RiwayatStock extends Component
 
         return view('livewire.stock.riwayat-stock', [
             'riwayats' => $riwayats,
-        ]);
+            'title' => 'Riwayat Pergerakan Stok'
+        ])->layout('layouts.app', ['title' => 'Riwayat Stok']);
     }
 }

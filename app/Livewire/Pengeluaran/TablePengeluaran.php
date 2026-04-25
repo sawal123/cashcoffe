@@ -122,7 +122,8 @@ class TablePengeluaran extends Component
     public function render()
     {
         return view('livewire.pengeluaran.table-pengeluaran', [
-            'pengeluarans' => $this->pengeluarans
-        ]);
+            'pengeluarans' => $this->pengeluarans,
+            'title' => 'Manajemen Pengeluaran'
+        ])->layout('layouts.app', ['title' => 'Pengeluaran']);
     }
 }

@@ -1,10 +1,22 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Gudang' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Gudang'" />
+    </div>
 
     <x-toast />
-    <div class="flex gap-2">
-        <x-droppage perPage="{{ $perPage }}" />
-        <div class="sm:w-[300px] ">
-            <x-input wire:model.live="search" place="Cari..." />
+    
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+        <div class="flex gap-2">
+            <x-droppage perPage="{{ $perPage }}" />
+            <div class="sm:w-[300px]">
+                <x-input wire:model.live="search" place="Cari bahan..." />
+            </div>
+        </div>
+        <div class="flex gap-2">
+            <x-ui.button-link href="/gudang/create" icon="mingcute:add-circle-line">
+                Tambah Bahan
+            </x-ui.button-link>
         </div>
     </div>
 

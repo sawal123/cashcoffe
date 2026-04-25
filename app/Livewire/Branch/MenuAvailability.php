@@ -84,6 +84,6 @@ class MenuAvailability extends Component
         return view('livewire.branch.menu-availability', [
             'categories' => $categories,
             'branches' => auth()->user()->hasRole('superadmin') ? Branch::all() : [],
-        ]);
+        ])->layout('layouts.app', ['title' => 'Ketersediaan Menu Cabang']);
     }
 }

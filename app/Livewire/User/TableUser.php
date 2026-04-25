@@ -135,7 +135,8 @@ class TableUser extends Component
         $all_roles = Role::latest()->get();
         return view('livewire.user.table-user', [
             'users' => $users,
-            'all_roles' => $all_roles // Kirim ke view
-        ]);
+            'all_roles' => $all_roles,
+            'title' => 'Manajemen Pengguna & Hak Akses'
+        ])->layout('layouts.app', ['title' => 'User']);
     }
 }

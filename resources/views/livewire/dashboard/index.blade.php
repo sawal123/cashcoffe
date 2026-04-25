@@ -1,10 +1,8 @@
-<x-app-layout :data="$data" :categories="$categories">
-    @php
-    $title = 'Dashboard';
-    $subTitle = 'eCommerce';
-    $script = '<script src="' . asset('assets/js/homethreeChart.js') . '"></script> ';
-    @endphp
-
+<div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Dashboard' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Dashboard'" />
+    </div>
     {{-- <a href="/order/create" wire:navigate
         class="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-indigo-600 text-white rounded-full shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-300"
         aria-label="Buka Halaman Keranjang">
@@ -15,7 +13,6 @@
                 d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 6m12-6l2 6m-6-6v6" />
         </svg>
     </a> --}}
-
 
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 3xl:grid-cols-5 gap-6">
         @foreach ($cards as $item)
@@ -34,14 +31,7 @@
             </div>
         </div><!-- card end -->
         @endforeach
-
     </div>
-
-
-
-
-
-
 
     <div class="grid grid-cols-1 gap-6 mt-6 xl:grid-cols-6 2xl:grid-cols-6">
         <div class="xl:col-span-12 2xl:col-span-6">
@@ -100,7 +90,4 @@
             </div>
         </div>
     </div>
-
-
-
-</x-app-layout>
+</div>

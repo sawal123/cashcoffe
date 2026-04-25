@@ -38,6 +38,9 @@ class TableAbsense extends Component
             }])
             ->paginate($this->perPage);
 
-        return view('livewire.absense.table-absense', compact('users'));
+        return view('livewire.absense.table-absense', [
+            'users' => $users,
+            'title' => 'Monitoring Absensi Karyawan'
+        ])->layout('layouts.app', ['title' => 'Absensi']);
     }
 }

@@ -17,6 +17,8 @@ class CreateUser extends Component
     // Properti Logic Edit
     public $userId = null;
     public $isEdit = false;
+    public $title = 'Tambah Pengguna Baru';
+    public $backUrl = '/users';
 
     // Lifecycle Mount (Dijalankan saat halaman dimuat)
     public function mount($userId = null)
@@ -40,6 +42,7 @@ class CreateUser extends Component
 
                 $this->userId = $user->id;
                 $this->isEdit = true;
+                $this->title = 'Edit Pengguna';
 
                 // Isi Form dengan data user
                 $this->name = $user->name;
@@ -143,7 +146,9 @@ class CreateUser extends Component
 
         return view('livewire.user.create-user', [
             'roles' => $roleQuery->latest()->get(),
-            'branches' => $currentUser->hasRole('superadmin') ? \App\Models\Branch::all() : []
-        ]);
+            'branches' => $currentUser->hasRole('superadmin') ? \App\Models\Branch::all() : [],
+            'title' => $this->title,
+            'backUrl' => $this->backUrl
+        ])->layout('layouts.app', ['title' => $this->title]);
     }
 }

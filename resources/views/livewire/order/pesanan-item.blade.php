@@ -320,7 +320,7 @@
                         </div>
                         <h3 class="text-xl font-black text-neutral-900 dark:text-white mb-2">Identifikasi Member</h3>
                         <p class="text-sm text-neutral-500 mb-6">Gunakan nomor HP untuk menghubungkan poin member.</p>
-                        <x-ui.input wire:model.live="member" placeholder="0812xxxx" :readonly="$status === 'selesai'" />
+                        <x-ui.input wire:model.live.debounce.500ms="member" placeholder="0812xxxx" :readonly="$status === 'selesai'" />
 
                         <div class="mt-4 mb-6">
                             @if (isset($memMessage) && $memMessage)

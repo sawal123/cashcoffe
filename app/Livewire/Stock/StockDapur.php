@@ -55,6 +55,7 @@ class StockDapur extends Component
         return view('livewire.stock.stock-dapur', [
             'items' => $items,
             'perPage' => $this->perPage,
-        ]);
+            'title' => 'Stok Dapur (Inventory)'
+        ])->layout('layouts.app', ['title' => 'Stock Dapur']);
     }
 }

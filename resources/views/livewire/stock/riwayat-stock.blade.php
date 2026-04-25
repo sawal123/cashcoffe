@@ -1,4 +1,8 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Riwayat Stok' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Riwayat Stok'" />
+    </div>
     <x-toast />
 
     {{-- Controls Section --}}
@@ -114,7 +118,7 @@
                 </td>
                 <td class="px-6 py-5 text-sm text-center">
                     <div class="flex items-center justify-center gap-3">
-                        <x-ui.action-edit href="/riwayat-stock/{{ base64_encode($item->id) }}/edit" wire:navigate />
+                        <x-ui.action-edit :href="route('riwayat-stock.edit', base64_encode($item->id))" wire:navigate />
                         <x-ui.action-delete
                             @click="$dispatch('open-modal', { name: 'confirm-delete', id: '{{ base64_encode($item->id) }}' })" />
                     </div>

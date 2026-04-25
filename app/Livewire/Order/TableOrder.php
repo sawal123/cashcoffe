@@ -162,7 +162,8 @@ class TableOrder extends Component
             ->paginate($this->perPage);
 
         return view('livewire.order.table-order', [
-            'orders' => $order
-        ]);
+            'orders' => $order,
+            'title' => 'Daftar Pesanan Hari Ini'
+        ])->layout('layouts.app', ['title' => 'Pesanan']);
     }
 }

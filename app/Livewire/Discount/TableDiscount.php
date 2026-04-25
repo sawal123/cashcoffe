@@ -40,6 +40,9 @@ class TableDiscount extends Component
             ->orderBy('created_at', 'desc')
             ->paginate($this->perPage);
 
-        return view('livewire.discount.table-discount', ['discounts' => $discounts]);
+        return view('livewire.discount.table-discount', [
+            'discounts' => $discounts,
+            'title' => 'Daftar Promo & Diskon'
+        ])->layout('layouts.app', ['title' => 'Diskon']);
     }
 }

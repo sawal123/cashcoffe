@@ -115,6 +115,7 @@ class TableOmset extends Component
             'totalProfit' => $totalProfit,
             'totalKomplemen' => $totalKomplemen,
             'totalProfitKomplemen' => $totalProfitKomplemen,
-        ]);
+            'title' => 'Laporan Omset & Keuntungan'
+        ])->layout('layouts.app', ['title' => 'Laporan Omset']);
     }
 }

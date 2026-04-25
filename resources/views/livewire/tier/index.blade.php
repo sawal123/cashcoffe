@@ -1,4 +1,9 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Tier Harga' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Tier Harga'" />
+    </div>
+
     <x-toast />
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-xl font-bold text-neutral-800 dark:text-neutral-200">Daftar Tier Harga</h2>

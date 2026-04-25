@@ -1,4 +1,8 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Pesanan' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Pesanan'" />
+    </div>
     <x-toast />
     
     {{-- Summary Bar --}}

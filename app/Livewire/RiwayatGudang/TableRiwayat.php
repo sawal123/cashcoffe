@@ -72,6 +72,6 @@ class TableRiwayat extends Component
         $riwayats = $query->paginate($this->perPage);
         return view('livewire.riwayat-gudang.table-riwayat', [
             'riwayats' => $riwayats,
-        ]);
+        ])->layout('layouts.app', ['title' => 'Riwayat Gudang']);
     }
 }

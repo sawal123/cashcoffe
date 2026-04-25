@@ -1,4 +1,13 @@
 <div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{{ $backUrl }}" wire:navigate class="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-primary-600 transition-all shadow-sm">
+                <iconify-icon icon="lucide:arrow-left" class="text-xl"></iconify-icon>
+            </a>
+            <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Pengeluaran' }}</h6>
+        </div>
+        <x-breadcrumb :title="$title ?? 'Pengeluaran'" />
+    </div>
     <x-toast />
 
     @php

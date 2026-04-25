@@ -1,4 +1,10 @@
-<div class="p-6">
+<div>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Grup Varian' }}</h6>
+        <x-breadcrumb :title="$title ?? 'Grup Varian'" />
+    </div>
+
+    <div class="p-6 bg-white dark:bg-neutral-800 rounded-3xl shadow-sm border border-neutral-100 dark:border-neutral-700">
     <x-toast />
     <div class="flex justify-between items-center mb-6">
         <div>
@@ -156,4 +162,4 @@
             </div>
         </div>
     @endif
-</div>
+</div></div>

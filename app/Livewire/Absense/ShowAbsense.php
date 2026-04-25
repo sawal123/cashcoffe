@@ -185,6 +185,6 @@ class ShowAbsense extends Component
             'totalCuti',
             'totalAlpha',
             'totalHari'
-        ));
+        ))->layout('layouts.app', ['title' => 'Detail Absensi']);
     }
 }

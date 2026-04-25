@@ -1,4 +1,15 @@
-<div class="flex flex-col-3 md:flex-row items-start gap-4 lg:gap-6 w-full">
+<div class="flex flex-col gap-6 w-full">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex items-center gap-3">
+            <a href="{{ $backUrl }}" wire:navigate class="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-primary-600 transition-all shadow-sm">
+                <iconify-icon icon="lucide:arrow-left" class="text-xl"></iconify-icon>
+            </a>
+            <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Order' }}</h6>
+        </div>
+        <x-breadcrumb :title="$title ?? 'Order'" />
+    </div>
+
+    <div class="flex flex-col-3 md:flex-row items-start gap-4 lg:gap-6 w-full">
     <x-toast />
 
     {{-- Kiri: Produk --}}
@@ -105,7 +116,34 @@
     {{-- MODAL VARIAN --}}
     <x-mdal name="variant-modal">
         @if ($selectedMenuForVariant)
-            <div class="p-6">
+            <div class="p-6" x-data="{
+                selectedOptions: {},
+                optionPrices: {{ json_encode($selectedMenuForVariant['option_prices']) }},
+                totalExtra: 0,
+                toggle(groupId, optionId, type) {
+                    if (type === 'single') {
+                        this.selectedOptions[groupId] = [optionId];
+                    } else {
+                        if (!this.selectedOptions[groupId]) this.selectedOptions[groupId] = [];
+                        const idx = this.selectedOptions[groupId].indexOf(optionId);
+                        if (idx > -1) this.selectedOptions[groupId].splice(idx, 1);
+                        else this.selectedOptions[groupId].push(optionId);
+                    }
+                    this.calculate();
+                },
+                calculate() {
+                    let sum = 0;
+                    for (let g in this.selectedOptions) {
+                        this.selectedOptions[g].forEach(id => {
+                            sum += (this.optionPrices[id] || 0);
+                        });
+                    }
+                    this.totalExtra = sum;
+                },
+                isSelected(groupId, optionId) {
+                    return this.selectedOptions[groupId] && this.selectedOptions[groupId].includes(optionId);
+                }
+            }">
                 {{-- Header Detail --}}
                 <div class="flex items-center gap-5 mb-8 pb-6 border-b border-neutral-100 dark:border-neutral-700">
                     <img src="{{ asset('storage/' . $selectedMenuForVariant['gambar']) }}"
@@ -158,38 +196,33 @@
 
                             <div class="grid grid-cols-2 gap-3">
                                 @foreach ($group->options as $option)
-                                            @php
-                                                $isSelected =
-                                                    isset($tempSelectedOptions[$group->id]) &&
-                                                    in_array($option->id, $tempSelectedOptions[$group->id]);
-                                            @endphp
-                                            <button type="button"
-                                                wire:click="selectOption({{ $group->id }}, {{ $option->id }}, '{{ $group->selection_type }}')"
-                                                class="relative flex flex-col p-4 rounded-[1.5rem] border-2 transition-all text-left overflow-hidden group
-                                                                                                                                                                                                                                                    {{ $isSelected
-                                    ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20 text-white'
-                                    : 'bg-white border-neutral-100 hover:border-blue-300 dark:bg-neutral-800 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300' }}">
+                                    <button type="button"
+                                        @click="toggle({{ $group->id }}, {{ $option->id }}, '{{ $group->selection_type }}')"
+                                        class="relative flex flex-col p-4 rounded-[1.5rem] border-2 transition-all text-left overflow-hidden group"
+                                        :class="isSelected({{ $group->id }}, {{ $option->id }})
+                                            ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20 text-white'
+                                            : 'bg-white border-neutral-100 hover:border-blue-300 dark:bg-neutral-800 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300'">
 
-                                                <div class="flex items-center justify-between mb-1">
-                                                    <span class="text-sm font-black leading-tight">
-                                                        {{ $option->nama_opsi }}
-                                                    </span>
-                                                    @if ($isSelected)
-                                                        <iconify-icon icon="mingcute:check-circle-fill"
-                                                            class="text-xl text-white"></iconify-icon>
-                                                    @endif
-                                                </div>
+                                        <div class="flex items-center justify-between mb-1">
+                                            <span class="text-sm font-black leading-tight">
+                                                {{ $option->nama_opsi }}
+                                            </span>
+                                            <template x-if="isSelected({{ $group->id }}, {{ $option->id }})">
+                                                <iconify-icon icon="mingcute:check-circle-fill"
+                                                    class="text-xl text-white"></iconify-icon>
+                                            </template>
+                                        </div>
 
-                                                @if ($option->extra_price > 0)
-                                                    <span
-                                                        class="text-[11px] font-bold {{ $isSelected ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400' }}">
-                                                        +Rp {{ number_format($option->extra_price, 0, ',', '.') }}
-                                                    </span>
-                                                @else
-                                                    <span
-                                                        class="text-[11px] font-medium {{ $isSelected ? 'text-blue-100' : 'text-neutral-400' }}">Gratis</span>
-                                                @endif
-                                            </button>
+                                        @if ($option->extra_price > 0)
+                                            <span class="text-[11px] font-bold"
+                                                :class="isSelected({{ $group->id }}, {{ $option->id }}) ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'">
+                                                +Rp {{ number_format($option->extra_price, 0, ',', '.') }}
+                                            </span>
+                                        @else
+                                            <span class="text-[11px] font-medium"
+                                                :class="isSelected({{ $group->id }}, {{ $option->id }}) ? 'text-blue-100' : 'text-neutral-400'">Gratis</span>
+                                        @endif
+                                    </button>
                                 @endforeach
                             </div>
                         </div>
@@ -203,7 +236,8 @@
                             Total:</span>
                         <span class="text-2xl font-black text-neutral-900 dark:text-white">
                             Rp
-                            {{ number_format($selectedMenuForVariant['harga_base'] + $totalExtraPrice, 0, ',', '.') }}
+                            <span
+                                x-text="new Intl.NumberFormat('id-ID').format({{ $selectedMenuForVariant['harga_base'] }} + totalExtra)"></span>
                         </span>
                     </div>
                     <div class="flex gap-4">
@@ -211,8 +245,8 @@
                             class="flex-1 px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-700 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition">
                             Batal
                         </button>
-                        <x-ui.button type="button" wire:click="confirmVariant" color="blue" class="flex-[2] !py-4 shadow-xl"
-                            wire:loading.attr="disabled">
+                        <x-ui.button type="button" @click="$wire.confirmVariant(JSON.stringify(selectedOptions))"
+                            color="blue" class="flex-[2] !py-4 shadow-xl" wire:loading.attr="disabled">
                             <span wire:loading.remove>Tambahkan ke Pesanan</span>
                             <span wire:loading.flex class="items-center justify-center gap-2">
                                 <iconify-icon icon="mingcute:loading-fill" class="animate-spin text-xl"></iconify-icon>
@@ -224,4 +258,5 @@
             </div>
         @endif
     </x-mdal>
+</div>
 </div>
