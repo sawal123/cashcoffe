@@ -9,7 +9,7 @@ class CategoryCreate extends Component
 {
     public $category;
     public $categoryId;
-    public $is_active;
+    public bool $is_active = true;
 
     public function fieldReset()
     {
@@ -23,7 +23,7 @@ class CategoryCreate extends Component
             $category = Category::find($this->categoryId);
             if ($category) {
                 $this->category = $category->nama;
-                $this->is_active = $category->is_active;
+                $this->is_active = (bool) $category->is_active;
             }
         }
         // dd($this->is_active);

@@ -35,11 +35,11 @@
                 </td>
                 <td class="px-6 py-4 text-center">
                     @if ($item->is_active == 1)
-                        <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                        <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50">
                             Active
                         </span>
                     @else
-                        <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+                        <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800/50">
                             Inactive
                         </span>
                     @endif
