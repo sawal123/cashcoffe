@@ -9,7 +9,7 @@
 
     <!-- ..::  header area start ::.. -->
     @persist('sidebar')
-        <x-sidebar />
+    <x-sidebar />
     @endpersist
     <!-- ..::  header area end ::.. -->
 
@@ -17,7 +17,7 @@
 
         <!-- ..::  navbar start ::.. -->
         @persist('navbar')
-            <x-navbar />
+        <x-navbar />
         @endpersist
         <!-- ..::  navbar end ::.. -->
         <div class="dashboard-main-body">
@@ -61,7 +61,7 @@
                 allowClear: true,
             });
 
-            select.on('change', function(value) {
+            select.on('change', function (value) {
                 Livewire.dispatch(eventName, {
                     value
                 });
