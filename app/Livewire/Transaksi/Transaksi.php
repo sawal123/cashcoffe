@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use App\Models\RiwayatStock;
 use Livewire\WithPagination;
 use App\Models\MenuIngredients;
+use App\Models\VariantOption;
 use Illuminate\Support\Facades\DB;
 
 class Transaksi extends Component
@@ -114,7 +115,7 @@ class Transaksi extends Component
                 }
             }
         }
-        
+
 
         // =========================
         // UPDATE STATUS PESANAN
@@ -145,66 +146,111 @@ class Transaksi extends Component
 
     private function reduceStock(Pesanan $pesanan)
     {
+        $stockChanges = []; // [ingredient_id => ['qty' => total, 'name' => name]]
+
         foreach ($pesanan->items as $item) {
-
+            // 1. Kumpulkan dari resep DASAR menu
             $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
-
             foreach ($komposisi as $k) {
-                $ingredient = Ingredients::find($k->ingredient_id);
-                if (!$ingredient) continue;
-
-                $totalOut = $k->qty * $item->qty;
-                $before = $ingredient->stok;
-                $after = $before - $totalOut;
-
-                // $ingredient->update(['stok' => max(0, $after)]);
-                // dd($after);
-                $ingredient->update([
-                    'stok' => $after
-                ]);
-
-                RiwayatStock::create([
-                    'ingredient_id' => $ingredient->id,
-                    'kode' => strtoupper('OUT-' . Str::random(6)),
-                    'qty' => $totalOut,
-                    'qty_before' => $before,
-                    'qty_after' => $after,
-                    'tipe' => 'out',
-                    'keterangan' => 'Pengurangan stok dari pesanan ' . $pesanan->kode,
-                ]);
+                if (!isset($stockChanges[$k->ingredient_id])) {
+                    $stockChanges[$k->ingredient_id] = ['qty' => 0];
+                }
+                $stockChanges[$k->ingredient_id]['qty'] += ($k->qty * $item->qty);
             }
+
+            // 2. Kumpulkan dari resep VARIAN
+            $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
+            if (!empty($selectedVariantIds)) {
+                $variantOptions = VariantOption::with('ingredients')
+                    ->whereIn('id', $selectedVariantIds)
+                    ->get();
+
+                foreach ($variantOptions as $variant) {
+                    foreach ($variant->ingredients as $vIngredient) {
+                        if (!isset($stockChanges[$vIngredient->id])) {
+                            $stockChanges[$vIngredient->id] = ['qty' => 0];
+                        }
+                        $stockChanges[$vIngredient->id]['qty'] += ($vIngredient->pivot->qty * $item->qty);
+                    }
+                }
+            }
+        }
+
+        // 3. Eksekusi pemotongan stok (Agregat)
+        foreach ($stockChanges as $ingredientId => $data) {
+            $ingredient = Ingredients::find($ingredientId);
+            if (!$ingredient)
+                continue;
+
+            $before = $ingredient->stok;
+            $after = $before - $data['qty'];
+
+            $ingredient->update(['stok' => $after]);
+
+            RiwayatStock::create([
+                'ingredient_id' => $ingredient->id,
+                'kode' => strtoupper('OUT-' . Str::random(6)),
+                'qty' => $data['qty'],
+                'qty_before' => $before,
+                'qty_after' => $after,
+                'tipe' => 'out',
+                'keterangan' => 'Akumulasi resep: pesanan ' . $pesanan->kode,
+            ]);
         }
     }
 
     private function restoreStock(Pesanan $pesanan)
     {
+        $stockChanges = []; // [ingredient_id => ['qty' => total]]
+
         foreach ($pesanan->items as $item) {
-
+            // 1. Kumpulkan dari resep DASAR menu
             $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
-
             foreach ($komposisi as $k) {
-
-                $ingredient = Ingredients::find($k->ingredient_id);
-                if (!$ingredient) continue;
-
-                $totalIn = $k->qty * $item->qty;
-                $before = $ingredient->stok;
-                $after = $before + $totalIn;
-
-                // Kembalikan stok
-                $ingredient->update(['stok' => $after]);
-
-                // Simpan riwayat masuk
-                RiwayatStock::create([
-                    'ingredient_id' => $ingredient->id,
-                    'kode' => strtoupper('IN-' . Str::random(6)),
-                    'qty' => $totalIn,
-                    'qty_before' => $before,
-                    'qty_after' => $after,
-                    'tipe' => 'in',
-                    'keterangan' => 'Pengembalian stok dari pembatalan pesanan ' . $pesanan->kode,
-                ]);
+                if (!isset($stockChanges[$k->ingredient_id])) {
+                    $stockChanges[$k->ingredient_id] = ['qty' => 0];
+                }
+                $stockChanges[$k->ingredient_id]['qty'] += ($k->qty * $item->qty);
             }
+
+            // 2. Kumpulkan dari resep VARIAN
+            $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
+            if (!empty($selectedVariantIds)) {
+                $variantOptions = VariantOption::with('ingredients')
+                    ->whereIn('id', $selectedVariantIds)
+                    ->get();
+
+                foreach ($variantOptions as $variant) {
+                    foreach ($variant->ingredients as $vIngredient) {
+                        if (!isset($stockChanges[$vIngredient->id])) {
+                            $stockChanges[$vIngredient->id] = ['qty' => 0];
+                        }
+                        $stockChanges[$vIngredient->id]['qty'] += ($vIngredient->pivot->qty * $item->qty);
+                    }
+                }
+            }
+        }
+
+        // 3. Eksekusi pengembalian stok (Agregat)
+        foreach ($stockChanges as $ingredientId => $data) {
+            $ingredient = Ingredients::find($ingredientId);
+            if (!$ingredient)
+                continue;
+
+            $before = $ingredient->stok;
+            $after = $before + $data['qty'];
+
+            $ingredient->update(['stok' => $after]);
+
+            RiwayatStock::create([
+                'ingredient_id' => $ingredient->id,
+                'kode' => strtoupper('IN-' . Str::random(6)),
+                'qty' => $data['qty'],
+                'qty_before' => $before,
+                'qty_after' => $after,
+                'tipe' => 'in',
+                'keterangan' => 'Pengembalian akumulasi: batal pesanan ' . $pesanan->kode,
+            ]);
         }
     }
 
@@ -279,7 +325,7 @@ class Transaksi extends Component
         // Hitung total omset keseluruhan
         $this->totalOmset = $query->clone()
             ->where('status', 'selesai')
-            ->where('status', '!=',  'dibatalkan')
+            ->where('status', '!=', 'dibatalkan')
             ->where('metode_pembayaran', '!=', 'komplemen')
             ->whereNotNull('metode_pembayaran')
             ->sum(DB::raw('total - discount_value'));

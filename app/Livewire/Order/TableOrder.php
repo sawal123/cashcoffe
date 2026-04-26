@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use App\Models\RiwayatStock;
 use Livewire\WithPagination;
 use App\Models\MenuIngredients;
+use App\Models\VariantOption;
 
 
 class TableOrder extends Component
@@ -84,38 +85,56 @@ class TableOrder extends Component
             //     $pesanan->discount->increment('digunakan');
             // }
 
-            // 2. Kurangi stok bahan
+            // 2. Kurangi stok bahan (Agregasi)
+            $stockChanges = []; // [ingredient_id => qty]
+
             foreach ($pesanan->items as $item) {
-
-                // Ambil semua komposisi menu
+                // A. Kumpulkan dari resep DASAR menu
                 $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
-
                 foreach ($komposisi as $k) {
-
-                    $ingredient = Ingredients::find($k->ingredient_id);
-                    if (! $ingredient) continue;
-
-                    // Hitung total pemakaian bahan
-                    $totalOut = $k->qty * $item->qty;
-
-                    $before = $ingredient->stok;
-                    $after = $before - $totalOut;
-
-                    $ingredient->update([
-                        'stok' => $after
-                    ]);
-
-                    // Catat ke riwayat stok (OUT)
-                    RiwayatStock::create([
-                        'ingredient_id' => $ingredient->id,
-                        'kode' => strtoupper('OUT-' . Str::random(6)),
-                        'qty' => $totalOut,
-                        'qty_before' => $before,
-                        'qty_after' => $after,
-                        'tipe' => 'out',
-                        'keterangan' => 'Pengurangan stok dari pesanan ' . $pesanan->kode,
-                    ]);
+                    if (!isset($stockChanges[$k->ingredient_id])) {
+                        $stockChanges[$k->ingredient_id] = 0;
+                    }
+                    $stockChanges[$k->ingredient_id] += ($k->qty * $item->qty);
                 }
+
+                // B. Kumpulkan dari resep VARIAN
+                $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
+                if (!empty($selectedVariantIds)) {
+                    $variantOptions = VariantOption::with('ingredients')
+                        ->whereIn('id', $selectedVariantIds)
+                        ->get();
+
+                    foreach ($variantOptions as $variant) {
+                        foreach ($variant->ingredients as $vIngredient) {
+                            if (!isset($stockChanges[$vIngredient->id])) {
+                                $stockChanges[$vIngredient->id] = 0;
+                            }
+                            $stockChanges[$vIngredient->id] += ($vIngredient->pivot->qty * $item->qty);
+                        }
+                    }
+                }
+            }
+
+            // C. Eksekusi pemotongan stok (Satu kali per bahan)
+            foreach ($stockChanges as $ingredientId => $totalQty) {
+                $ingredient = Ingredients::find($ingredientId);
+                if (!$ingredient) continue;
+
+                $before = $ingredient->stok;
+                $after = $before - $totalQty;
+
+                $ingredient->update(['stok' => $after]);
+
+                RiwayatStock::create([
+                    'ingredient_id' => $ingredient->id,
+                    'kode'          => strtoupper('OUT-' . Str::random(6)),
+                    'qty'           => $totalQty,
+                    'qty_before'    => $before,
+                    'qty_after'     => $after,
+                    'tipe'          => 'out',
+                    'keterangan'    => 'Akumulasi resep: pesanan ' . $pesanan->kode,
+                ]);
             }
         }
 

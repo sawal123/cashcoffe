@@ -102,6 +102,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
         Route::get('/category/{categoryId}/edit', App\Livewire\Category\CategoryCreate::class)->name('category.edit');
         Route::get('/menu-ingredient', App\Livewire\Menu\MenuIngredient::class)->name('menu-ingredient.index');
         Route::get('/variant-group', App\Livewire\Variant\TableVariantGroup::class)->name('variant-group.index');
+        Route::get('/variant-option/{id}/ingredients', App\Livewire\Variant\ManageVariantIngredient::class)->name('variant-option.ingredients');
     });
 
     Route::middleware(['role:manager'])->group(function () {

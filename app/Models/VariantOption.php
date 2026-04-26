@@ -26,4 +26,18 @@ class VariantOption extends Model
     {
         return $this->belongsToMany(PesananItem::class, 'pesanan_item_variants');
     }
+
+    /**
+     * Komposisi bahan baku tambahan untuk opsi varian ini.
+     * Contoh: Varian "Large" membutuhkan +10g kopi, +50ml susu.
+     */
+    public function ingredients()
+    {
+        return $this->belongsToMany(
+            Ingredients::class,
+            'variant_option_ingredients',
+            'variant_option_id',
+            'ingredient_id'
+        )->withPivot('qty')->withTimestamps();
+    }
 }
