@@ -48,36 +48,52 @@ function initThemeToggle() {
 // }
 
 function highlightActiveMenu() {
-    const currentUrl = window.location.pathname;
-    const links = document.querySelectorAll("ul#sidebar-menu a");
+    const currentUrl = window.location.pathname.replace(/\/$/, "") || "/";
+    const sidebarMenu = document.getElementById("sidebar-menu");
+    if (!sidebarMenu) return;
+
+    const links = sidebarMenu.querySelectorAll("a");
+    const activeClass = "active-page";
+
+    // Clear all previous active states from the entire menu
+    sidebarMenu.querySelectorAll("." + activeClass).forEach(el => {
+        el.classList.remove(activeClass);
+    });
+    sidebarMenu.querySelectorAll(".show, .open").forEach(el => {
+        el.classList.remove("show", "open");
+    });
+
     let activeLink = null;
 
-    links.forEach(function(link) {
-        // Reset state first
-        link.classList.remove("active-page");
-        if (link.parentElement) {
-            link.parentElement.classList.remove("active-page", "show", "open");
-        }
-        
-        const linkPath = new URL(link.href).pathname;
+    links.forEach(link => {
+        const linkPath = link.pathname.replace(/\/$/, "") || "/";
+        if (link.getAttribute('href') === "#") return;
 
-        if (currentUrl === linkPath || (linkPath !== '/' && currentUrl.startsWith(linkPath + "/"))) {
-            link.classList.add("active-page");
+        const isExactMatch = currentUrl === linkPath;
+        const isPrefixMatch = linkPath !== '/' && currentUrl.startsWith(linkPath + "/");
+
+        if (isExactMatch || isPrefixMatch) {
+            link.classList.add(activeClass);
             activeLink = link;
 
-            let parent = link.parentElement;
-            if (parent) parent.classList.add("active-page");
-
-            while (parent && parent.tagName !== "BODY") {
-                if (parent.tagName === "LI") {
-                    parent.classList.add("show", "open");
+            let parentLi = link.closest("li");
+            if (parentLi) {
+                parentLi.classList.add(activeClass);
+                
+                // Open parent menus if nested
+                let ancestor = parentLi.parentElement;
+                while (ancestor && ancestor !== sidebarMenu) {
+                    if (ancestor.tagName === "LI") {
+                        ancestor.classList.add("show", "open");
+                    }
+                    ancestor = ancestor.parentElement;
                 }
-                parent = parent.parentElement;
             }
         }
     });
 
     if (activeLink) {
+        // scrollIntoView might be jarring if persisted, so we use block: 'nearest'
         activeLink.scrollIntoView({ block: "nearest" });
     }
 }
