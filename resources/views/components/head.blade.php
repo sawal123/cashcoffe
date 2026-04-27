@@ -34,12 +34,12 @@
     <link rel="stylesheet" href="{{ asset('assets/css/lib/audioplayer.css') }}">
     <!-- main css -->
     {{-- @vite([]) --}}
-    @vite(['resources/css/app.css'])
-    @vite(['resources/js/app.js'])
+    {{-- @vite(['resources/css/app.css'])
+    @vite(['resources/js/app.js']) --}}
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
 
     <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-D8LFHCZJ.css') }}">
+    <link rel="stylesheet" href="{{ asset('build/assets/app-B6lFgtzp.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-OScb3ZFM.js') }}">
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
