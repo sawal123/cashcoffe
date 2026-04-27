@@ -41,7 +41,8 @@
     <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-B6lFgtzp.css') }}">
     <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
-    <script src="{{ asset('build/assets/app-OScb3ZFM.js') }}" defer></script>
+    {{--
+    <script src="{{ asset('build/assets/app-OScb3ZFM.js') }}"></script> --}}
     <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
     <!-- TomSelect CSS -->

@@ -48,54 +48,55 @@ function initThemeToggle() {
 // }
 
 function highlightActiveMenu() {
-    const currentUrl = window.location.pathname.replace(/\/$/, "") || "/";
-    const sidebarMenu = document.getElementById("sidebar-menu");
-    if (!sidebarMenu) return;
+    setTimeout(function() {
+        const currentUrl = window.location.pathname.replace(/\/$/, "") || "/";
+        const sidebarMenu = document.getElementById("sidebar-menu");
+        if (!sidebarMenu) return;
 
-    const links = sidebarMenu.querySelectorAll("a");
-    const activeClass = "active-page";
+        const links = sidebarMenu.querySelectorAll("a");
+        const activeClass = "active-page";
 
-    // Clear all previous active states from the entire menu
-    sidebarMenu.querySelectorAll("." + activeClass).forEach(el => {
-        el.classList.remove(activeClass);
-    });
-    sidebarMenu.querySelectorAll(".show, .open").forEach(el => {
-        el.classList.remove("show", "open");
-    });
+        // Clear all previous active states from the entire menu
+        sidebarMenu.querySelectorAll("." + activeClass).forEach(el => {
+            el.classList.remove(activeClass);
+        });
+        sidebarMenu.querySelectorAll(".show, .open").forEach(el => {
+            el.classList.remove("show", "open");
+        });
 
-    let activeLink = null;
+        let activeLink = null;
 
-    links.forEach(link => {
-        const linkPath = link.pathname.replace(/\/$/, "") || "/";
-        if (link.getAttribute('href') === "#") return;
+        links.forEach(link => {
+            const linkPath = link.pathname.replace(/\/$/, "") || "/";
+            if (link.getAttribute('href') === "#") return;
 
-        const isExactMatch = currentUrl === linkPath;
-        const isPrefixMatch = linkPath !== '/' && currentUrl.startsWith(linkPath + "/");
+            const isExactMatch = currentUrl === linkPath;
+            const isPrefixMatch = linkPath !== '/' && currentUrl.startsWith(linkPath + "/");
 
-        if (isExactMatch || isPrefixMatch) {
-            link.classList.add(activeClass);
-            activeLink = link;
+            if (isExactMatch || isPrefixMatch) {
+                link.classList.add(activeClass);
+                activeLink = link;
 
-            let parentLi = link.closest("li");
-            if (parentLi) {
-                parentLi.classList.add(activeClass);
-                
-                // Open parent menus if nested
-                let ancestor = parentLi.parentElement;
-                while (ancestor && ancestor !== sidebarMenu) {
-                    if (ancestor.tagName === "LI") {
-                        ancestor.classList.add("show", "open");
+                let parentLi = link.closest("li");
+                if (parentLi) {
+                    parentLi.classList.add(activeClass);
+                    
+                    // Open parent menus if nested
+                    let ancestor = parentLi.parentElement;
+                    while (ancestor && ancestor !== sidebarMenu) {
+                        if (ancestor.tagName === "LI") {
+                            ancestor.classList.add("show", "open");
+                        }
+                        ancestor = ancestor.parentElement;
                     }
-                    ancestor = ancestor.parentElement;
                 }
             }
-        }
-    });
+        });
 
-    if (activeLink) {
-        // scrollIntoView might be jarring if persisted, so we use block: 'nearest'
-        activeLink.scrollIntoView({ block: "nearest" });
-    }
+        if (activeLink) {
+            activeLink.scrollIntoView({ block: "nearest" });
+        }
+    }, 50);
 }
 
 function initMobileSidebar() {
