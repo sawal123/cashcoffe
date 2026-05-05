@@ -26,22 +26,22 @@
         'Nilai',
         ['name' => 'Digunakan', 'align' => 'center'],
         ['name' => 'Status', 'align' => 'center'],
-        ['name' => 'Action', 'align' => 'center']
+        ['name' => 'Aksi', 'align' => 'center']
     ]">
         @forelse ($discounts as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($discounts->currentPage() - 1) * $discounts->perPage() + $loop->iteration }}
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Nama Diskon" class="px-6 py-4">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ $item->nama_diskon }}</span>
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Jenis" class="px-6 py-4">
                     <span class="text-sm border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 capitalize">
                         {{ $item->jenis_diskon }}
                     </span>
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Nilai" class="px-6 py-4">
                     <span class="font-bold text-neutral-900 dark:text-white">
                         @if ($item->jenis_diskon == 'persentase')
                             {{ $item->nilai_diskon }}%
@@ -50,15 +50,15 @@
                         @endif
                     </span>
                 </td>
-                <td class="px-6 py-4 text-center text-sm text-neutral-600 dark:text-neutral-400">
+                <td data-label="Digunakan" class="px-6 py-4 text-center text-sm text-neutral-600 dark:text-neutral-400">
                     {{ $item->digunakan ?? '0' }}
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Status" class="px-6 py-4 text-center">
                     <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full {{ $item->is_active ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200' }}">
                         {{ $item->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Aksi" class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/discount/{{ base64_encode($item->id) }}/edit" wire:navigate />
                         <x-ui.action-delete @click="$dispatch('open-modal', {name : 'confirm-delete', id : '{{ base64_encode($item->id) }}'})" />

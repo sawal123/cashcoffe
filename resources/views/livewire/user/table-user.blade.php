@@ -32,7 +32,7 @@
     <div class="mb-4">
         <h4 class="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-2">Daftar Role Tersedia:</h4>
 
-        <div class="flex flex-nowrap items-center gap-3 overflow-x-auto pb-2" style="scrollbar-width: thin;">
+        <div class="flex flex-wrap items-center gap-2 pb-2">
 
             @forelse ($all_roles as $role)
                 <div
@@ -41,13 +41,19 @@
                         {{ ucfirst($role->name) }}
                     </span>
 
-                    @if ($role->name !== 'admin')
-                        <button type="button"
-                            @click="$dispatch('open-modal', { name: 'delete-role', id: {{ json_encode(base64_encode($role->id)) }} })"
-                            class="ml-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors focus:outline-none"
-                            title="Hapus Role">
-                            <iconify-icon icon="mingcute:close-line" class="text-base block"></iconify-icon>
-                        </button>
+                    @if ($role->name !== 'admin' && $role->name !== 'superadmin')
+                        @if ($role->users_count > 0)
+                            <span class="text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-md font-bold" title="Role sedang digunakan oleh {{ $role->users_count }} user">
+                                {{ $role->users_count }} user
+                            </span>
+                        @else
+                            <button type="button"
+                                @click="$dispatch('open-modal', { name: 'delete-role', id: {{ json_encode(base64_encode($role->id)) }} })"
+                                class="ml-1 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors focus:outline-none"
+                                title="Hapus Role">
+                                <iconify-icon icon="mingcute:close-line" class="text-base block"></iconify-icon>
+                            </button>
+                        @endif
                     @endif
                 </div>
             @empty
@@ -68,11 +74,11 @@
     ]">
         @forelse ($users as $user)
             <tr wire:key="{{ $user->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($users->currentPage() - 1) * $users->perPage() + $loop->iteration }}
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Avatar" class="px-6 py-4 text-center">
                     @if ($user->avatar)
                         <img src="{{ asset('storage/' . $user->avatar) }}" alt="Avatar"
                             class="w-10 h-10 rounded-full object-cover mx-auto border border-neutral-300">
@@ -84,17 +90,17 @@
                     @endif
                 </td>
 
-                <td class="px-6 py-4">
+                <td data-label="Nama" class="px-6 py-4 break-words">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                         {{ $user->name }}
                     </span>
                 </td>
 
-                <td class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                <td data-label="Email" class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400 break-all">
                     {{ $user->email }}
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Cabang" class="px-6 py-4 text-center">
                     @if ($user->branch)
                         <span
                             class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-600 border border-blue-100 uppercase">
@@ -108,7 +114,7 @@
                     @endif
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Role" class="px-6 py-4 text-center">
                     <div class="flex flex-wrap justify-center gap-1">
                         @forelse ($user->roles as $role)
                             <span
@@ -121,7 +127,7 @@
                     </div>
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Aksi" class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/user/{{ base64_encode($user->id) }}/edit" wire:navigate />
                         <x-ui.action-delete

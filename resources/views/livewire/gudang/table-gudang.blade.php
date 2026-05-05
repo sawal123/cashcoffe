@@ -31,33 +31,33 @@
     ]">
         @forelse ($gudangs as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($gudangs->currentPage() - 1) * $gudangs->perPage() + $loop->iteration }}
                 </td>
 
-                <td class="px-6 py-4">
+                <td data-label="Nama Bahan" class="px-6 py-4">
                     <span class="font-bold text-neutral-800 dark:text-neutral-200">{{ $item->nama_bahan }}</span>
                 </td>
 
-                <td class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                <td data-label="Satuan" class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
                     {{ $item->satuan }}
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Stok" class="px-6 py-4 text-center">
                     <span class="font-semibold text-neutral-900 dark:text-white">{{ number_format($item->stok, 2, ',', '.') }}</span>
                 </td>
 
-                <td class="px-6 py-4 text-right">
+                <td data-label="Harga Satuan" class="px-6 py-4 text-right">
                     <span class="font-bold text-neutral-900 dark:text-white">Rp {{ number_format($item->harga_satuan, 0, ',', '.') }}</span>
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Min Stok" class="px-6 py-4 text-center">
                     <span class="px-2 py-1 rounded-lg {{ $item->stok < $item->minimum_stok ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' }} text-xs font-bold">
                         {{ number_format($item->minimum_stok, 2, ',', '.') }}
                     </span>
                 </td>
 
-                <td class="px-6 py-4">
+                <td data-label="Aksi" class="px-6 py-4">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/gudang/{{ base64_encode($item->id) }}/edit" wire:navigate />
                         <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />

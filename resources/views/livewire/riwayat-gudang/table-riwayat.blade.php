@@ -38,13 +38,13 @@
     ]">
         @forelse ($riwayats as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($riwayats->currentPage() - 1) * $riwayats->perPage() + $loop->iteration }}
                 </td>
-                <td class="px-6 py-4 font-bold text-neutral-800 dark:text-neutral-200">
+                <td data-label="Nama Bahan" class="px-6 py-4 font-bold text-neutral-800 dark:text-neutral-200">
                     {{ $item->gudang->nama_bahan }}
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Tipe" class="px-6 py-4 text-center">
                     @if ($item->tipe === 'masuk')
                         <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
                             MASUK
@@ -55,25 +55,25 @@
                         </span>
                     @endif
                 </td>
-                <td class="px-6 py-4 text-center font-bold">
+                <td data-label="Qty" class="px-6 py-4 text-center font-bold">
                     {{ number_format($item->jumlah, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-4 text-right text-sm text-neutral-600">
+                <td data-label="H Satuan" class="px-6 py-4 text-right text-sm text-neutral-600">
                     Rp {{ number_format($item->harga_satuan, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-4 text-right font-bold text-neutral-900 dark:text-white">
+                <td data-label="Total" class="px-6 py-4 text-right font-bold text-neutral-900 dark:text-white">
                     Rp {{ number_format($item->total_harga, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="S Sebelum" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ number_format($item->stok_sebelum, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="S Sesudah" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ number_format($item->stok_sesudah, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-4 text-sm text-neutral-500">
+                <td data-label="Tanggal" class="px-6 py-4 text-sm text-neutral-500">
                     {{ $item->created_at->format('d M Y') }}
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Aksi" class="px-6 py-4">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/gudang/{{ base64_encode($item->id) }}/edit" wire:navigate />
                         <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id) ) }} })" />

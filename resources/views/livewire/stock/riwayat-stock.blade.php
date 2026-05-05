@@ -71,16 +71,16 @@
     ]">
         @forelse ($riwayats as $item)
             <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-700/50 transition-colors">
-                <td class="px-6 py-5 text-sm font-bold text-neutral-400">
+                <td data-label="#" class="px-6 py-5 text-sm font-bold text-neutral-400">
                     {{ ($riwayats->currentPage() - 1) * $riwayats->perPage() + $loop->iteration }}
                 </td>
-                <td class="px-6 py-5 text-sm font-extrabold text-blue-600">
+                <td data-label="Code" class="px-6 py-5 text-sm font-extrabold text-blue-600">
                     {{ $item->kode }}
                 </td>
-                <td class="px-6 py-5 text-sm font-bold text-neutral-800 dark:text-neutral-200">
+                <td data-label="Item Name" class="px-6 py-5 text-sm font-bold text-neutral-800 dark:text-neutral-200">
                     {{ $item->ingredient->nama_bahan }}
                 </td>
-                <td class="px-6 py-5 text-sm">
+                <td data-label="Type" class="px-6 py-5 text-sm">
                     @if ($item->tipe === 'in')
                         <span
                             class="inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
@@ -95,7 +95,7 @@
                         </span>
                     @endif
                 </td>
-                <td class="px-6 py-5 text-sm font-black text-center">
+                <td data-label="Qty" class="px-6 py-5 text-sm font-black text-center">
                     @if ($item->tipe === 'in')
                         <span
                             class="text-blue-600 dark:text-blue-400">+{{ number_format($item->qty, 0, ',', '.') }}</span>
@@ -104,19 +104,19 @@
                             class="text-orange-600 dark:text-orange-400">-{{ number_format($item->qty, 0, ',', '.') }}</span>
                     @endif
                 </td>
-                <td class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400 text-center">
+                <td data-label="Before" class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400 text-center">
                     {{ number_format($item->qty_before, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400 text-center">
+                <td data-label="After" class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400 text-center">
                     {{ number_format($item->qty_after, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-5 text-sm font-medium text-neutral-500 dark:text-neutral-400 max-w-[200px] truncate">
+                <td data-label="Description" class="px-6 py-5 text-sm font-medium text-neutral-500 dark:text-neutral-400 max-w-[200px] truncate">
                     {{ $item->keterangan ?? '-' }}
                 </td>
-                <td class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400">
+                <td data-label="Date" class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400">
                     {{ $item->created_at->format('M d, Y') }}
                 </td>
-                <td class="px-6 py-5 text-sm text-center">
+                <td data-label="Aksi" class="px-6 py-5 text-sm text-center">
                     <div class="flex items-center justify-center gap-3">
                         @hasrole('superadmin')
                             <x-ui.action-edit :href="route('riwayat-stock.edit', base64_encode($item->id))" wire:navigate />

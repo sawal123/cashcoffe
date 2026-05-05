@@ -42,10 +42,10 @@
     ]">
         @forelse ($menu as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-4 sm:px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($menu->currentPage() - 1) * $menu->perPage() + $loop->iteration }}
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Item" class="px-4 sm:px-6 py-4">
                     <div class="flex items-center gap-3">
                         <img src="{{ asset('storage/' . $item->gambar) }}" alt="{{ $item->nama_menu }}"
                             class="shrink-0 rounded-2xl w-12 h-12 object-cover border border-neutral-100 dark:border-neutral-700 shadow-sm">
@@ -56,13 +56,13 @@
                         </div>
                     </div>
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Kategori" class="px-4 sm:px-6 py-4">
                     <span
                         class="text-sm font-medium text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-700 px-2.5 py-1 rounded-lg border border-neutral-200 dark:border-neutral-600">
                         {{ $item->category->nama ?? '-' }}
                     </span>
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Harga" class="px-4 sm:px-6 py-4">
                     @php
                         $tieredPrice = $item->menuPrices->first();
                         $hargaDisplay = $tieredPrice
@@ -76,16 +76,16 @@
                     <span class="font-bold text-neutral-900 dark:text-white">Rp
                         {{ number_format($hargaDisplay, 0, ',', '.') }}</span>
                 </td>
-                <td class="px-6 py-4 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
+                <td data-label="Terjual" class="px-4 sm:px-6 py-4 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
                     {{ number_format($item->jumlah_terjual ?? 0, 0, ',', '.') }}
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Status" class="px-4 sm:px-6 py-4 text-center">
                     <span
                         class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200' }}">
                         {{ $item->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Aksi" class="px-4 sm:px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         @hasrole('superadmin')
                             <a wire:key="var-{{ $item->id }}" href="{{ route('menu.variants', $item->id) }}"

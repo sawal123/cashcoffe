@@ -24,81 +24,70 @@
                 <x-ui.input wire:model.live="search" placeholder="Cari grup..." class="max-w-xs" />
             </div>
 
-            <table class="w-full text-left">
-                <thead class="bg-slate-50 text-slate-600 text-sm uppercase">
-                    <tr>
-                        <th class="px-6 py-4 font-bold">Nama Grup</th>
-                        <th class="px-6 py-4 font-bold">Tipe Seleksi</th>
-                        <th class="px-6 py-4 font-bold">Wajib?</th>
-                        <th class="px-6 py-4 font-bold">Jumlah Opsi</th>
-                        <th class="px-6 py-4 font-bold text-right">Aksi</th>
+            <x-ui.table :headers="['Nama Grup', 'Tipe Seleksi', 'Wajib?', 'Jumlah Opsi', ['name' => 'Aksi', 'align' => 'right']]">
+                @forelse ($groups as $group)
+                    {{-- Row Grup Utama --}}
+                    <tr class="hover:bg-slate-50 dark:hover:bg-neutral-900/30 transition">
+                        <td data-label="Nama Grup" class="px-6 py-4 text-slate-800 dark:text-neutral-200 font-bold">{{ $group->nama_group }}
+                        </td>
+                        <td data-label="Tipe Seleksi" class="px-6 py-4">
+                            <span
+                                class="px-2 py-1 rounded-full text-xs font-bold {{ $group->selection_type === 'single' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600' }}">
+                                {{ ucfirst($group->selection_type) }}
+                            </span>
+                        </td>
+                        <td data-label="Wajib?" class="px-6 py-4">
+                            @if($group->is_required)
+                                <span class="text-emerald-600 flex items-center gap-1 text-sm">
+                                    <iconify-icon icon="lucide:check-circle"></iconify-icon> Ya
+                                </span>
+                            @else
+                                <span class="text-slate-400 text-sm">Tidak</span>
+                            @endif
+                        </td>
+                        <td data-label="Jumlah Opsi" class="px-6 py-4 text-slate-600 dark:text-neutral-400">{{ $group->options_count }} Opsi</td>
+                        <td data-label="Aksi" class="px-6 py-4 text-right space-x-2">
+                            <button wire:click="edit({{ $group->id }})"
+                                class="text-blue-600 hover:text-blue-800 font-bold text-sm">Edit Grup</button>
+                            <button wire:click="delete({{ $group->id }})" wire:confirm="Yakin ingin menghapus grup ini?"
+                                class="text-red-500 hover:text-red-700 font-bold text-sm">Hapus</button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @forelse ($groups as $group)
-                        {{-- Row Grup Utama --}}
-                        <tr class="hover:bg-slate-50 dark:hover:bg-neutral-900/30 transition">
-                            <td class="px-6 py-4 text-slate-800 dark:text-neutral-200 font-bold">{{ $group->nama_group }}
+                    {{-- Sub-rows: Opsi Varian dengan tombol Resep Bahan --}}
+                    @foreach ($group->options as $option)
+                        <tr class="bg-neutral-50/70 dark:bg-neutral-900/20 border-l-4 border-l-amber-300">
+                            <td data-label="Opsi" class="px-6 py-3 pl-10" colspan="1">
+                                <div class="flex items-center gap-2">
+                                    <iconify-icon icon="lucide:corner-down-right"
+                                        class="text-neutral-400 text-sm"></iconify-icon>
+                                    <span
+                                        class="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{{ $option->nama_opsi }}</span>
+                                </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="px-2 py-1 rounded-full text-xs font-bold {{ $group->selection_type === 'single' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600' }}">
-                                    {{ ucfirst($group->selection_type) }}
+                            <td data-label="Harga Tambahan" class="px-6 py-3" colspan="2">
+                                <span class="text-xs text-neutral-500">
+                                    + Rp {{ number_format($option->extra_price, 0, ',', '.') }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
-                                @if($group->is_required)
-                                    <span class="text-emerald-600 flex items-center gap-1 text-sm">
-                                        <iconify-icon icon="lucide:check-circle"></iconify-icon> Ya
-                                    </span>
-                                @else
-                                    <span class="text-slate-400 text-sm">Tidak</span>
-                                @endif
+                            <td data-label="Bahan" class="px-6 py-3 text-xs text-neutral-400">
+                                {{ $option->ingredients_count ?? 0 }} bahan
                             </td>
-                            <td class="px-6 py-4 text-slate-600 dark:text-neutral-400">{{ $group->options_count }} Opsi</td>
-                            <td class="px-6 py-4 text-right space-x-2">
-                                <button wire:click="edit({{ $group->id }})"
-                                    class="text-blue-600 hover:text-blue-800 font-bold text-sm">Edit Grup</button>
-                                <button wire:click="delete({{ $group->id }})" wire:confirm="Yakin ingin menghapus grup ini?"
-                                    class="text-red-500 hover:text-red-700 font-bold text-sm">Hapus</button>
+                            <td data-label="Aksi" class="px-6 py-3 text-right">
+                                <a href="{{ route('variant-option.ingredients', base64_encode($option->id)) }}"
+                                    wire:navigate
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold transition">
+                                    <iconify-icon icon="lucide:flask-conical" class="text-sm"></iconify-icon>
+                                    Resep Bahan
+                                </a>
                             </td>
                         </tr>
-                        {{-- Sub-rows: Opsi Varian dengan tombol Resep Bahan --}}
-                        @foreach ($group->options as $option)
-                            <tr class="bg-neutral-50/70 dark:bg-neutral-900/20 border-l-4 border-l-amber-300">
-                                <td class="px-6 py-3 pl-10" colspan="1">
-                                    <div class="flex items-center gap-2">
-                                        <iconify-icon icon="lucide:corner-down-right"
-                                            class="text-neutral-400 text-sm"></iconify-icon>
-                                        <span
-                                            class="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{{ $option->nama_opsi }}</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-3" colspan="2">
-                                    <span class="text-xs text-neutral-500">
-                                        + Rp {{ number_format($option->extra_price, 0, ',', '.') }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-3 text-xs text-neutral-400">
-                                    {{ $option->ingredients_count ?? 0 }} bahan
-                                </td>
-                                <td class="px-6 py-3 text-right">
-                                    <a href="{{ route('variant-option.ingredients', base64_encode($option->id)) }}"
-                                        wire:navigate
-                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold transition">
-                                        <iconify-icon icon="lucide:flask-conical" class="text-sm"></iconify-icon>
-                                        Resep Bahan
-                                    </a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    @empty
-                        <tr>
-                            <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">Belum ada grup varian.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    @endforeach
+                @empty
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">Belum ada grup varian.</td>
+                    </tr>
+                @endforelse
+            </x-ui.table>
 
             <div class="p-4 border-t border-slate-200">
                 {{ $groups->links() }}

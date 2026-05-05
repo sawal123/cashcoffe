@@ -34,35 +34,35 @@
     ]">
         @forelse($items as $i)
             <tr wire:key="{{ $i->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4">
+                <td data-label="Nama Bahan" class="px-6 py-4">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ $i->nama_bahan }}</span>
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Stok" class="px-6 py-4 text-center">
                     <span
                         class="px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg text-sm font-bold border border-blue-100 dark:border-blue-700">
                         {{ number_format($i->stok, 0, ',', '.') }}
                     </span>
                 </td>
 
-                <td class="px-6 py-4">
+                <td data-label="HPP" class="px-6 py-4">
                     <span class="font-bold text-neutral-900 dark:text-white">
                         Rp {{ number_format($i->hpp, 0, ',', '.') }}
                     </span>
                 </td>
 
-                <td class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                <td data-label="Digunakan" class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
                     {{ number_format($i->digunakan ?? 0, 0, ',', '.') }}
                 </td>
 
-                <td class="px-6 py-4">
+                <td data-label="Satuan" class="px-6 py-4">
                     <span
                         class="text-sm border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400">
                         {{ $i->satuan->nama_satuan ?? '-' }}
                     </span>
                 </td>
 
-                <td class="px-6 py-4 text-center">
+                <td data-label="Aksi" class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/stock-dapur/{{ base64_encode($i->id) }}/edit" wire:navigate />
                         <x-ui.action-delete

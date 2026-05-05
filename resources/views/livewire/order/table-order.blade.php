@@ -49,16 +49,16 @@
     ]">
         @forelse ($orders as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-4 sm:px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($orders->currentPage() - 1) * $orders->perPage() + $loop->iteration }}
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Kode" class="px-4 sm:px-6 py-4">
                     <span class="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg">#{{ $item->kode }}</span>
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Pelanggan" class="px-4 sm:px-6 py-4">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ $item->nama ?: '-' }}</span>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Status" class="px-4 sm:px-6 py-4 text-center">
                     @php
                         $statusClasses = [
                             'selesai' => 'bg-green-100 text-green-700 border-green-200',
@@ -71,19 +71,19 @@
                         {{ ucwords(str_replace('_', ' ', $item->status)) }}
                     </span>
                 </td>
-                <td class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                <td data-label="Metode" class="px-4 sm:px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
                     {{ $item->metode_pembayaran ? ucwords($item->metode_pembayaran) : 'Belum Bayar' }}
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Total" class="px-4 sm:px-6 py-4">
                     <span class="font-bold text-neutral-900 dark:text-white">Rp{{ number_format($item->total - $item->discount_value, 0, ',', '.') }}</span>
                 </td>
-                <td class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                    {{ $item->user->name }}
+                <td data-label="Kasir" class="px-4 sm:px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                    {{ $item->user->name ?? '-' }}
                 </td>
-                <td class="px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
-                    {{ $item->created_at->format('H:i') }}
+                <td data-label="Waktu" class="px-4 sm:px-6 py-4 text-xs text-neutral-500">
+                    {{ $item->created_at->format('d/m/y H:i') }}
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Aksi" class="px-4 sm:px-6 py-4 text-center">
                     <div class="flex justify-center gap-1.5">
 
                         {{-- ======================= --}}

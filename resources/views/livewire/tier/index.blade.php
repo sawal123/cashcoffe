@@ -14,41 +14,30 @@
     </div>
 
     <!-- Table Tiers -->
-    <div class="overflow-x-auto border border-neutral-200 dark:border-neutral-700 rounded-2xl">
-        <table class="w-full text-left text-sm text-neutral-600 dark:text-neutral-400">
-            <thead class="bg-neutral-50 dark:bg-neutral-800/50 text-neutral-800 dark:text-neutral-200 uppercase text-xs font-bold border-b border-neutral-200 dark:border-neutral-700">
-                <tr>
-                    <th class="px-6 py-4">Nama Tier</th>
-                    <th class="px-6 py-4 text-center">Status</th>
-                    <th class="px-6 py-4 text-center">Aksi</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-200 dark:divide-neutral-700">
-                @forelse($tiers as $t)
-                <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                    <td class="px-6 py-4 font-bold text-neutral-800 dark:text-neutral-200 whitespace-nowrap">
-                        {{ $t->nama_tier }}
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" class="sr-only peer" wire:click="toggleStatus({{ $t->id }})" {{ $t->is_active ? 'checked' : '' }}>
-                            <div class="w-11 h-6 bg-gray-400 peer-focus:outline-none rounded-full peer dark:bg-gray-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                        </label>
-                    </td>
-                    <td class="px-6 py-4 text-center">
-                        <button wire:click="edit({{ $t->id }})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors">
-                            <iconify-icon icon="lucide:edit" class="text-lg"></iconify-icon>
-                        </button>
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="3" class="px-6 py-8 text-center text-neutral-500">Belum ada tier harga terdaftar.</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+    <x-ui.table :headers="['Nama Tier', ['name' => 'Status', 'align' => 'center'], ['name' => 'Aksi', 'align' => 'center']]">
+        @forelse($tiers as $t)
+        <tr class="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+            <td data-label="Nama Tier" class="px-6 py-4 font-bold text-neutral-800 dark:text-neutral-200 whitespace-nowrap">
+                {{ $t->nama_tier }}
+            </td>
+            <td data-label="Status" class="px-6 py-4 text-center">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" class="sr-only peer" wire:click="toggleStatus({{ $t->id }})" {{ $t->is_active ? 'checked' : '' }}>
+                    <div class="w-11 h-6 bg-gray-400 peer-focus:outline-none rounded-full peer dark:bg-gray-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                </label>
+            </td>
+            <td data-label="Aksi" class="px-6 py-4 text-center">
+                <button wire:click="edit({{ $t->id }})" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-colors">
+                    <iconify-icon icon="lucide:edit" class="text-lg"></iconify-icon>
+                </button>
+            </td>
+        </tr>
+        @empty
+        <tr>
+            <td colspan="3" class="px-6 py-8 text-center text-neutral-500">Belum ada tier harga terdaftar.</td>
+        </tr>
+        @endforelse
+    </x-ui.table>
 
     <!-- Modal Create / Edit -->
     <x-mdal name="modal-tier">

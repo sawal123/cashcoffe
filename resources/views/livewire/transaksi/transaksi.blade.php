@@ -99,17 +99,17 @@
         ]">
             @forelse ($orders as $item)
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-700/50 transition-colors">
-                    <td class="px-6 py-5 text-sm font-bold text-neutral-400">
+                    <td data-label="#" class="px-6 py-5 text-sm font-bold text-neutral-400">
                         {{ ($orders->currentPage() - 1) * $orders->perPage() + $loop->iteration }}
                     </td>
-                    <td class="px-6 py-5">
+                    <td data-label="Kode" class="px-6 py-5">
                         <span
                             class="text-sm font-black text-blue-600 dark:text-blue-400 tracking-tight">{{ $item->kode }}</span>
                     </td>
-                    <td class="px-6 py-5 text-sm font-bold text-neutral-800 dark:text-neutral-200">
+                    <td data-label="Customer" class="px-6 py-5 text-sm font-bold text-neutral-800 dark:text-neutral-200">
                         {{ $item->nama ?? '-' }}
                     </td>
-                    <td class="px-6 py-5">
+                    <td data-label="Status" class="px-6 py-5">
                         <span
                             class="inline-flex items-center px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest
                             @if ($item->status === 'selesai') bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400
@@ -118,25 +118,25 @@
                             {{ $item->status }}
                         </span>
                     </td>
-                    <td class="px-6 py-5">
+                    <td data-label="Pembayaran" class="px-6 py-5">
                         <div class="flex items-center gap-2">
                             <span class="text-xs font-bold text-neutral-500 dark:text-neutral-400">
                                 {{ $item->metode_pembayaran ? ucfirst($item->metode_pembayaran) : 'Belum Bayar' }}
                             </span>
                         </div>
                     </td>
-                    <td class="px-6 py-5">
+                    <td data-label="Total" class="px-6 py-5">
                         <span class="text-sm font-black text-neutral-800 dark:text-neutral-100 italic">
                             Rp {{ number_format($item->total - $item->discount_value, 0, ',', '.') }}
                         </span>
                     </td>
-                    <td class="px-6 py-5 text-sm font-medium text-neutral-500 dark:text-neutral-400">
+                    <td data-label="Kasir" class="px-6 py-5 text-sm font-medium text-neutral-500 dark:text-neutral-400">
                         {{ $item->user->name ?? '-' }}
                     </td>
-                    <td class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400">
+                    <td data-label="Tanggal" class="px-6 py-5 text-sm font-bold text-neutral-500 dark:text-neutral-400">
                         {{ $item->created_at->format('d M, H:i') }}
                     </td>
-                    <td class="px-6 py-5">
+                    <td data-label="Aksi" class="px-6 py-5">
                         <div class="flex items-center justify-center gap-3">
                             <x-ui.action-edit @click="$wire.editStatus('{{ base64_encode($item->id) }}')"
                                 tooltip="Ubah Status" />

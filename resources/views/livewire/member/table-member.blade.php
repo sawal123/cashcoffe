@@ -28,22 +28,22 @@
     ]">
         @forelse ($members as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($members->currentPage() - 1) * $members->perPage() + $loop->iteration }}
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Nama" class="px-6 py-4">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ $item->user->name ?? '-' }}</span>
                 </td>
-                <td class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
+                <td data-label="Email" class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
                     {{ $item->user->email ?? '-' }}
                 </td>
-                <td class="px-6 py-4 text-sm font-medium text-neutral-800 dark:text-neutral-200">
+                <td data-label="Phone" class="px-6 py-4 text-sm font-medium text-neutral-800 dark:text-neutral-200">
                     {{ $item->phone }}
                 </td>
-                <td class="px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
+                <td data-label="Alamat" class="px-6 py-4 text-sm text-neutral-500 dark:text-neutral-400">
                     {{ \Illuminate\Support\Str::limit($item->address, 30, '...') }}
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Aksi" class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-detail wire:click="viewMemberDetails('{{ base64_encode($item->id) }}')" /> 
                         <x-ui.action-edit href="/member/{{ base64_encode($item->id) }}/edit" wire:navigate />

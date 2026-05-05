@@ -132,7 +132,7 @@ class TableUser extends Component
         }
 
         $users = $query->latest()->paginate($this->perPage);
-        $all_roles = Role::latest()->get();
+        $all_roles = Role::withCount('users')->latest()->get();
         return view('livewire.user.table-user', [
             'users' => $users,
             'all_roles' => $all_roles,

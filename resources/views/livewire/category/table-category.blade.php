@@ -27,13 +27,13 @@
     ]">
         @forelse ($category as $item)
             <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td class="px-6 py-4 text-center text-sm text-neutral-500">
+                <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($category->currentPage() - 1) * $category->perPage() + $loop->iteration }}
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Nama Kategori" class="px-6 py-4">
                     <span class="font-bold text-neutral-800 dark:text-neutral-200">{{ $item->nama }}</span>
                 </td>
-                <td class="px-6 py-4 text-center">
+                <td data-label="Status" class="px-6 py-4 text-center">
                     @if ($item->is_active == 1)
                         <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50">
                             Active
@@ -44,7 +44,7 @@
                         </span>
                     @endif
                 </td>
-                <td class="px-6 py-4">
+                <td data-label="Aksi" class="px-6 py-4">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/category/{{ base64_encode($item->id) }}/edit" wire:navigate />
                         @unlessrole('kasir')

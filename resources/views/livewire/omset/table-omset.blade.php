@@ -82,29 +82,29 @@
         ]">
             @forelse ($dataOmset as $index => $item)
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                    <td class="px-6 py-4 text-center text-sm text-neutral-500">{{ $index + 1 }}</td>
-                    <td class="px-6 py-4">
+                    <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">{{ $index + 1 }}</td>
+                    <td data-label="Tanggal" class="px-6 py-4">
                         <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                             {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d F Y') }}
                         </span>
                     </td>
-                    <td class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                    <td data-label="Pesanan" class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
                         {{ number_format($item->jumlah_pesanan, 0, ',', '.') }}
                     </td>
-                    <td class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                    <td data-label="Menu" class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
                         {{ number_format($item->jumlah_menu, 0, ',', '.') }}
                     </td>
-                    <td class="px-6 py-4 text-center">
+                    <td data-label="Komplemen" class="px-6 py-4 text-center">
                         <span class="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold border border-amber-100 dark:border-amber-700">
                             {{ number_format($item->total_komplemen, 0, ',', '.') }}
                         </span>
                     </td>
-                    <td class="px-6 py-4">
+                    <td data-label="Omset Total" class="px-6 py-4">
                         <span class="font-bold text-neutral-900 dark:text-white">
                             Rp {{ number_format($item->total_omset, 0, ',', '.') }}
                         </span>
                     </td>
-                    <td class="px-6 py-4">
+                    <td data-label="Estimated Profit" class="px-6 py-4">
                         <span class="font-bold text-green-600 dark:text-green-400">
                             Rp {{ number_format($item->total_profit, 0, ',', '.') }}
                         </span>
