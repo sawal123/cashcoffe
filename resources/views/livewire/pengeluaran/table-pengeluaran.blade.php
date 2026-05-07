@@ -40,7 +40,9 @@
         {{-- Total Filtered --}}
         <div
             class="md:col-span-4 bg-white dark:bg-neutral-800 rounded-3xl p-8 shadow-sm border border-neutral-100 dark:border-neutral-700 relative overflow-hidden">
-            <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">Total Filtered</h4>
+            <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                {{ $filterMonth ? 'Total Bulan ' . $months[$filterMonth] : 'Total Filtered' }}
+            </h4>
             <p class="text-3xl font-black text-blue-600 dark:text-blue-500 mb-4">
                 Rp {{ number_format($this->totalFiltered, 0, ',', '.') }}
             </p>
@@ -56,7 +58,9 @@
         <div
             class="md:col-span-8 bg-neutral-900 rounded-3xl p-8 shadow-xl shadow-neutral-900/20 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
-                <h4 class="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">Total Seluruhnya</h4>
+                <h4 class="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">
+                    {{ $filterYear ? 'Total Tahun ' . $filterYear : 'Total Seluruhnya' }}
+                </h4>
                 <p class="text-4xl font-black text-white">
                     Rp {{ number_format($this->totalAllTime, 0, ',', '.') }}
                 </p>

@@ -66,7 +66,11 @@ class TablePengeluaran extends Component
     #[Computed]
     public function totalAllTime()
     {
-        return Pengeluaran::sum('total');
+        return Pengeluaran::query()
+            ->when($this->filterYear, function ($q) {
+                $q->whereYear('tanggal_pengeluaran', $this->filterYear);
+            })
+            ->sum('total');
     }
 
     #[Computed]
