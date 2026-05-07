@@ -5,6 +5,8 @@ namespace App\Livewire\Pengeluaran;
 use Livewire\Component;
 use App\Models\Pengeluaran;
 use Livewire\WithPagination;
+use Illuminate\Support\Facades\DB;
+use Livewire\Attributes\Computed;
 use Illuminate\Support\Facades\Storage;
 
 class TablePengeluaran extends Component
@@ -21,7 +23,17 @@ class TablePengeluaran extends Component
     public function mount()
     {
         $this->filterMonth = ''; // Initial empty for Dec/all
+        
+        // Default ke tahun sekarang, tapi jika tidak ada data, cari tahun terbaru yang ada datanya
         $this->filterYear = date('Y');
+        $hasDataCurrentYear = Pengeluaran::whereYear('tanggal_pengeluaran', $this->filterYear)->exists();
+        
+        if (!$hasDataCurrentYear) {
+            $latestYearData = Pengeluaran::orderBy('tanggal_pengeluaran', 'desc')->value('tanggal_pengeluaran');
+            if ($latestYearData) {
+                $this->filterYear = \Carbon\Carbon::parse($latestYearData)->format('Y');
+            }
+        }
     }
 
     public function updated($property)
@@ -31,7 +43,8 @@ class TablePengeluaran extends Component
         }
     }
 
-    public function getPengeluaransProperty()
+    #[Computed]
+    public function pengeluarans()
     {
         return Pengeluaran::query()
             ->when($this->search, function ($q) {
@@ -50,12 +63,14 @@ class TablePengeluaran extends Component
             ->paginate($this->perPage);
     }
 
-    public function getTotalAllTimeProperty()
+    #[Computed]
+    public function totalAllTime()
     {
         return Pengeluaran::sum('total');
     }
 
-    public function getTotalFilteredProperty()
+    #[Computed]
+    public function totalFiltered()
     {
         return Pengeluaran::query()
             ->when($this->search, function ($q) {
@@ -73,7 +88,8 @@ class TablePengeluaran extends Component
             ->sum('total');
     }
 
-    public function getGrowthPercentageProperty()
+    #[Computed]
+    public function growthPercentage()
     {
         $currentMonth = now()->month;
         $currentYear = now()->year;

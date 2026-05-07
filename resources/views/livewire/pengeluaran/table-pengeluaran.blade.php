@@ -109,13 +109,17 @@
         <x-dropdown align="right" width="48">
             <x-slot name="trigger">
                 <button type="button"
-                    class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-neutral-900 border-0 rounded-2xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm hover:bg-neutral-50 transition-all">
-                    <span>{{ $filterYear }}</span>
+                    class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-neutral-900 border-0 rounded-2xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm hover:bg-neutral-50 transition-all min-w-[100px] justify-between">
+                    <span>{{ $filterYear ?: 'Tahun' }}</span>
                     <iconify-icon icon="lucide:chevron-down" class="text-neutral-400"></iconify-icon>
                 </button>
             </x-slot>
             <x-slot name="content">
                 <div class="p-2 space-y-1">
+                    <button wire:click="$set('filterYear', '')"
+                        class="w-full text-left px-4 py-2 text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 {{ $filterYear == '' ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
+                        Semua Tahun
+                    </button>
                     @foreach(range(date('Y'), date('Y') - 5) as $y)
                         <button wire:click="$set('filterYear', {{ $y }})"
                             class="w-full text-left px-4 py-2 text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 {{ $filterYear == $y ? 'bg-blue-50 text-blue-600' : '' }}">
