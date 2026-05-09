@@ -78,7 +78,7 @@ new #[Layout('layouts.guest')] class extends Component {
                     style="padding-left: 44px !important; padding-right: 44px !important; padding-top: 10px !important; padding-bottom: 10px !important;"
                     ::type="show ? 'text' : 'password'" name="password" required autocomplete="current-password" />
                 <button type="button" @click="show = !show"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                    class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"
                         x-show="!show">
                         <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />

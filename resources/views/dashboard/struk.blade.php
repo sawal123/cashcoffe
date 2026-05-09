@@ -27,7 +27,6 @@
             /* Area cetak aman untuk kertas 58mm */
             margin: 0 auto;
             padding: 2mm 0;
-            overflow: hidden;
         }
 
         .center {
@@ -84,12 +83,27 @@
                 width: 58mm;
                 margin: 0;
                 padding: 0;
-                height: auto;
-                overflow: hidden;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .no-print {
                 display: none;
+            }
+
+            /* Mencegah pemotongan konten dan pemisahan halaman */
+            html,
+            body {
+                height: auto !important;
+                overflow: visible !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .receipt-wrapper {
+                width: 100%;
+                margin: 0 auto;
+                padding: 2mm;
             }
         }
     </style>
@@ -98,7 +112,7 @@
 <body class="bg-white">
     <div class="receipt-wrapper">
         <div class="center">
-            <img src="{{ asset('logo/logo.png') }}" style="max-width:60px; filter: grayscale(1);"><br>
+            <img src="{{ asset('logo/logo.png') }}" width="60" style="display: block; margin: 0 auto 5px;"><br>
             <div class="bold">Temuan Space</div>
             <div style="font-size: 10px;">Jl. Tenis No.30, Ps. Merah Bar., Medan</div>
             <div>{{ date('d/m/Y H:i') }}</div>
@@ -190,9 +204,20 @@
     </div>
 
     <script>
+        // Gunakan flag agar tidak terpicu dua kali
+        let isPrinting = false;
+
         window.onload = function () {
-            window.print();
+            if (isPrinting) return;
+            isPrinting = true;
+
+            // Memberikan jeda sedikit untuk memastikan rendering selesai, terutama gambar
+            setTimeout(function () {
+                window.print();
+            }, 500);
         };
+
+        // Menutup jendela setelah proses cetak selesai atau dibatalkan
         window.onafterprint = function () {
             window.close();
         };

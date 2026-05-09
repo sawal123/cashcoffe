@@ -61,11 +61,11 @@
                 <td data-label="Status" class="px-4 sm:px-6 py-4 text-center">
                     @php
                         $statusClasses = [
-                            'selesai' => 'bg-green-100 text-green-700 border-green-200',
-                            'diproses' => 'bg-amber-100 text-amber-700 border-amber-200',
-                            'batal' => 'bg-rose-100 text-rose-700 border-rose-200',
+                            'selesai' => 'bg-green-100 text-green-700 dark:text-green-400 dark:bg-green-900/30 border-green-200',
+                            'diproses' => 'bg-amber-100 text-amber-700 dark:text-amber-400 dark:bg-amber-900/30 border-amber-200',
+                            'batal' => 'bg-rose-100 text-rose-700 dark:text-rose-400 dark:bg-rose-900/30 border-rose-200',
                         ];
-                        $statusClass = $statusClasses[$item->status] ?? 'bg-neutral-100 text-neutral-700 border-neutral-200';
+                        $statusClass = $statusClasses[$item->status] ?? 'bg-neutral-100 text-neutral-700 dark:text-neutral-400 dark:bg-neutral-900/30 border-neutral-200';
                     @endphp
                     <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $statusClass }}">
                         {{ ucwords(str_replace('_', ' ', $item->status)) }}
