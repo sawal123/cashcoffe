@@ -88,6 +88,9 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     Route::get('/user/create', App\Livewire\User\CreateUser::class)->name('user.create');
     Route::get('/user/{userId}/edit', App\Livewire\User\CreateUser::class)->name('user.edit');
 
+    // Asset Management
+    Route::get('/asset', App\Livewire\Asset\Index::class)->name('asset.index');
+
     Route::get('print/struk/{id}', [StruckController::class, 'index'])->name('struk.print');
 
     Route::get('/orders/export', function () {

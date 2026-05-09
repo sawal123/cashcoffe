@@ -158,6 +158,13 @@
                     </a>
                 </li>
 
+                <li>
+                    <a href="/asset" wire:navigate class="{{ request()->is('asset*') ? 'active-page' : '' }}">
+                        <iconify-icon icon="solar:archive-bold" class="menu-icon"></iconify-icon>
+                        <span>Aset & Inventaris</span>
+                    </a>
+                </li>
+
                 @role('superadmin')
                     <li>
                         <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
