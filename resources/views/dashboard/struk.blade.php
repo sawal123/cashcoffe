@@ -17,16 +17,18 @@
             /* Font standar thermal */
             font-size: 12px;
             line-height: 1.2;
-            width: 58mm;
+            width: 48mm; /* Safe width for 58mm paper */
             padding: 0;
             margin: 0;
+            overflow: hidden;
         }
 
         .receipt-wrapper {
-            width: 52mm;
-            /* Area cetak aman untuk kertas 58mm */
-            margin: 0 auto;
+            width: 48mm;
+            margin: 0;
             padding: 2mm 0;
+            /* Memberikan ruang kosong di bawah agar tidak terpotong saat di-tear */
+            margin-bottom: 15mm;
         }
 
         .center {
@@ -80,7 +82,7 @@
             }
 
             body {
-                width: 58mm;
+                width: 48mm;
                 margin: 0;
                 padding: 0;
                 -webkit-print-color-adjust: exact;
@@ -101,8 +103,8 @@
             }
 
             .receipt-wrapper {
-                width: 100%;
-                margin: 0 auto;
+                width: 48mm;
+                margin: 0;
                 padding: 2mm;
             }
         }
@@ -112,7 +114,7 @@
 <body class="bg-white">
     <div class="receipt-wrapper">
         <div class="center">
-            <img src="{{ asset('logo/logo.png') }}" width="60" style="display: block; margin: 0 auto 5px;"><br>
+            <img id="logo" src="{{ asset('logo/logo.png') }}" width="60" style="display: block; margin: 0 auto 5px;"><br>
             <div class="bold">Temuan Space</div>
             <div style="font-size: 10px;">Jl. Tenis No.30, Ps. Merah Bar., Medan</div>
             <div>{{ date('d/m/Y H:i') }}</div>
@@ -148,7 +150,7 @@
                     <tr>
                         <td colspan="3" style="padding-left: 5px; font-size: 10px; color: #555;">
                             @foreach ($item->variants as $variant)
-                                <div>◦ {{ $variant->nama_opsi }}
+                                <div>- {{ $variant->nama_opsi }}
                                     @if ($variant->extra_price > 0)
                                         +{{ number_format($variant->extra_price) }}
                                     @endif
@@ -204,20 +206,25 @@
     </div>
 
     <script>
-        // Gunakan flag agar tidak terpicu dua kali
-        let isPrinting = false;
-
         window.onload = function () {
-            if (isPrinting) return;
-            isPrinting = true;
+            const logo = document.getElementById('logo');
+            
+            const startPrint = () => {
+                // Berikan jeda sedikit lagi untuk memastikan rendering font selesai
+                setTimeout(() => {
+                    window.print();
+                }, 300);
+            };
 
-            // Memberikan jeda sedikit untuk memastikan rendering selesai, terutama gambar
-            setTimeout(function () {
-                window.print();
-            }, 500);
+            if (logo.complete) {
+                startPrint();
+            } else {
+                logo.onload = startPrint;
+                // Fallback jika logo error atau terlalu lama
+                setTimeout(startPrint, 2000);
+            }
         };
 
-        // Menutup jendela setelah proses cetak selesai atau dibatalkan
         window.onafterprint = function () {
             window.close();
         };
