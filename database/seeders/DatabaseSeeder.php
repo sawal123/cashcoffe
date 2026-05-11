@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             [
                 MejaSeeder::class,
                 RoleSeeder::class,
+                SuperAdminSeeder::class,
                 UserSeeder::class,
                 CategorySeeder::class,
                 MenuSeeder::class,
