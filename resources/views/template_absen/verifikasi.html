@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-low": "#f2f4f6",
+                    "primary-fixed-dim": "#b6c4ff",
+                    "on-tertiary-fixed": "#001a42",
+                    "surface-dim": "#d8dadc",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-secondary-fixed": "#0b1c30",
+                    "on-secondary-container": "#54647a",
+                    "error": "#ba1a1a",
+                    "surface-container-highest": "#e0e3e5",
+                    "on-surface": "#191c1e",
+                    "primary": "#00236f",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#d8e2ff",
+                    "surface-tint": "#4059aa",
+                    "surface-container": "#eceef0",
+                    "surface-bright": "#f7f9fb",
+                    "on-tertiary-fixed-variant": "#004395",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface": "#f7f9fb",
+                    "on-background": "#191c1e",
+                    "background": "#f7f9fb",
+                    "secondary-fixed": "#d3e4fe",
+                    "surface-container-high": "#e6e8ea",
+                    "surface-variant": "#e0e3e5",
+                    "primary-fixed": "#dce1ff",
+                    "on-surface-variant": "#444651",
+                    "on-primary-fixed": "#00164e",
+                    "tertiary-fixed-dim": "#adc6ff",
+                    "primary-container": "#1e3a8a",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-container": "#82abff",
+                    "on-primary-fixed-variant": "#264191",
+                    "inverse-surface": "#2d3133",
+                    "secondary": "#505f76",
+                    "on-tertiary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "outline": "#757682",
+                    "inverse-primary": "#b6c4ff",
+                    "inverse-on-surface": "#eff1f3",
+                    "tertiary": "#00285e",
+                    "on-secondary": "#ffffff",
+                    "on-primary-container": "#90a8ff",
+                    "tertiary-container": "#003d88",
+                    "outline-variant": "#c5c5d3",
+                    "secondary-container": "#d0e1fb"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "base": "8px",
+                    "stack-md": "12px",
+                    "desktop-max-width": "1280px",
+                    "stack-sm": "4px",
+                    "stack-lg": "24px",
+                    "container-margin": "24px"
+            },
+            "fontFamily": {
+                    "body-md": ["Inter"],
+                    "headline-lg-mobile": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "button": ["Inter"],
+                    "headline-md": ["Inter"],
+                    "headline-lg": ["Inter"],
+                    "label-md": ["Inter"]
+            },
+            "fontSize": {
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "button": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .camera-overlay {
+            background: radial-gradient(circle at center, transparent 180px, rgba(0, 0, 0, 0.7) 180px);
+        }
+        @media (max-width: 768px) {
+            .camera-overlay {
+                background: radial-gradient(circle at center, transparent 130px, rgba(0, 0, 0, 0.7) 130px);
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface flex justify-between items-center px-container-margin py-stack-md w-full border-b border-outline-variant z-50">
+<div class="flex items-center gap-4">
+<button class="hover:bg-surface-container-low transition-colors p-2 rounded-full active:opacity-80">
+<span class="material-symbols-outlined text-primary">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">Verifikasi Kehadiran</h1>
+</div>
+<div class="flex items-center">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden border border-outline-variant">
+<img alt="Employee Profile Photo" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate employee in a light blue shirt, looking friendly and professional. The background is a clean, slightly out-of-focus modern office setting. The lighting is soft and even, highlighting a clean corporate aesthetic consistent with a high-end HR application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJdehWI_MvLCz-wcVgCCsFOKBGxykYsMh7xeZupbBjMNZwKgzkNd3ouwfpx1w7erCQ0-X6y08LQyW3PBxOT9ex3ZQw7epOae36wJOmcd-jT2DHWjt0brckXMvoB_wZlx63zJiuLQwXlLdSAmemCBaVaX3OxE0w2jxjMJl5CU5DOwusF5IOUuo4w9ABK92DjeSKjNOrHt_YUMnANCZRZC4KZtj_VD9Km-X85YrvUNIUY_qmE4fRlCLVcYPezlUHUlZf2-z5pYUtlWY"/>
+</div>
+</div>
+</header>
+<!-- Main Content: Camera Viewfinder -->
+<main class="flex-grow flex flex-col relative overflow-hidden bg-black">
+<!-- Viewfinder Background -->
+<div class="absolute inset-0 z-0">
+<img alt="Camera Viewfinder" class="w-full h-full object-cover opacity-90" data-alt="A first-person perspective of a smartphone camera view showing a professional woman in a modern office. She is smiling naturally, positioned for a facial recognition check. The lighting is bright and professional, suggesting a well-lit corporate environment. The overall mood is high-tech, secure, and efficient." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCdJeExeBdzIup05MRxfukTwiT7sW7rIRM0WbpmrfU0Hqx_ZNTiSNEu9TCitmhzTX6skfL3fu__61fT_g0PaQEAg6cjYaLT3y3Al-StnVuLxqPdJOKBlEjmGGAe31bl-xd_1L-iKh_RWJ0phHFpBqnwQGx4kBLLwDzarA3PwA5XcPymJbxeNvmR-Wi5sEo3YHt5cC8cUhsgorNYRz5zESErT73eMjZTHxzFzj6SbWgV3ZmPYhMvDYAnaZqLZZMI_k_Iooagh7on1jw"/>
+</div>
+<!-- Mask Overlay -->
+<div class="absolute inset-0 z-10 camera-overlay"></div>
+<!-- Face Alignment Guide -->
+<div class="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+<div class="w-[260px] h-[260px] md:w-[360px] md:h-[360px] border-4 border-dashed border-white/50 rounded-full flex items-center justify-center">
+<div class="w-full h-full border-2 border-primary/40 rounded-full scale-95"></div>
+</div>
+</div>
+<!-- Real-time Status Indicators -->
+<div class="absolute top-10 left-0 right-0 z-30 flex justify-center px-gutter">
+<div class="bg-surface-container-lowest/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg border border-outline-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-600" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-button text-button text-on-surface">Wajah Terdeteksi</span>
+</div>
+</div>
+<!-- Information Cards Overlay -->
+<div class="absolute bottom-0 left-0 right-0 z-30 p-gutter bg-gradient-to-t from-black/80 to-transparent pt-20">
+<div class="max-w-desktop-max-width mx-auto space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<!-- Location Card -->
+<div class="bg-surface-container-lowest/95 backdrop-blur-md p-4 rounded-xl border border-outline-variant shadow-sm flex items-start gap-3">
+<div class="bg-primary-container/20 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">location_on</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-secondary">Lokasi Terkini</p>
+<p class="font-body-lg text-body-lg font-bold text-on-surface">Headquarters Office</p>
+</div>
+</div>
+<!-- Time Card -->
+<div class="bg-surface-container-lowest/95 backdrop-blur-md p-4 rounded-xl border border-outline-variant shadow-sm flex items-start gap-3">
+<div class="bg-primary-container/20 p-2 rounded-lg">
+<span class="material-symbols-outlined text-primary">schedule</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-secondary">Waktu Sekarang</p>
+<p class="font-body-lg text-body-lg font-bold text-on-surface">08:42:15 AM</p>
+</div>
+</div>
+</div>
+<!-- Primary Action Button -->
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary py-4 px-6 rounded-xl font-button text-button shadow-lg flex items-center justify-center gap-3 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined">photo_camera</span>
+                    Ambil Foto &amp; Konfirmasi
+                </button>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Shell (Suppressed for transactional screen as per Mandate) -->
+<!-- Not rendering BottomNavBar here to prioritize the camera viewport focus -->
+</body></html>

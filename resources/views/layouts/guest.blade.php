@@ -6,18 +6,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Temuan Space</title>
-    <link rel="icon" type="image/png') }}" href="{{ asset('logo/logow.png') }}" sizes="16x16">
+    <title>{{ $webSetting->app_name ?? 'WorkSync' }}</title>
+    <link rel="icon" type="image/png" href="{{ asset($webSetting->icon ?? 'logo/logow.png') }}" sizes="16x16">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     <!-- Scripts -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <link rel="stylesheet" href="{{ asset('build/assets/ui-BvFyUMto.css') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-B6lFgtzp.css') }}">
-    <link rel="stylesheet" href="{{ asset('build/assets/app-BTaMLvJ2.css') }}">
+    @vite(['resources/css/app.css', 'resources/css/ui.css', 'resources/js/app.js'])
 </head>
 
 <body class="font-sans text-gray-900 antialiased">
@@ -26,7 +23,7 @@
             {{-- <a href="/" wire:navigate>
                 <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
             </a> --}}
-            <img src="{{ asset('logo/logow.png') }}" style="width: 150px" alt="site logo" class="light-logo">
+            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" style="width: 150px; max-height: 100px; object-fit: contain;" alt="site logo" class="light-logo">
         </div>
 
         <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-xl rounded-lg">

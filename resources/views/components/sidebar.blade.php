@@ -4,9 +4,9 @@
     </button>
     <div>
         <a href="{{ route('dashboard.index') }}" class="sidebar-logo">
-            <img src="{{ asset('logo/logow.png') }}" alt="site logo" class="light-logo">
-            <img src="{{ asset('logo/logow.png') }}" style="width: 50ppx" alt="site logo" class="dark-logo">
-            <img src="{{ asset('logo/logow.png') }}" alt="site logo" class="logo-icon">
+            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="light-logo">
+            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" style="width: 50ppx" alt="site logo" class="dark-logo">
+            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="logo-icon">
         </a>
     </div>
     <style>
@@ -65,12 +65,14 @@
                 </a>
             </li>
 
-            <li>
-                <a href="/order" wire:navigate class="{{ request()->is('order*') ? 'active-page' : '' }}">
-                    <iconify-icon icon="solar:cart-3-bold" class="menu-icon"></iconify-icon>
-                    <span>Order</span>
-                </a>
-            </li>
+            @unlessrole('superadmin')
+                <li>
+                    <a href="/order" wire:navigate class="{{ request()->is('order*') ? 'active-page' : '' }}">
+                        <iconify-icon icon="solar:cart-3-bold" class="menu-icon"></iconify-icon>
+                        <span>Order</span>
+                    </a>
+                </li>
+            @endunlessrole
 
             @role('superadmin')
                 <li>
@@ -248,6 +250,12 @@
                     <a href="/branch" wire:navigate class="{{ request()->is('branch*') ? 'active-page' : '' }}">
                         <iconify-icon icon="solar:shop-bold" class="menu-icon"></iconify-icon>
                         <span>Cabang</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="/setting" wire:navigate class="{{ request()->is('setting*') ? 'active-page' : '' }}">
+                        <iconify-icon icon="solar:settings-bold" class="menu-icon"></iconify-icon>
+                        <span>Pengaturan Web</span>
                     </a>
                 </li>
             @endrole

@@ -133,6 +133,10 @@ class ShowAbsense extends Component
             if ($item) {
                 switch ($item->status) {
 
+                    case 'hadir':
+                        $totalHadir++;
+                        break;
+
                     case 'complete':
                         $totalHadir++;
                         break;

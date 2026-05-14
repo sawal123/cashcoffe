@@ -30,9 +30,11 @@
             </div>
         </div>
         <div class="flex gap-2">
-            <x-ui.button-link href="/order/create" icon="mingcute:add-circle-line">
-                Pesan Menu
-            </x-ui.button-link>
+            @unlessrole('superadmin')
+                <x-ui.button-link href="/order/create" icon="mingcute:add-circle-line">
+                    Pesan Menu
+                </x-ui.button-link>
+            @endunlessrole
         </div>
     </div>
 

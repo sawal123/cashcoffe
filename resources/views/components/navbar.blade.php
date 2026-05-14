@@ -14,14 +14,16 @@
 
         </div>
         {{-- <p>Anda Login Sebagai Kasir!</p> --}}
-        <a href="/order/create" wire:navigate
-            class="w bg-primary-600 flex  hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round"
-                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 6m12-6l2 6m-6-6v6" />
-            </svg> Buat Pesanan
-        </a>
+        @unlessrole('superadmin')
+            <a href="/order/create" wire:navigate
+                class="w bg-primary-600 flex  hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-lg transition duration-300">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2 6m12-6l2 6m-6-6v6" />
+                </svg> Buat Pesanan
+            </a>
+        @endunlessrole
         <div class="col-auto">
             <div class="flex flex-wrap items-center gap-3">
 

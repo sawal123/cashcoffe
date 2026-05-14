@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WorkSync Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#757682",
+                        "on-primary-container": "#90a8ff",
+                        "tertiary-container": "#003d88",
+                        "primary-fixed-dim": "#b6c4ff",
+                        "primary": "#00236f",
+                        "on-primary": "#ffffff",
+                        "inverse-primary": "#b6c4ff",
+                        "on-secondary-container": "#54647a",
+                        "tertiary-fixed-dim": "#adc6ff",
+                        "on-tertiary-fixed-variant": "#004395",
+                        "on-primary-fixed-variant": "#264191",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#82abff",
+                        "on-secondary": "#ffffff",
+                        "on-background": "#191c1e",
+                        "tertiary": "#00285e",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f2f4f6",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-surface-variant": "#444651",
+                        "surface-bright": "#f7f9fb",
+                        "surface-dim": "#d8dadc",
+                        "outline-variant": "#c5c5d3",
+                        "primary-container": "#1e3a8a",
+                        "surface-container": "#eceef0",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#d0e1fb",
+                        "on-tertiary-fixed": "#001a42",
+                        "surface-container-high": "#e6e8ea",
+                        "on-primary-fixed": "#00164e",
+                        "on-secondary-fixed": "#0b1c30",
+                        "surface-tint": "#4059aa",
+                        "inverse-surface": "#2d3133",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface": "#f7f9fb",
+                        "background": "#f7f9fb",
+                        "secondary": "#505f76",
+                        "on-error-container": "#93000a",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#dce1ff",
+                        "surface-container-highest": "#e0e3e5",
+                        "tertiary-fixed": "#d8e2ff",
+                        "surface-variant": "#e0e3e5",
+                        "secondary-fixed-dim": "#b7c8e1"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "stack-md": "12px",
+                        "container-margin": "24px",
+                        "stack-sm": "4px",
+                        "stack-lg": "24px",
+                        "desktop-max-width": "1280px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "button": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "button": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface-dim border-b border-outline-variant dark:border-outline w-full top-0 sticky z-50">
+<div class="flex justify-between items-center px-container-margin py-stack-md w-full max-w-[1280px] mx-auto">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-surface-container">
+<img alt="Employee Profile Photo" data-alt="A professional headshot of a young male employee in a clean corporate setting. He is wearing a crisp blue shirt and smiling confidently. The lighting is bright and even, reflecting a professional and corporate modern aesthetic consistent with a high-utility employee platform. The background is a soft, out-of-focus modern office space." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAIU4dQQexPIz2TE7Yiwil4lhrWZMj44CfnHEqJlC7d6wAqHFl2R1T3iVjFNucpZsbs_I0zjosPyOSpRO6LlAdACwx7rLFiGB2aBbRXsN4_tI1ojs2UwOFOy25IP8QqbxqusMqmNhM8DcSZ4Z4vzPck_3WZkdzd7NHC_XeajFp8aMXjFKIBsUjl0kYMWXwBDGc4IIQlJxql831s0ZHz5jEGzxkUX3OV6iuU188HY7Di5RtuWEdGcRyTdlDe6gjujfMPua1IdZwGlps"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">WorkSync</h1>
+</div>
+<button class="material-symbols-outlined p-2 rounded-full text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors active:opacity-80">
+                notifications
+            </button>
+</div>
+</header>
+<main class="max-w-[1280px] mx-auto px-container-margin mt-stack-lg">
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Left Column: Attendance Focus -->
+<div class="md:col-span-8 flex flex-col gap-gutter">
+<!-- Main Action Card (Bento Style) -->
+<section class="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 shadow-[0_4px_12px_rgba(0,0,0,0.04)] relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-container/5 rounded-full -mr-20 -mt-20"></div>
+<div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+<div>
+<p class="font-label-md text-label-md text-secondary uppercase tracking-wider mb-2">Status Saat Ini</p>
+<h2 class="font-headline-lg text-headline-lg text-error mb-4">Belum Absen</h2>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md">Senin, 24 Mei 2024</span>
+<span class="font-title-lg text-title-lg text-on-surface">08:00 AM</span>
+</div>
+<div class="h-8 w-[1px] bg-outline-variant"></div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md">Jam Masuk</span>
+<span class="font-title-lg text-title-lg text-on-surface">08:30 AM</span>
+</div>
+</div>
+</div>
+<button class="bg-primary hover:bg-primary-container text-on-primary font-button text-button px-10 py-5 rounded-xl shadow-lg active:scale-95 transition-all flex items-center gap-3">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">login</span>
+                            Absen Sekarang
+                        </button>
+</div>
+</section>
+<!-- Daily Summary & Stats Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Work Hours Summary -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
+<h3 class="font-title-lg text-title-lg mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">timer</span>
+                            Jam Kerja Hari Ini
+                        </h3>
+<div class="flex items-baseline gap-1 mb-2">
+<span class="font-display-lg text-display-lg text-primary">0h 0m</span>
+<span class="font-body-md text-body-md text-secondary">/ 8h</span>
+</div>
+<div class="w-full bg-surface-container h-3 rounded-full overflow-hidden">
+<div class="bg-primary h-full w-0"></div>
+</div>
+<p class="mt-4 font-body-md text-body-md text-on-surface-variant">Kamu belum mulai bekerja hari ini.</p>
+</div>
+<!-- Weekly Progress -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6">
+<h3 class="font-title-lg text-title-lg mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary">analytics</span>
+                            Statistik Mingguan
+                        </h3>
+<div class="flex justify-between items-end h-24 gap-2">
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-primary rounded-t-sm h-[80%]"></div>
+<span class="text-[10px] font-medium text-secondary">S</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-primary rounded-t-sm h-[90%]"></div>
+<span class="text-[10px] font-medium text-secondary">S</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-primary rounded-t-sm h-[75%]"></div>
+<span class="text-[10px] font-medium text-secondary">R</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-primary rounded-t-sm h-[85%]"></div>
+<span class="text-[10px] font-medium text-secondary">K</span>
+</div>
+<div class="flex flex-col items-center gap-2 flex-1">
+<div class="w-full bg-surface-container rounded-t-sm h-[10%]"></div>
+<span class="text-[10px] font-medium text-secondary">J</span>
+</div>
+</div>
+<p class="mt-4 font-label-md text-label-md text-on-surface-variant text-right">Rata-rata: 7.8 jam/hari</p>
+</div>
+</div>
+</div>
+<!-- Right Column: Contextual Info -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<!-- Office Announcements -->
+<section class="bg-surface-container-high rounded-xl p-6 h-full">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-title-lg text-title-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">campaign</span>
+                            Pengumuman
+                        </h3>
+<span class="material-symbols-outlined text-secondary cursor-pointer">open_in_new</span>
+</div>
+<div class="space-y-4">
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/30">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 bg-tertiary-fixed text-on-tertiary-fixed text-[10px] font-bold rounded uppercase">Update</span>
+<span class="text-[11px] text-secondary">2 jam yang lalu</span>
+</div>
+<h4 class="font-button text-button mb-1">Kebijakan Cuti Baru 2024</h4>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Mohon tinjau kebijakan cuti tahunan terbaru yang telah diperbarui...</p>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/30">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded uppercase">Event</span>
+<span class="text-[11px] text-secondary">Kemarin</span>
+</div>
+<h4 class="font-button text-button mb-1">Townhall Meeting Juni</h4>
+<p class="font-body-md text-body-md text-on-surface-variant line-clamp-2">Undangan untuk rapat koordinasi bulanan di ruang meeting utama...</p>
+</div>
+</div>
+<button class="w-full mt-6 py-3 border border-outline text-primary font-button text-button rounded-lg hover:bg-surface-container transition-colors">
+                        Lihat Semua Pengumuman
+                    </button>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center py-stack-sm px-gutter bg-surface dark:bg-surface-dim border-t border-outline-variant dark:border-outline shadow-sm md:hidden">
+<div class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary text-on-primary-container dark:text-on-primary rounded-xl px-4 py-1 active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-4 py-1 hover:text-primary dark:hover:text-primary-fixed-dim active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">schedule</span>
+<span class="font-label-md text-label-md">Attendance</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-4 py-1 hover:text-primary dark:hover:text-primary-fixed-dim active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">History</span>
+</div>
+<div class="flex flex-col items-center justify-center text-secondary dark:text-secondary-fixed-dim px-4 py-1 hover:text-primary dark:hover:text-primary-fixed-dim active:scale-95 transition-transform duration-150">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</div>
+</nav>
+<!-- Desktop Sidebar/Nav (Bonus for responsive completeness) -->
+<div class="hidden md:flex fixed left-0 top-16 bottom-0 w-20 flex-col items-center py-8 gap-8 border-r border-outline-variant bg-surface">
+<div class="text-primary bg-primary-container p-3 rounded-xl cursor-pointer">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+</div>
+<div class="text-secondary hover:text-primary p-3 rounded-xl cursor-pointer transition-colors">
+<span class="material-symbols-outlined">schedule</span>
+</div>
+<div class="text-secondary hover:text-primary p-3 rounded-xl cursor-pointer transition-colors">
+<span class="material-symbols-outlined">history</span>
+</div>
+<div class="mt-auto text-secondary hover:text-primary p-3 rounded-xl cursor-pointer transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</div>
+</div>
+</body></html>

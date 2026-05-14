@@ -24,6 +24,11 @@ class User extends Authenticatable
         'phone',
         'password',
         'branch_id',
+        'gaji_pokok',
+        'tunjangan_harian',
+        'potongan_terlambat',
+        'potongan_alpha',
+        'hak_cuti',
     ];
 
     /**
@@ -59,6 +64,11 @@ class User extends Authenticatable
     public function absensis()
     {
         return $this->hasMany(Absensi::class);
+    }
+    
+    public function payrolls()
+    {
+        return $this->hasMany(Payroll::class);
     }
     
     public function branch()

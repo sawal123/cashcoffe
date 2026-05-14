@@ -4,6 +4,9 @@ use App\Exports\OrdersExport;
 use App\Livewire\Absensi\ClockIn as AbsensiClockIn;
 use App\Livewire\Absensi\Home;
 use App\Livewire\Absensi\Login;
+use App\Livewire\Absensi\History;
+use App\Livewire\Absensi\Profile;
+use App\Livewire\Absensi\Verifikasi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -13,12 +16,17 @@ use App\Http\Controllers\StruckController;
 
 Route::view('/', 'welcome');
 
+Route::get('/absen/login', Login::class)->name('absensi.login');
+
 Route::prefix('absen')
     ->name('absensi.')
     ->middleware(['auth', 'role:karyawan'])
     ->group(function () {
         Route::get('/', Home::class)->name('home');
         Route::get('/clock-in', AbsensiClockIn::class)->name('clock.in');
+        Route::get('/history', History::class)->name('history');
+        Route::get('/profile', Profile::class)->name('profile');
+        Route::get('/verifikasi', Verifikasi::class)->name('verifikasi');
     });
 
 Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () {
@@ -106,6 +114,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
         Route::get('/menu-ingredient', App\Livewire\Menu\MenuIngredient::class)->name('menu-ingredient.index');
         Route::get('/variant-group', App\Livewire\Variant\TableVariantGroup::class)->name('variant-group.index');
         Route::get('/variant-option/{id}/ingredients', App\Livewire\Variant\ManageVariantIngredient::class)->name('variant-option.ingredients');
+        Route::get('/setting', App\Livewire\Setting\Index::class)->name('setting.index');
     });
 
     Route::middleware(['role:manager'])->group(function () {

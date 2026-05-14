@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "outline": "#757682",
+            "on-primary-container": "#90a8ff",
+            "tertiary-container": "#003d88",
+            "primary-fixed-dim": "#b6c4ff",
+            "primary": "#00236f",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#b6c4ff",
+            "on-secondary-container": "#54647a",
+            "tertiary-fixed-dim": "#adc6ff",
+            "on-tertiary-fixed-variant": "#004395",
+            "on-primary-fixed-variant": "#264191",
+            "on-error": "#ffffff",
+            "on-tertiary-container": "#82abff",
+            "on-secondary": "#ffffff",
+            "on-background": "#191c1e",
+            "tertiary": "#00285e",
+            "on-secondary-fixed-variant": "#38485d",
+            "error-container": "#ffdad6",
+            "surface-container-low": "#f2f4f6",
+            "inverse-on-surface": "#eff1f3",
+            "on-surface-variant": "#444651",
+            "surface-bright": "#f7f9fb",
+            "surface-dim": "#d8dadc",
+            "outline-variant": "#c5c5d3",
+            "primary-container": "#1e3a8a",
+            "surface-container": "#eceef0",
+            "on-tertiary": "#ffffff",
+            "error": "#ba1a1a",
+            "secondary-container": "#d0e1fb",
+            "on-tertiary-fixed": "#001a42",
+            "surface-container-high": "#e6e8ea",
+            "on-primary-fixed": "#00164e",
+            "on-secondary-fixed": "#0b1c30",
+            "surface-tint": "#4059aa",
+            "inverse-surface": "#2d3133",
+            "surface-container-lowest": "#ffffff",
+            "secondary-fixed": "#d3e4fe",
+            "surface": "#f7f9fb",
+            "background": "#f7f9fb",
+            "secondary": "#505f76",
+            "on-error-container": "#93000a",
+            "on-surface": "#191c1e",
+            "primary-fixed": "#dce1ff",
+            "surface-container-highest": "#e0e3e5",
+            "tertiary-fixed": "#d8e2ff",
+            "surface-variant": "#e0e3e5",
+            "secondary-fixed-dim": "#b7c8e1"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "base": "8px",
+            "stack-md": "12px",
+            "container-margin": "24px",
+            "stack-sm": "4px",
+            "stack-lg": "24px",
+            "desktop-max-width": "1280px",
+            "gutter": "16px"
+          },
+          "fontFamily": {
+            "headline-lg": ["Inter"],
+            "display-lg": ["Inter"],
+            "title-lg": ["Inter"],
+            "body-md": ["Inter"],
+            "label-md": ["Inter"],
+            "body-lg": ["Inter"],
+            "button": ["Inter"],
+            "headline-lg-mobile": ["Inter"],
+            "headline-md": ["Inter"]
+          },
+          "fontSize": {
+            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+            "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+            "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "button": ["14px", {"lineHeight": "20px", "fontWeight": "600"}],
+            "headline-lg-mobile": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    body { font-family: 'Inter', sans-serif; }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface min-h-screen pb-24">
+<!-- TopAppBar -->
+<header class="bg-surface w-full top-0 border-b border-outline-variant flex justify-between items-center px-container-margin py-stack-md z-40 sticky">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
+<img alt="Employee Profile" class="w-full h-full object-cover" data-alt="A professional corporate headshot of a middle-aged man with a friendly expression, wearing a sharp navy blue suit and a crisp white shirt. The lighting is soft and even, typical of a high-end studio setting with a clean, neutral background. The overall aesthetic is professional, modern, and aligned with a corporate light-mode UI design, emphasizing trust and punctuality." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdbl2LeB9fuPM8SsRFV9S2y-QdW4Rd3VW0w43hhtYVYciOwTjD_rMksDwuoarGMHiIYHPr24PJXYnvynuirjGBMN5urM5fzFoaFfYl_OMvrkE0R_nU-ZujqZqm-k2yvHEmlPj-u9TvuDt4-giI3BSw2pu7CFpxF7-_c21F3H_QHhMmk6eDoJFjZOKhVdxEIXXhbsgyfCP33OrdkTBVEg6Cb98C-ohJ1zXjra-OzKiPYulG9P15Xxise-Q1SkqA4X5snz147D0Esv0"/>
+</div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">WorkSync</h1>
+</div>
+<div class="flex items-center">
+<button class="p-2 rounded-full hover:bg-surface-container-low transition-colors text-primary active:opacity-80">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="max-w-desktop-max-width mx-auto px-gutter py-stack-lg">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Time & Real-time Info (Bento Style) -->
+<section class="lg:col-span-8 flex flex-col gap-gutter">
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-lg shadow-[0_4px_12px_rgba(0,0,0,0.04)] flex flex-col items-center justify-center text-center">
+<p class="font-label-md text-label-md text-secondary uppercase tracking-widest mb-2">Current Time</p>
+<div class="font-display-lg text-display-lg text-primary-container flex items-baseline gap-1">
+            08:42<span class="text-headline-md font-headline-md opacity-60">:15</span>
+<span class="text-title-lg font-title-lg ml-2">AM</span>
+</div>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-2">Monday, October 23, 2023</p>
+<!-- GPS Status Indicator -->
+<div class="mt-stack-lg flex items-center gap-2 px-3 py-1 bg-secondary-container rounded-full text-on-secondary-container">
+<span class="material-symbols-outlined text-sm" data-icon="location_on" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-label-md text-label-md">GPS Status: <strong class="font-bold">Akurat</strong></span>
+</div>
+</div>
+<!-- Action Grid -->
+<div class="grid md:grid-cols-2 gap-gutter grid-cols-2">
+<button class="flex flex-col items-center justify-center gap-stack-md bg-primary text-on-primary p-stack-lg rounded-xl shadow-[0_4px_12px_rgba(30,58,138,0.2)] hover:opacity-90 active:scale-95 transition-all group h-32">
+<div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-4xl" data-icon="login">login</span>
+</div>
+<span class="font-headline-md text-headline-md font-bold">Clock-in</span>
+<span class="font-label-md text-label-md opacity-80 uppercase">Start working</span>
+</button>
+<button class="flex flex-col items-center justify-center gap-stack-md bg-white border-2 border-primary text-primary p-stack-lg rounded-xl hover:bg-surface-container-low active:scale-95 transition-all group h-32">
+<div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-4xl" data-icon="logout">logout</span>
+</div>
+<span class="font-headline-md text-headline-md font-bold">Clock-out</span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase">End of day</span>
+</button>
+</div>
+</section>
+<!-- Location & Stats Sidebar -->
+<aside class="lg:col-span-4 flex flex-col gap-gutter">
+<!-- Mockup Map -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.04)] h-full">
+<div class="p-stack-md border-b border-outline-variant flex justify-between items-center bg-surface-bright">
+<h3 class="font-title-lg text-title-lg text-primary">Live Location</h3>
+<span class="material-symbols-outlined text-secondary" data-icon="my_location">my_location</span>
+</div>
+<div class="relative h-64 lg:h-[calc(100%-60px)]">
+<img alt="Current Location Map" class="w-full h-full object-cover grayscale-[20%] opacity-90" data-alt="A clean, minimalist digital map view of a modern urban business district in Jakarta, featuring simplified 3D building blocks and soft pastel road colors. The map uses a sophisticated palette of light greys, muted blues, and soft whites. A prominent blue pulse marker indicates the user's current high-accuracy location. The lighting is bright and airy, reflecting a professional daytime environment for an enterprise attendance application." data-location="Jakarta" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASN5Az57lM8R_hIwnbEVMcp837AbSwds8MWw_sNIC4AF_8wIenz9DBEMgj4cE8uVjhH6Zut_FQFQuebwpC9Fvlx1h33tKMK1y7us4neNNmJeS_W8cj3fz-uh8ILTEztRok_LQ_oSzqfzcV5I_-DICckCHfpbKIn18WTizv5K_LZyD_xW8f-JmNHLYh4xF2miasq3E7jkrn0tPeYZGAb9QK3CzYrQM0iG1OdS_y6JBhgMj3eCr_eJr7vl1TK1NzpuCrfTx60E7jey4"/>
+<div class="absolute inset-0 bg-primary/5 pointer-events-none"></div>
+<div class="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur-sm border border-outline-variant p-3 rounded-lg flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-1" data-icon="domain" style="font-variation-settings: 'FILL' 1;">domain</span>
+<div>
+<p class="font-label-md text-label-md text-primary font-bold">Headquarters Office</p>
+<p class="font-body-md text-body-md text-on-surface-variant">Sudirman Central Business District, Jakarta</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Weekly Summary -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md shadow-[0_4px_12px_rgba(0,0,0,0.04)]">
+<h3 class="font-title-lg text-title-lg text-primary mb-4">Weekly Progress</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between mb-1">
+<span class="font-label-md text-label-md text-on-surface-variant">Hours Target</span>
+<span class="font-label-md text-label-md text-primary font-bold">32 / 40h</span>
+</div>
+<div class="w-full h-2 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full w-[80%]"></div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-outline-variant">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-green-500"></span>
+<span class="font-label-md text-label-md">Status</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded text-[10px] font-bold uppercase">On Track</span>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center py-stack-sm px-gutter border-t border-outline-variant bg-surface shadow-sm">
+<a class="flex flex-col items-center justify-center text-secondary px-4 py-1 hover:text-primary transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-xl px-4 py-1 transition-transform duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="schedule" style="font-variation-settings: 'FILL' 1;">schedule</span>
+<span class="font-label-md text-label-md">Attendance</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary px-4 py-1 hover:text-primary transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-secondary px-4 py-1 hover:text-primary transition-colors active:scale-95" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+</nav>
+</body></html>

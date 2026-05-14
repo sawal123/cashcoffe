@@ -11,8 +11,15 @@ use Illuminate\Validation\Rule;
 
 class CreateUser extends Component
 {
-    // Properti Form
+    // Properti Form Dasar
     public $name, $email, $phone, $password, $role_selected, $branch_id;
+
+    // Properti Form Gaji & Cuti (Payroll)
+    public $gaji_pokok = 0;
+    public $tunjangan_harian = 0;
+    public $potongan_terlambat = 0;
+    public $potongan_alpha = 0;
+    public $hak_cuti = 12;
 
     // Properti Logic Edit
     public $userId = null;
@@ -23,11 +30,14 @@ class CreateUser extends Component
     // Lifecycle Mount (Dijalankan saat halaman dimuat)
     public function mount($userId = null)
     {
-        // dd($userId);
         // Set default branch_id untuk manager
         if (!auth()->user()->hasRole('superadmin')) {
             $this->branch_id = auth()->user()->branch_id;
         }
+
+        // Pastikan role karyawan dan manager terdaftar di sistem secara dinamis
+        Role::firstOrCreate(['name' => 'karyawan', 'guard_name' => 'web']);
+        Role::firstOrCreate(['name' => 'manager', 'guard_name' => 'web']);
 
         // Jika ada ID di URL, berarti Mode Edit
         if ($userId) {
@@ -49,12 +59,17 @@ class CreateUser extends Component
                 $this->email = $user->email;
                 $this->phone = $user->phone;
                 $this->branch_id = $user->branch_id;
-                // Password tidak diisi karena terenkripsi
 
-                // Ambil role pertama (karena form kita single select)
+                // Isi Form Payroll
+                $this->gaji_pokok = $user->gaji_pokok ?? 0;
+                $this->tunjangan_harian = $user->tunjangan_harian ?? 0;
+                $this->potongan_terlambat = $user->potongan_terlambat ?? 0;
+                $this->potongan_alpha = $user->potongan_alpha ?? 0;
+                $this->hak_cuti = $user->hak_cuti ?? 12;
+
+                // Ambil role pertama
                 $this->role_selected = $user->roles->first()?->name;
             } catch (\Exception $e) {
-                // Jika ID base64 error/tidak ditemukan, redirect ke index
                 return redirect()->route('users.index');
             }
         }
@@ -62,14 +77,12 @@ class CreateUser extends Component
 
     public function save()
     {
-        // dd($this->phone);
         // 1. Validasi Dinamis
         $this->validate([
             'name'          => 'required|string|max:255',
             'phone'         => 'nullable|numeric',
             'role_selected' => 'required|exists:roles,name',
 
-            // Email: Unique, tapi abaikan user ini jika sedang edit
             'email' => [
                 'required',
                 'email',
@@ -84,64 +97,77 @@ class CreateUser extends Component
                 'exists:branches,id'
             ],
 
-            // Password: Wajib saat Create, Nullable (boleh kosong) saat Edit
             'password' => $this->isEdit ? 'nullable|min:6' : 'required|min:6',
+
+            // Validasi Komponen Gaji
+            'gaji_pokok'         => 'nullable|numeric|min:0',
+            'tunjangan_harian'   => 'nullable|numeric|min:0',
+            'potongan_terlambat' => 'nullable|numeric|min:0',
+            'potongan_alpha'     => 'nullable|numeric|min:0',
+            'hak_cuti'           => 'nullable|integer|min:0',
         ]);
+
+        $payrollData = [
+            'gaji_pokok'         => empty($this->gaji_pokok) ? 0 : $this->gaji_pokok,
+            'tunjangan_harian'   => empty($this->tunjangan_harian) ? 0 : $this->tunjangan_harian,
+            'potongan_terlambat' => empty($this->potongan_terlambat) ? 0 : $this->potongan_terlambat,
+            'potongan_alpha'     => empty($this->potongan_alpha) ? 0 : $this->potongan_alpha,
+            'hak_cuti'           => empty($this->hak_cuti) ? 12 : $this->hak_cuti,
+        ];
 
         if ($this->isEdit) {
             // === LOGIC UPDATE ===
             $user = User::find($this->userId);
 
-            $dataToUpdate = [
+            $dataToUpdate = array_merge([
                 'name'  => $this->name,
                 'email' => $this->email,
                 'phone' => $this->phone,
                 'branch_id' => $this->branch_id,
-            ];
+            ], $payrollData);
 
-            // Hanya update password jika input tidak kosong
             if (!empty($this->password)) {
                 $dataToUpdate['password'] = Hash::make($this->password);
             }
 
             $user->update($dataToUpdate);
-
-            // Sync Role (Ganti role lama dengan yang baru)
             $user->syncRoles($this->role_selected);
 
-            $message = 'Data user berhasil diperbarui.';
+            $message = 'Data user & parameter kompensasi gaji berhasil diperbarui.';
         } else {
             // === LOGIC CREATE ===
-            $user = User::create([
+            $dataToCreate = array_merge([
                 'name'     => $this->name,
                 'email'    => $this->email,
                 'phone'    => $this->phone,
                 'password' => Hash::make($this->password),
                 'branch_id' => auth()->user()->hasRole('superadmin') ? $this->branch_id : auth()->user()->branch_id,
-            ]);
+            ], $payrollData);
 
+            $user = User::create($dataToCreate);
             $user->assignRole($this->role_selected);
-            $this->reset(['name', 'email', 'phone', 'password', 'role_selected']);
+
+            $this->reset(['name', 'email', 'phone', 'password', 'role_selected', 'gaji_pokok', 'tunjangan_harian', 'potongan_terlambat', 'potongan_alpha']);
+            $this->hak_cuti = 12;
             
-            // Re-assign branch_id for manager after reset so it's ready for next input
             if (!auth()->user()->hasRole('superadmin')) {
                 $this->branch_id = auth()->user()->branch_id;
             }
 
-            $message = 'User berhasil ditambahkan.';
+            $message = 'User baru beserta struktur gaji bulanan berhasil ditambahkan.';
         }
 
-        // Kirim Notifikasi
         $this->dispatch('showToast', type: 'success', message: $message);
     }
+
     public function render()
     {
         $currentUser = auth()->user();
-        $roleQuery = \Spatie\Permission\Models\Role::query();
+        $roleQuery = Role::query();
         
-        // Audit Role: Manager hanya boleh mengelola role 'kasir'
+        // Audit Role: Manager hanya boleh mengelola role 'kasir' dan 'karyawan'
         if (!$currentUser->hasRole('superadmin')) {
-            $roleQuery->where('name', 'kasir');
+            $roleQuery->whereIn('name', ['kasir', 'karyawan']);
         }
 
         return view('livewire.user.create-user', [
