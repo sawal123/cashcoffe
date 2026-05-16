@@ -83,6 +83,7 @@
                             <tr>
                                 <th class="px-6 py-4 font-label-md uppercase tracking-wider">Jenis</th>
                                 <th class="px-6 py-4 font-label-md uppercase tracking-wider">Tanggal</th>
+                                <th class="px-6 py-4 font-label-md uppercase tracking-wider">Alasan</th>
                                 <th class="px-6 py-4 font-label-md uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-4 font-label-md uppercase tracking-wider text-center">Aksi</th>
                             </tr>
@@ -109,6 +110,11 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-5">
+                                        <p class="text-xs text-on-surface-variant italic line-clamp-1 max-w-[150px]" title="{{ $req->alasan }}">
+                                            "{{ $req->alasan }}"
+                                        </p>
+                                    </td>
+                                    <td class="px-6 py-5">
                                         @php
                                             $statusStyle = match($req->status) {
                                                 'approved' => 'bg-emerald-100 text-emerald-700',
@@ -121,7 +127,8 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-5 text-center">
-                                        <button class="w-10 h-10 rounded-full hover:bg-surface-container transition-all flex items-center justify-center text-secondary">
+                                        <button type="button" wire:click="viewRequest({{ $req->id }})" 
+                                            class="w-10 h-10 rounded-full hover:bg-surface-container transition-all flex items-center justify-center text-secondary">
                                             <span class="material-symbols-outlined text-[20px]">info</span>
                                         </button>
                                     </td>
@@ -143,4 +150,95 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal Detail Pengajuan --}}
+    <x-mdal name="view-request-detail">
+        <div wire:loading.flex wire:target="viewRequest" class="p-20 flex-col items-center justify-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+            <p class="mt-4 text-sm text-neutral-500 italic">Memuat data...</p>
+        </div>
+
+        <div wire:loading.remove wire:target="viewRequest">
+            @if($viewingRequest)
+                <div class="px-6 py-4 border-b border-neutral-100 dark:border-neutral-700 flex items-center justify-between bg-surface-container-lowest sticky top-0 z-10">
+                    <h3 class="text-lg font-bold text-neutral-800 dark:text-neutral-100">Detail Pengajuan</h3>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <div class="flex items-center justify-between bg-neutral-50 dark:bg-neutral-900/50 p-4 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                        <div class="space-y-1">
+                            <span class="text-[10px] font-black uppercase text-neutral-400 tracking-widest">Jenis</span>
+                            <div class="flex items-center gap-2">
+                                <span class="inline-flex px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-widest {{ 
+                                    $viewingRequest->jenis == 'cuti' ? 'bg-secondary-container text-primary' : 
+                                    ($viewingRequest->jenis == 'sakit' ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container')
+                                }}">
+                                    {{ $viewingRequest->jenis }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-black uppercase text-neutral-400 tracking-widest">Status</span>
+                            <div>
+                                @php
+                                    $statusStyle = match($viewingRequest->status) {
+                                        'approved' => 'bg-emerald-100 text-emerald-700',
+                                        'rejected' => 'bg-rose-100 text-rose-700',
+                                        default => 'bg-amber-100 text-amber-700'
+                                    };
+                                @endphp
+                                <span class="inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest {{ $statusStyle }}">
+                                    {{ $viewingRequest->status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                            <span class="text-[10px] font-black uppercase text-neutral-400 tracking-widest block mb-1">Tanggal Mulai</span>
+                            <p class="text-sm font-bold text-neutral-700 dark:text-neutral-300">
+                                {{ \Carbon\Carbon::parse($viewingRequest->tanggal_mulai)->translatedFormat('d M Y') }}
+                            </p>
+                        </div>
+                        <div class="p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                            <span class="text-[10px] font-black uppercase text-neutral-400 tracking-widest block mb-1">Tanggal Selesai</span>
+                            <p class="text-sm font-bold text-neutral-700 dark:text-neutral-300">
+                                {{ \Carbon\Carbon::parse($viewingRequest->tanggal_selesai)->translatedFormat('d M Y') }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                        <span class="text-[10px] font-black uppercase text-neutral-400 tracking-widest block mb-2">Alasan</span>
+                        <p class="text-sm text-neutral-600 dark:text-neutral-400 italic">
+                            "{{ $viewingRequest->alasan }}"
+                        </p>
+                    </div>
+
+                    @if($viewingRequest->bukti)
+                        <div class="p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                            <span class="text-[10px] font-black uppercase text-neutral-400 tracking-widest block mb-2">Bukti Lampiran</span>
+                            <a href="{{ asset('storage/' . $viewingRequest->bukti) }}" target="_blank" class="flex items-center gap-3 p-3 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-100 dark:border-neutral-700 hover:border-primary transition-colors group">
+                                <div class="w-10 h-10 rounded-lg bg-primary/5 text-primary flex items-center justify-center">
+                                    <span class="material-symbols-outlined">image</span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-bold text-neutral-700 dark:text-neutral-300 truncate">Lihat Lampiran</p>
+                                    <p class="text-[10px] text-neutral-400">Klik untuk membuka gambar</p>
+                                </div>
+                                <span class="material-symbols-outlined text-neutral-300 group-hover:text-primary transition-colors">open_in_new</span>
+                            </a>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="p-6 bg-neutral-50 dark:bg-neutral-900/50 border-t border-neutral-100 dark:border-neutral-700 flex justify-end">
+                    <button @click="$dispatch('close-modal', { name: 'view-request-detail' })" class="px-6 py-2 bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 rounded-xl text-xs font-bold hover:bg-neutral-50 transition-all shadow-sm">
+                        Tutup
+                    </button>
+                </div>
+            @endif
+        </div>
+    </x-mdal>
 </main>

@@ -10,13 +10,26 @@ use Livewire\WithPagination;
 
 class RequestLeave extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithFileUploads, WithPagination;
 
     public $tanggal_mulai;
+
     public $tanggal_selesai;
+
     public $jenis = 'izin';
+
     public $alasan;
+
     public $bukti;
+
+    public $viewingRequest;
+
+    public function viewRequest($id)
+    {
+        $this->viewingRequest = null;
+        $this->viewingRequest = IzinAbsensi::where('user_id', Auth::id())->findOrFail($id);
+        $this->dispatch('open-modal', name: 'view-request-detail');
+    }
 
     protected $rules = [
         'tanggal_mulai' => 'required|date|after_or_equal:today',
@@ -39,7 +52,8 @@ class RequestLeave extends Component
         $user = Auth::user();
         if ($this->jenis === 'cuti') {
             if ($user->hak_cuti < $this->total_hari) {
-                $this->dispatch('showToast', type: 'error', message: 'Gagal! Sisa hak cuti Anda tidak mencukupi (Sisa: ' . $user->hak_cuti . ' hari, Pengajuan: ' . $this->total_hari . ' hari).');
+                $this->dispatch('showToast', type: 'error', message: 'Gagal! Sisa hak cuti Anda tidak mencukupi (Sisa: '.$user->hak_cuti.' hari, Pengajuan: '.$this->total_hari.' hari).');
+
                 return;
             }
         }
@@ -76,6 +90,7 @@ class RequestLeave extends Component
                 return 0;
             }
         }
+
         return 0;
     }
 
@@ -84,6 +99,7 @@ class RequestLeave extends Component
         if ($this->jenis === 'cuti' && $this->total_hari > 0) {
             return Auth::user()->hak_cuti < $this->total_hari;
         }
+
         return false;
     }
 
@@ -94,7 +110,7 @@ class RequestLeave extends Component
             ->paginate(10);
 
         return view('livewire.absense.request-leave', [
-            'requests' => $requests
+            'requests' => $requests,
         ])->layout('layouts.absensi', ['title' => 'Pengajuan Izin & Cuti']);
     }
 }
