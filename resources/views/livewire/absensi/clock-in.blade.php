@@ -79,13 +79,20 @@
                     <span class="material-symbols-outlined text-secondary">domain</span>
                 </div>
                 <div class="relative flex-grow bg-surface-container">
-                    <iframe class="w-full h-full border-0 absolute inset-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q=-6.200000,106.816666&hl=id&z=15&output=embed"></iframe>
+                    @php
+                        $userBranch = auth()->user()->branch;
+                        $lat = $userBranch->latitude ?? '-6.200000';
+                        $lng = $userBranch->longitude ?? '106.816666';
+                        $radius = $userBranch->radius ?? 50;
+                        $branchName = $userBranch->nama_cabang ?? 'Cabang Utama';
+                    @endphp
+                    <iframe class="w-full h-full border-0 absolute inset-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://www.google.com/maps?q={{ $lat }},{{ $lng }}&hl=id&z=15&output=embed"></iframe>
                 </div>
                 <div class="p-4 bg-white/90 border-t border-outline-variant flex items-start gap-3">
                     <span class="material-symbols-outlined text-primary mt-1" style="font-variation-settings: 'FILL' 1;">domain</span>
                     <div>
-                        <p class="font-label-md text-label-md text-primary font-bold">Kantor Pusat CashCoffee</p>
-                        <p class="font-body-md text-body-md text-on-surface-variant text-xs mt-0.5">Radius presisi diaktifkan untuk deteksi lokasi</p>
+                        <p class="font-label-md text-label-md text-primary font-bold">{{ $branchName }}</p>
+                        <p class="font-body-md text-body-md text-on-surface-variant text-xs mt-0.5">Radius presisi diaktifkan ({{ $radius }} Meter)</p>
                     </div>
                 </div>
             </div>

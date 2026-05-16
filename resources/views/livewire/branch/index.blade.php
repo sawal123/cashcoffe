@@ -86,6 +86,20 @@
 
                 <x-ui.input label="No Telepon (Opsional)" wire:model="no_telp" placeholder="0812xxxxxx" />
 
+                <div class="mt-4 p-4 bg-neutral-50 dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-700">
+                    <h6 class="font-bold text-neutral-800 dark:text-neutral-200 text-sm mb-3 flex items-center gap-2">
+                        <iconify-icon icon="lucide:map-pin" class="text-blue-600"></iconify-icon>
+                        Titik Lokasi Absensi
+                    </h6>
+                    <div class="grid grid-cols-2 gap-4">
+                        <x-ui.input label="Latitude" wire:model="latitude" placeholder="Contoh: -6.200000" />
+                        <x-ui.input label="Longitude" wire:model="longitude" placeholder="Contoh: 106.816666" />
+                        <div class="col-span-2">
+                            <x-ui.input type="number" label="Radius Presisi (Meter)" wire:model="radius" placeholder="Contoh: 50" />
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex justify-end gap-3 pt-4">
                     <button type="button" wire:click="closeModal"
                         class="px-6 py-3 font-semibold text-neutral-600 hover:bg-neutral-100 rounded-2xl transition-colors dark:text-neutral-400 dark:hover:bg-neutral-800">Batal</button>

@@ -59,7 +59,7 @@ function highlightActiveMenu() {
 
         const linkPath = link.pathname.replace(/\/$/, "") || "/";
         const isExactMatch = currentUrl === linkPath;
-        const isPrefixMatch = linkPath !== "/" && currentUrl.startsWith(linkPath + "/");
+        const isPrefixMatch = linkPath !== "/" && currentUrl.startsWith(linkPath + "/") && !link.hasAttribute("data-exact-match");
 
         if (isExactMatch || isPrefixMatch) {
             link.classList.add(activeClass);

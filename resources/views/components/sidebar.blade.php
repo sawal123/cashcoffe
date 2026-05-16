@@ -5,7 +5,8 @@
     <div>
         <a href="{{ route('dashboard.index') }}" class="sidebar-logo">
             <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="light-logo">
-            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" style="width: 50ppx" alt="site logo" class="dark-logo">
+            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" style="width: 50ppx" alt="site logo"
+                class="dark-logo">
             <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="logo-icon">
         </a>
     </div>
@@ -66,30 +67,30 @@
             </li>
 
             @unlessrole('superadmin')
-                <li>
-                    <a href="/order" wire:navigate class="{{ request()->is('order*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:cart-3-bold" class="menu-icon"></iconify-icon>
-                        <span>Order</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/order" wire:navigate class="{{ request()->is('order*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:cart-3-bold" class="menu-icon"></iconify-icon>
+                    <span>Order</span>
+                </a>
+            </li>
             @endunlessrole
 
             @role('superadmin')
-                <li>
-                    <a href="/menu" wire:navigate class="{{ request()->is('menu') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:book-broken" class="menu-icon"></iconify-icon>
-                        <span>Menu</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/menu" wire:navigate class="{{ request()->is('menu') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:book-broken" class="menu-icon"></iconify-icon>
+                    <span>Menu</span>
+                </a>
+            </li>
             @endrole
 
             @unlessrole(['kasir', 'superadmin'])
-                <li>
-                    <a href="/menu-cabang" wire:navigate class="{{ request()->is('menu-cabang*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:checklist-minimalistic-broken" class="menu-icon"></iconify-icon>
-                        <span>Ketersediaan Menu</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/menu-cabang" wire:navigate class="{{ request()->is('menu-cabang*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:checklist-minimalistic-broken" class="menu-icon"></iconify-icon>
+                    <span>Ketersediaan Menu</span>
+                </a>
+            </li>
             @endunlessrole
 
 
@@ -114,150 +115,157 @@
             </li>
 
             @unlessrole('kasir')
-                <li>
-                    <a href="/omset" wire:navigate class="{{ request()->is('omset*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:graph-up-bold" class="menu-icon"></iconify-icon>
-                        <span>Omset</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/omset" wire:navigate class="{{ request()->is('omset*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:graph-up-bold" class="menu-icon"></iconify-icon>
+                    <span>Omset</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/pengeluaran" wire:navigate class="{{ request()->is('pengeluaran*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:money-bag-broken" class="menu-icon"></iconify-icon>
-                        <span>Pengeluaran</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/pengeluaran" wire:navigate class="{{ request()->is('pengeluaran*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:money-bag-broken" class="menu-icon"></iconify-icon>
+                    <span>Pengeluaran</span>
+                </a>
+            </li>
             @endunlessrole
 
             @role('superadmin')
-                <li>
-                    <a href="/discount" wire:navigate class="{{ request()->is('discount*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
-                        <span>Discount</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/discount" wire:navigate class="{{ request()->is('discount*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:chat-round-money-broken" class="menu-icon"></iconify-icon>
+                    <span>Discount</span>
+                </a>
+            </li>
             @endrole
             @unlessrole('kasir')
-                <!-- GROUP: Gudang -->
-                <li class="menu-title">
-                    <a href="#" class="menu-title-link" onclick="return false;">
-                        <span class="color">Gudang</span>
-                    </a>
-                </li>
+            <!-- GROUP: Gudang -->
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">Gudang</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/stock-dapur" wire:navigate class="{{ request()->is('stock-dapur*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
-                        <span>Stock Dapur</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/stock-dapur" wire:navigate class="{{ request()->is('stock-dapur*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
+                    <span>Stock Dapur</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/riwayat-stock" wire:navigate
-                        class="{{ request()->is('riwayat-stock*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
-                        <span>Riwayat Stock</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/riwayat-stock" wire:navigate
+                    class="{{ request()->is('riwayat-stock*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
+                    <span>Riwayat Stock</span>
+                </a>
+            </li>
 
-                <li>
-                    <a href="/asset" wire:navigate class="{{ request()->is('asset*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:archive-bold" class="menu-icon"></iconify-icon>
-                        <span>Aset & Inventaris</span>
-                    </a>
-                </li>
+            <li>
+                <a href="/asset" wire:navigate class="{{ request()->is('asset*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:archive-bold" class="menu-icon"></iconify-icon>
+                    <span>Aset & Inventaris</span>
+                </a>
+            </li>
 
-                @role('superadmin')
-                    <li>
-                        <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
-                            <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
-                            <span>Gudang</span>
-                        </a>
-                    </li>
+            @role('superadmin')
+            <li>
+                <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
+                    <span>Gudang</span>
+                </a>
+            </li>
 
-                    <li>
-                        <a href="/riwayat-gudang" wire:navigate
-                            class="{{ request()->is('riwayat-gudang*') ? 'active-page' : '' }}">
-                            <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
-                            <span>Riwayat Gudang</span>
-                        </a>
-                    </li>
-                @endrole
+            <li>
+                <a href="/riwayat-gudang" wire:navigate
+                    class="{{ request()->is('riwayat-gudang*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:history-bold" class="menu-icon"></iconify-icon>
+                    <span>Riwayat Gudang</span>
+                </a>
+            </li>
+            @endrole
             @endunlessrole
             <!-- GROUP: User -->
             @role('superadmin')
-                <li class="menu-title">
-                    <a href="#" class="menu-title-link" onclick="return false;">
-                        <span class="color">Absensi</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/absense" wire:navigate class="{{ request()->is('absense*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
-                        <span>Absensi</span>
-                    </a>
-                </li>
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">Absensi</span>
+                </a>
+            </li>
+            <li>
+                <a href="/absense" wire:navigate class="{{ request()->is('absense') ? 'active-page' : '' }}" data-exact-match>
+                    <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
+                    <span>Monitoring Absensi</span>
+                </a>
+            </li>
+            <li>
+                <a href="/absense/requests" wire:navigate
+                    class="{{ request()->is('absense/requests') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:clipboard-list-bold" class="menu-icon"></iconify-icon>
+                    <span>Persetujuan Izin</span>
+                </a>
+            </li>
             @endrole
 
 
             @role('superadmin')
-                <li class="menu-title">
-                    <a href="#" class="menu-title-link" onclick="return false;">
-                        <span class="color">User Management</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/user" wire:navigate class="{{ request()->is('user*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
-                        <span>User</span>
-                    </a>
-                </li>
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">User Management</span>
+                </a>
+            </li>
+            <li>
+                <a href="/user" wire:navigate class="{{ request()->is('user*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
+                    <span>User</span>
+                </a>
+            </li>
             @endrole
 
             @role('superadmin')
-                <li class="menu-title">
-                    <a href="#" class="menu-title-link" onclick="return false;">
-                        <span class="color">Konfigurasi</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/category" wire:navigate class="{{ request()->is('category*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:tag-broken" class="menu-icon"></iconify-icon>
-                        <span>Category</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/variant-group" wire:navigate
-                        class="{{ request()->is('variant-group*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:tuning-square-2-linear" class="menu-icon"></iconify-icon>
-                        <span>Varian</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/menu-ingredient" wire:navigate
-                        class="{{ request()->is('menu-ingredient*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:chef-hat-broken" class="menu-icon"></iconify-icon>
-                        <span>Komposisi Menu</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/price-tier" wire:navigate class="{{ request()->is('price-tier*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:tag-price-bold" class="menu-icon"></iconify-icon>
-                        <span>Tier Harga</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/branch" wire:navigate class="{{ request()->is('branch*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:shop-bold" class="menu-icon"></iconify-icon>
-                        <span>Cabang</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="/setting" wire:navigate class="{{ request()->is('setting*') ? 'active-page' : '' }}">
-                        <iconify-icon icon="solar:settings-bold" class="menu-icon"></iconify-icon>
-                        <span>Pengaturan Web</span>
-                    </a>
-                </li>
+            <li class="menu-title">
+                <a href="#" class="menu-title-link" onclick="return false;">
+                    <span class="color">Konfigurasi</span>
+                </a>
+            </li>
+            <li>
+                <a href="/category" wire:navigate class="{{ request()->is('category*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:tag-broken" class="menu-icon"></iconify-icon>
+                    <span>Category</span>
+                </a>
+            </li>
+            <li>
+                <a href="/variant-group" wire:navigate
+                    class="{{ request()->is('variant-group*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:tuning-square-2-linear" class="menu-icon"></iconify-icon>
+                    <span>Varian</span>
+                </a>
+            </li>
+            <li>
+                <a href="/menu-ingredient" wire:navigate
+                    class="{{ request()->is('menu-ingredient*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:chef-hat-broken" class="menu-icon"></iconify-icon>
+                    <span>Komposisi Menu</span>
+                </a>
+            </li>
+            <li>
+                <a href="/price-tier" wire:navigate class="{{ request()->is('price-tier*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:tag-price-bold" class="menu-icon"></iconify-icon>
+                    <span>Tier Harga</span>
+                </a>
+            </li>
+            <li>
+                <a href="/branch" wire:navigate class="{{ request()->is('branch*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:shop-bold" class="menu-icon"></iconify-icon>
+                    <span>Cabang</span>
+                </a>
+            </li>
+            <li>
+                <a href="/setting" wire:navigate class="{{ request()->is('setting*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:settings-bold" class="menu-icon"></iconify-icon>
+                    <span>Pengaturan Web</span>
+                </a>
+            </li>
             @endrole
 
             <hr class="my-4 opacity-50">

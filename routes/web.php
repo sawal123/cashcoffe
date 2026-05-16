@@ -27,6 +27,11 @@ Route::prefix('absen')
         Route::get('/history', History::class)->name('history');
         Route::get('/profile', Profile::class)->name('profile');
         Route::get('/verifikasi', Verifikasi::class)->name('verifikasi');
+
+        // New features
+        Route::get('/leave', App\Livewire\Absense\RequestLeave::class)->name('leave');
+        Route::get('/correction', App\Livewire\Absense\RequestCorrection::class)->name('correction');
+        Route::get('/password', App\Livewire\Profile\Password::class)->name('password');
     });
 
 Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () {
@@ -89,11 +94,13 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
 
     // Absense
     Route::get('/absense', App\Livewire\Absense\TableAbsense::class)->name('absense.index');
+    Route::get('/absense/requests', App\Livewire\Absense\ManageRequest::class)->name('absense.requests');
     Route::get('/absense/{userId}', App\Livewire\Absense\ShowAbsense::class)->name('absense.show');
 
     // User
     Route::get('/user', App\Livewire\User\TableUser::class)->name('user.index');
     Route::get('/user/create', App\Livewire\User\CreateUser::class)->name('user.create');
+    Route::get('/user/jabatan', App\Livewire\User\TableJabatan::class)->name('user.jabatan');
     Route::get('/user/{userId}/edit', App\Livewire\User\CreateUser::class)->name('user.edit');
 
     // Asset Management

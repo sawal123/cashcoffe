@@ -60,13 +60,30 @@
                 </div>
                 @endif
 
-                {{-- ROLE --}}
-                <x-ui.select wire:model="role_selected" label="Role Access *" class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
-                    <option value="">-- Pilih Role --</option>
-                    @foreach ($roles as $role)
-                        <option value="{{ $role->name }}">{{ ucfirst($role->name) }}</option>
+                {{-- JABATAN --}}
+                <x-ui.select wire:model="jabatan_id" label="Jabatan Karyawan *" class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                    <option value="">-- Pilih Jabatan --</option>
+                    @foreach ($jabatans as $jab)
+                        <option value="{{ $jab->id }}">{{ $jab->nama_jabatan }}</option>
                     @endforeach
                 </x-ui.select>
+
+                {{-- ROLE --}}
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                        Role Access (Hak Akses Sistem) *
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        @foreach ($roles as $role)
+                            <label class="flex items-center gap-2 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 cursor-pointer hover:border-primary-500 transition-colors">
+                                <input type="checkbox" wire:model="role_selected" value="{{ $role->name }}" class="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+                                <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">{{ ucfirst($role->name) }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('role_selected') <span class="text-xs text-red-500 font-medium">{{ $message }}</span> @enderror
+                    <p class="text-[10px] text-neutral-400 mt-1">*Pilih satu atau lebih hak akses untuk user ini. Karyawan biasa wajib diberi role 'karyawan' agar bisa absen.</p>
+                </div>
 
                 {{-- PARAMETER KOMPENSASI GAJI & CUTI (Khusus Akses Manajemen Operasional) --}}
                 <div class="mt-2 pt-6 border-t border-neutral-100 dark:border-neutral-700 space-y-4">
@@ -83,15 +100,11 @@
                         <x-ui.input type="number" step="0.01" wire:model="tunjangan_harian" label="Tunjangan Kehadiran Harian (Rp)" placeholder="Contoh: 50000" class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {{-- POTONGAN TERLAMBAT --}}
-                        <x-ui.input type="number" step="0.01" wire:model="potongan_terlambat" label="Potongan Terlambat (Rp/Hari)" placeholder="Contoh: 25000" class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
-
-                        {{-- POTONGAN ALPHA --}}
-                        <x-ui.input type="number" step="0.01" wire:model="potongan_alpha" label="Potongan Tanpa Keterangan/Alpha (Rp/Hari)" placeholder="Contoh: 100000" class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
-
+                    <div class="grid grid-cols-1 gap-4 mt-4">
                         {{-- HAK CUTI --}}
-                        <x-ui.input type="number" wire:model="hak_cuti" label="Hak Cuti Tahunan (Hari)" placeholder="Default: 12" class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
+                        <div class="md:w-1/2">
+                            <x-ui.input type="number" wire:model="hak_cuti" label="Hak Cuti Tahunan (Hari)" placeholder="Default: 12" class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
+                        </div>
                     </div>
                     <p class="text-[10px] text-neutral-400 mt-1">*Parameter ini akan menjadi acuan dasar pada modul kalkulasi otomatis saat pencetakan slip/rekap payroll bulanan.</p>
                 </div>

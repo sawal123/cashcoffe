@@ -48,13 +48,33 @@
                         </x-ui.select>
                     </div>
 
-                    {{-- Nama Item --}}
-                    <x-ui.input label="Nama Item / Keperluan" wire:model="title"
-                        placeholder="Contoh: Pembelian Bahan Baku Kopi Arabica" />
-
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {{-- Nama Item --}}
+                        <x-ui.input label="Nama Item / Keperluan" wire:model="title"
+                            placeholder="Contoh: Pembelian Bahan Baku Kopi Arabica" />
+
+                        @if(auth()->user()->hasRole('superadmin'))
+                            {{-- Cabang --}}
+                            <x-ui.select label="Cabang / Branch" wire:model="branch_id">
+                                <option value="">Pilih Cabang</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        @endif
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {{-- Jumlah --}}
+                        <x-ui.input type="number" label="Jumlah" wire:model="jumlah" placeholder="1" />
+
                         {{-- Satuan --}}
-                        <x-ui.input label="Satuan" wire:model="satuan" placeholder="Kg, Meter, Pcs, dll" />
+                        <x-ui.select label="Satuan" wire:model="satuan_id">
+                            <option value="">Pilih Satuan</option>
+                            @foreach($satuanBahans as $satuan)
+                                <option value="{{ $satuan->id }}">{{ $satuan->nama_satuan }}</option>
+                            @endforeach
+                        </x-ui.select>
 
                         {{-- Total --}}
                         <x-ui.input type="number" step="100" label="Total (Rp)" wire:model="total" prefix="Rp"

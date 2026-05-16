@@ -40,24 +40,41 @@
 
         <!-- Navigation Settings List -->
         <section class="lg:col-span-8 flex flex-col gap-4">
-            <h3 class="font-title-lg text-title-lg text-on-surface px-1 font-bold">Pengaturan Akun</h3>
+            <h3 class="font-title-lg text-title-lg text-on-surface px-1 font-bold">Layanan Mandiri</h3>
             <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-                <!-- Jadwal Kerja -->
-                <a onclick="alert('Menampilkan modul integrasi jadwal shift mingguan...')" class="flex items-center justify-between p-5 hover:bg-surface-container-low transition-colors group cursor-pointer">
+                <!-- Pengajuan Cuti -->
+                <a href="{{ route('absensi.leave') }}" wire:navigate class="flex items-center justify-between p-5 hover:bg-surface-container-low transition-colors group cursor-pointer">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary shrink-0">
-                            <span class="material-symbols-outlined">calendar_today</span>
+                            <span class="material-symbols-outlined">event_busy</span>
                         </div>
                         <div>
-                            <p class="font-body-lg text-body-lg font-semibold text-on-surface">Jadwal Kerja</p>
-                            <p class="font-body-md text-body-md text-on-surface-variant">Lihat giliran kerja dan shift mingguan</p>
+                            <p class="font-body-lg text-body-lg font-semibold text-on-surface">Pengajuan Cuti & Izin</p>
+                            <p class="font-body-md text-body-md text-on-surface-variant">Ajukan permohonan istirahat atau izin sakit</p>
                         </div>
                     </div>
                     <span class="material-symbols-outlined text-outline-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
                 </a>
                 <div class="h-[1px] bg-outline-variant/30 mx-5"></div>
+                <!-- Perbaikan Kehadiran -->
+                <a href="{{ route('absensi.correction') }}" wire:navigate class="flex items-center justify-between p-5 hover:bg-surface-container-low transition-colors group cursor-pointer">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary shrink-0">
+                            <span class="material-symbols-outlined">edit_calendar</span>
+                        </div>
+                        <div>
+                            <p class="font-body-lg text-body-lg font-semibold text-on-surface">Perbaikan Kehadiran</p>
+                            <p class="font-body-md text-body-md text-on-surface-variant">Koreksi kesalahan jam masuk atau lupa absen</p>
+                        </div>
+                    </div>
+                    <span class="material-symbols-outlined text-outline-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+                </a>
+            </div>
+
+            <h3 class="font-title-lg text-title-lg text-on-surface px-1 mt-4 font-bold">Pengaturan Akun</h3>
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
                 <!-- Ubah Kata Sandi -->
-                <a onclick="alert('Modul pengaturan kata sandi mandiri...')" class="flex items-center justify-between p-5 hover:bg-surface-container-low transition-colors group cursor-pointer">
+                <a href="{{ route('absensi.password') }}" wire:navigate class="flex items-center justify-between p-5 hover:bg-surface-container-low transition-colors group cursor-pointer">
                     <div class="flex items-center gap-4">
                         <div class="w-12 h-12 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary shrink-0">
                             <span class="material-symbols-outlined">lock_reset</span>

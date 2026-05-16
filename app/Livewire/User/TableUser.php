@@ -14,8 +14,16 @@ class TableUser extends Component
     public $search = '';
     public $perPage = 10;
     public $newRoleName = '';
-    // Reset pagination saat melakukan pencarian
+    public $filterRole = '';
+    public $viewingUser = null;
+
+    // Reset pagination saat melakukan pencarian atau filter
     public function updatedSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedFilterRole()
     {
         $this->resetPage();
     }
@@ -72,8 +80,6 @@ class TableUser extends Component
         }
     }
 
-    // ...
-
     public function deleteUser($encodedId)
     {
         // 1. Decode ID
@@ -116,14 +122,28 @@ class TableUser extends Component
         $this->dispatch('showToast', type: 'success', message: 'User berhasil dihapus selamanya.');
     }
 
+    public function viewUser($encodedId)
+    {
+        $id = base64_decode($encodedId);
+        $this->viewingUser = User::with(['roles', 'branch', 'jabatan'])->find($id);
+        $this->dispatch('open-modal', name: 'view-user');
+    }
+
     public function render()
     {
         $user = auth()->user();
         $query = User::query()
-            ->with(['roles', 'branch']) // <--- Eager Loading branch
+            ->with(['roles', 'branch', 'jabatan']) // <--- Eager Loading branch & jabatan
             ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('email', 'like', '%' . $this->search . '%');
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('email', 'like', '%' . $this->search . '%');
+                });
+            })
+            ->when($this->filterRole, function ($query) {
+                $query->whereHas('roles', function($q) {
+                    $q->where('name', $this->filterRole);
+                });
             });
 
         // Audit Role: JIKA bukan superadmin, hanya boleh lihat user di cabangnya sendiri

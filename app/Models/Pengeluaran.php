@@ -10,4 +10,9 @@ class Pengeluaran extends Model
 {
     use SoftDeletes, BelongsToBranch;
     protected $guarded =[];
+
+    public function satuanBahan()
+    {
+        return $this->belongsTo(SatuanBahan::class, 'satuan_id');
+    }
 }

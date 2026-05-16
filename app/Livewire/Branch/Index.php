@@ -8,6 +8,7 @@ use Livewire\Component;
 class Index extends Component
 {
     public $nama_cabang, $kode_cabang, $alamat, $no_telp, $is_active = true, $branch_id, $price_tier_id;
+    public $latitude, $longitude, $radius = 50;
     public $isEdit = false;
 
     protected $rules = [
@@ -17,6 +18,9 @@ class Index extends Component
         'no_telp' => 'nullable|string',
         'is_active' => 'boolean',
         'price_tier_id' => 'required|exists:price_tiers,id',
+        'latitude' => 'nullable|string|max:255',
+        'longitude' => 'nullable|string|max:255',
+        'radius' => 'nullable|integer|min:1',
     ];
 
     public function render()
@@ -48,6 +52,9 @@ class Index extends Component
             'no_telp' => $this->no_telp,
             'is_active' => $this->is_active,
             'price_tier_id' => $this->price_tier_id,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'radius' => $this->radius ?? 50,
         ]);
 
         $this->dispatch('showToast', message: 'Cabang Berhasil Ditambahkan', type: 'success', title: 'Success');
@@ -64,6 +71,9 @@ class Index extends Component
         $this->no_telp = $branch->no_telp;
         $this->is_active = $branch->is_active;
         $this->price_tier_id = $branch->price_tier_id;
+        $this->latitude = $branch->latitude;
+        $this->longitude = $branch->longitude;
+        $this->radius = $branch->radius;
 
         $this->isEdit = true;
         $this->dispatch('open-modal', name: 'modal-branch');
@@ -78,6 +88,9 @@ class Index extends Component
             'no_telp' => 'nullable|string',
             'is_active' => 'boolean',
             'price_tier_id' => 'required|exists:price_tiers,id',
+            'latitude' => 'nullable|string|max:255',
+            'longitude' => 'nullable|string|max:255',
+            'radius' => 'nullable|integer|min:1',
         ]);
 
         $branch = Branch::findOrFail($this->branch_id);
@@ -88,6 +101,9 @@ class Index extends Component
             'no_telp' => $this->no_telp,
             'is_active' => $this->is_active,
             'price_tier_id' => $this->price_tier_id,
+            'latitude' => $this->latitude,
+            'longitude' => $this->longitude,
+            'radius' => $this->radius ?? 50,
         ]);
 
         $this->dispatch('showToast', message: 'Cabang Berhasil Diperbarui', type: 'success', title: 'Success');
@@ -117,5 +133,8 @@ class Index extends Component
         $this->is_active = true;
         $this->branch_id = null;
         $this->price_tier_id = '';
+        $this->latitude = '';
+        $this->longitude = '';
+        $this->radius = 50;
     }
 }

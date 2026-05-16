@@ -113,6 +113,10 @@
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script src="{{ asset('assets/js/lib/iconify-icon.min.js') }}" data-navigate-once></script>
     @livewireStyles
 </head>
 <body class="bg-background text-on-background min-h-screen pb-32">

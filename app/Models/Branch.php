@@ -16,6 +16,9 @@ class Branch extends Model
         'no_telp',
         'is_active',
         'price_tier_id',
+        'latitude',
+        'longitude',
+        'radius',
     ];
 
     public function users()

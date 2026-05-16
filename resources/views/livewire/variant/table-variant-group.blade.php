@@ -28,11 +28,12 @@
                 @forelse ($groups as $group)
                     {{-- Row Grup Utama --}}
                     <tr class="hover:bg-slate-50 dark:hover:bg-neutral-900/30 transition">
-                        <td data-label="Nama Grup" class="px-6 py-4 text-slate-800 dark:text-neutral-200 font-bold">{{ $group->nama_group }}
+                        <td data-label="Nama Grup" class="px-6 py-4 text-slate-800 dark:text-neutral-200 font-bold">
+                            {{ $group->nama_group }}
                         </td>
                         <td data-label="Tipe Seleksi" class="px-6 py-4">
                             <span
-                                class="px-2 py-1 rounded-full text-xs font-bold {{ $group->selection_type === 'single' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600' }}">
+                                class="px-2 py-1 rounded-full text-xs font-bold {{ $group->selection_type === 'single' ? 'bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400' }}">
                                 {{ ucfirst($group->selection_type) }}
                             </span>
                         </td>
@@ -45,7 +46,9 @@
                                 <span class="text-slate-400 text-sm">Tidak</span>
                             @endif
                         </td>
-                        <td data-label="Jumlah Opsi" class="px-6 py-4 text-slate-600 dark:text-neutral-400">{{ $group->options_count }} Opsi</td>
+                        <td data-label="Jumlah Opsi" class="px-6 py-4 text-slate-600 dark:text-neutral-400">
+                            {{ $group->options_count }} Opsi
+                        </td>
                         <td data-label="Aksi" class="px-6 py-4 text-right space-x-2">
                             <button wire:click="edit({{ $group->id }})"
                                 class="text-blue-600 hover:text-blue-800 font-bold text-sm">Edit Grup</button>
@@ -73,9 +76,8 @@
                                 {{ $option->ingredients_count ?? 0 }} bahan
                             </td>
                             <td data-label="Aksi" class="px-6 py-3 text-right">
-                                <a href="{{ route('variant-option.ingredients', base64_encode($option->id)) }}"
-                                    wire:navigate
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 text-xs font-bold transition">
+                                <a href="{{ route('variant-option.ingredients', base64_encode($option->id)) }}" wire:navigate
+                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 text-amber-700 border border-amber-200 text-xs font-bold transition">
                                     <iconify-icon icon="lucide:flask-conical" class="text-sm"></iconify-icon>
                                     Resep Bahan
                                 </a>

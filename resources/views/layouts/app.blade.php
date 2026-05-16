@@ -8,9 +8,7 @@
 <body class="dark:bg-neutral-800 bg-neutral-100 dark:text-white">
 
     <!-- ..::  header area start ::.. -->
-    @persist('sidebar')
     <x-sidebar />
-    @endpersist
     <!-- ..::  header area end ::.. -->
 
     <main class="dashboard-main">

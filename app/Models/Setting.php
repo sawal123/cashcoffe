@@ -13,5 +13,11 @@ class Setting extends Model
         'app_name',
         'logo',
         'icon',
+        'default_potongan_terlambat',
+        'default_potongan_alpha',
+        'office_name',
+        'office_latitude',
+        'office_longitude',
+        'office_radius',
     ];
 }

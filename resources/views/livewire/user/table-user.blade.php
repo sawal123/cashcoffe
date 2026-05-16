@@ -8,17 +8,30 @@
     {{-- Header Controls (Pagination & Search) --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
 
-        {{-- Bagian Kiri: Droppage & Search --}}
-        <div class="flex gap-2">
+        {{-- Bagian Kiri: Droppage, Search, & Filter --}}
+        <div class="flex flex-wrap gap-2">
             <x-droppage perPage="{{ $perPage }}" />
-            <div class="sm:w-[300px]">
+            <div class="sm:w-[200px]">
                 <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari user..."
                     class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
+            </div>
+            <div class="sm:w-[180px]">
+                <x-ui.select wire:model.live="filterRole"
+                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+                    <option value="">Semua Role</option>
+                    @foreach ($all_roles as $role)
+                        <option value="{{ $role->name }}">{{ ucfirst($role->name) }}</option>
+                    @endforeach
+                </x-ui.select>
             </div>
         </div>
 
         {{-- Bagian Kanan: Button Add Role & Add User --}}
         <div class="flex gap-2">
+            <x-ui.button-link href="/user/jabatan" icon="solar:user-speak-bold" color="success"
+                class="border-success dark:border-success !text-success dark:!text-neutral-300">
+                Kelola Jabatan
+            </x-ui.button-link>
             <x-ui.button @click="$dispatch('open-modal', { name: 'add-role' })" color="blue" class="!px-5 !py-2.5">
                 <iconify-icon icon="mingcute:add-circle-line" class="mr-2 text-lg align-middle"></iconify-icon>
                 Tambah Role
@@ -43,7 +56,9 @@
 
                     @if ($role->name !== 'admin' && $role->name !== 'superadmin')
                         @if ($role->users_count > 0)
-                            <span class="text-[10px] bg-neutral-100 text-neutral-500 px-1.5 py-0.5 rounded-md font-bold" title="Role sedang digunakan oleh {{ $role->users_count }} user">
+                            <span
+                                class="text-[10px] bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400  px-1.5 py-0.5 rounded-md font-bold"
+                                title="Role sedang digunakan oleh {{ $role->users_count }} user">
                                 {{ $role->users_count }} user
                             </span>
                         @else
@@ -68,6 +83,7 @@
         ['name' => 'Avatar', 'align' => 'center'],
         'Nama',
         'Email',
+        ['name' => 'Jabatan', 'align' => 'center'],
         ['name' => 'Cabang', 'align' => 'center'],
         ['name' => 'Role', 'align' => 'center'],
         ['name' => 'Action', 'align' => 'center'],
@@ -100,10 +116,20 @@
                     {{ $user->email }}
                 </td>
 
+                <td data-label="Jabatan" class="px-6 py-4 text-center">
+                    @if ($user->jabatan)
+                        <span class="font-medium text-neutral-800 dark:text-neutral-200">
+                            {{ $user->jabatan->nama_jabatan }}
+                        </span>
+                    @else
+                        <span class="text-xs text-neutral-400 italic">-</span>
+                    @endif
+                </td>
+
                 <td data-label="Cabang" class="px-6 py-4 text-center">
                     @if ($user->branch)
                         <span
-                            class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-600 border border-blue-100 uppercase">
+                            class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400  uppercase">
                             {{ $user->branch->nama_cabang }}
                         </span>
                     @else
@@ -129,6 +155,11 @@
 
                 <td data-label="Aksi" class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
+                        <button type="button" @click="$wire.viewUser('{{ base64_encode($user->id) }}')"
+                            class="flex h-8 w-8 items-center justify-center rounded-xl bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700 transition-colors shadow-sm border border-green-100"
+                            title="Lihat Detail">
+                            <iconify-icon icon="lucide:eye" class="text-lg"></iconify-icon>
+                        </button>
                         <x-ui.action-edit href="/user/{{ base64_encode($user->id) }}/edit" wire:navigate />
                         <x-ui.action-delete
                             @click="$dispatch('open-modal', { name: 'delete-user', id: {{ json_encode(base64_encode($user->id)) }} })" />
@@ -228,6 +259,119 @@
                     Ya, Hapus User
                 </x-ui.button>
             </div>
+        </div>
+    </x-mdal>
+
+    <x-mdal name="view-user">
+        <div class="px-6 py-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-bold text-neutral-800 dark:text-neutral-100">Detail Pengguna</h3>
+
+            </div>
+
+            @if($viewingUser)
+                <div class="flex flex-col gap-6">
+                    <!-- Profile Header -->
+                    <div
+                        class="flex items-center gap-4 p-4 bg-neutral-50 dark:bg-neutral-800/50 rounded-2xl border border-neutral-100 dark:border-neutral-700">
+                        @if ($viewingUser->avatar)
+                            <img src="{{ asset('storage/' . $viewingUser->avatar) }}" alt="Avatar"
+                                class="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm">
+                        @else
+                            <div
+                                class="w-16 h-16 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-2xl border-2 border-white shadow-sm">
+                                {{ substr($viewingUser->name, 0, 1) }}
+                            </div>
+                        @endif
+                        <div>
+                            <h4 class="text-lg font-bold text-neutral-800 dark:text-neutral-100">{{ $viewingUser->name }}
+                            </h4>
+                            <p class="text-sm text-neutral-500">{{ $viewingUser->email }}</p>
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                @foreach ($viewingUser->roles as $role)
+                                    <span
+                                        class="px-2 py-0.5 text-[10px] font-bold rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 uppercase">
+                                        {{ $role->name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Data & Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="space-y-1">
+                            <span class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Jabatan</span>
+                            <p class="font-medium text-neutral-800 dark:text-neutral-200">
+                                {{ $viewingUser->jabatan ? $viewingUser->jabatan->nama_jabatan : '-' }}
+                            </p>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Nomor
+                                Telepon</span>
+                            <p class="font-medium text-neutral-800 dark:text-neutral-200">{{ $viewingUser->phone ?? '-' }}
+                            </p>
+                        </div>
+                        <div class="space-y-1">
+                            <span class="text-xs font-semibold text-neutral-400 uppercase tracking-wider">Cabang</span>
+                            <p class="font-medium text-neutral-800 dark:text-neutral-200">
+                                {{ $viewingUser->branch ? $viewingUser->branch->nama_cabang : 'Pusat (HQ)' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr class="border-neutral-100 dark:border-neutral-700">
+
+                    <!-- Payroll & Leave Info -->
+                    <div>
+                        <h5 class="text-sm font-bold text-neutral-800 dark:text-neutral-200 mb-3 flex items-center gap-2">
+                            <iconify-icon icon="lucide:wallet" class="text-primary-600"></iconify-icon>
+                            Informasi Kompensasi & Cuti
+                        </h5>
+                        <div
+                            class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                            <div class="space-y-1">
+                                <span
+                                    class="text-xs font-semibold text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider">Gaji
+                                    Pokok</span>
+                                <p class="font-bold text-blue-900 dark:text-blue-300">Rp
+                                    {{ number_format($viewingUser->gaji_pokok ?? 0, 0, ',', '.') }}
+                                </p>
+                            </div>
+                            <div class="space-y-1">
+                                <span
+                                    class="text-xs font-semibold text-blue-600/70 dark:text-blue-400/70 uppercase tracking-wider">Tunjangan
+                                    Harian</span>
+                                <p class="font-bold text-blue-900 dark:text-blue-300">Rp
+                                    {{ number_format($viewingUser->tunjangan_harian ?? 0, 0, ',', '.') }}
+                                </p>
+                            </div>
+                            <div class="space-y-1 col-span-1 md:col-span-2 mt-2">
+                                <div
+                                    class="flex items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-neutral-100 dark:border-neutral-700">
+                                    <div class="flex items-center gap-3">
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center">
+                                            <iconify-icon icon="lucide:calendar-clock" class="text-xl"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs font-semibold text-neutral-500 block">Sisa Hak Cuti</span>
+                                            <span
+                                                class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $viewingUser->hak_cuti ?? 0 }}
+                                                Hari</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="py-8 flex justify-center">
+                    <iconify-icon icon="mingcute:loading-fill"
+                        class="animate-spin text-3xl text-primary-600"></iconify-icon>
+                </div>
+            @endif
         </div>
     </x-mdal>
 </div>

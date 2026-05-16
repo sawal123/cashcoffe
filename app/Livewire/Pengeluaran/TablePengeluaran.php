@@ -46,7 +46,7 @@ class TablePengeluaran extends Component
     #[Computed]
     public function pengeluarans()
     {
-        return Pengeluaran::query()
+        return Pengeluaran::with(['branch', 'satuanBahan'])
             ->when($this->search, function ($q) {
                 $q->where(function($sub) {
                     $sub->where('title', 'like', "%{$this->search}%")

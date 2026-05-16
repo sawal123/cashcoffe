@@ -17,6 +17,10 @@ class Index extends Component
     public $currentLogo;
     public $currentIcon;
 
+    // Parameter Kompensasi Global
+    public $default_potongan_terlambat = 0;
+    public $default_potongan_alpha = 0;
+
     public function mount()
     {
         $setting = Setting::first();
@@ -24,10 +28,14 @@ class Index extends Component
             $this->appName     = $setting->app_name;
             $this->currentLogo = $setting->logo;
             $this->currentIcon = $setting->icon;
+            $this->default_potongan_terlambat = $setting->default_potongan_terlambat ?? 0;
+            $this->default_potongan_alpha = $setting->default_potongan_alpha ?? 0;
         } else {
             $this->appName     = 'WorkSync CashCoffee';
             $this->currentLogo = 'logo/logow.png';
             $this->currentIcon = 'logo/logow.png';
+            $this->default_potongan_terlambat = 0;
+            $this->default_potongan_alpha = 0;
         }
     }
 
@@ -37,6 +45,8 @@ class Index extends Component
             'appName' => 'required|string|max:255',
             'newLogo' => 'nullable|image|max:2048',
             'newIcon' => 'nullable|image|max:1024',
+            'default_potongan_terlambat' => 'nullable|numeric|min:0',
+            'default_potongan_alpha' => 'nullable|numeric|min:0',
         ]);
 
         $setting = Setting::first();
@@ -45,6 +55,8 @@ class Index extends Component
         }
 
         $setting->app_name = $this->appName;
+        $setting->default_potongan_terlambat = empty($this->default_potongan_terlambat) ? 0 : $this->default_potongan_terlambat;
+        $setting->default_potongan_alpha = empty($this->default_potongan_alpha) ? 0 : $this->default_potongan_alpha;
 
         if ($this->newLogo) {
             $path = $this->newLogo->store('settings', 'public');
@@ -62,7 +74,7 @@ class Index extends Component
 
         $setting->save();
 
-        session()->flash('success', 'Konfigurasi Web, Logo, dan Icon berhasil diperbarui secara dinamis!');
+        session()->flash('success', 'Konfigurasi Web & Lokasi berhasil diperbarui secara dinamis!');
         
         return $this->redirect('/setting', navigate: true);
     }

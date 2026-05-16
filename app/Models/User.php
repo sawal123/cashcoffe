@@ -24,10 +24,9 @@ class User extends Authenticatable
         'phone',
         'password',
         'branch_id',
+        'jabatan_id',
         'gaji_pokok',
         'tunjangan_harian',
-        'potongan_terlambat',
-        'potongan_alpha',
         'hak_cuti',
     ];
 
@@ -74,5 +73,10 @@ class User extends Authenticatable
     public function branch()
     {
         return $this->belongsTo(Branch::class, 'branch_id');
+    }
+
+    public function jabatan()
+    {
+        return $this->belongsTo(Jabatan::class, 'jabatan_id');
     }
 }

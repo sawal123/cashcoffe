@@ -18,7 +18,9 @@ class Create extends Component
 
     public $title;
 
-    public $satuan;
+    public $jumlah = 1;
+
+    public $satuan_id;
 
     public $total;
 
@@ -27,6 +29,8 @@ class Create extends Component
     public $catatan;
 
     public $bukti;
+
+    public $branch_id;
 
     public $pengeluaranId = null;
 
@@ -38,11 +42,13 @@ class Create extends Component
             $this->tanggal_pengeluaran = $pengeluaran->tanggal_pengeluaran;
             $this->kategori = $pengeluaran->kategori;
             $this->title = $pengeluaran->title;
-            $this->satuan = $pengeluaran->satuan;
+            $this->jumlah = $pengeluaran->jumlah;
+            $this->satuan_id = $pengeluaran->satuan_id;
             $this->total = $pengeluaran->total;
             $this->metode_pembayaran = $pengeluaran->metode_pembayaran;
             $this->catatan = $pengeluaran->catatan;
             $this->bukti = $pengeluaran->bukti;
+            $this->branch_id = $pengeluaran->branch_id;
         } else {
             $this->tanggal_pengeluaran = now()->format('Y-m-d');
         }
@@ -54,11 +60,13 @@ class Create extends Component
             'tanggal_pengeluaran' => 'required|date',
             'kategori' => 'nullable|string|max:100',
             'title' => 'required|string|max:255',
-            'satuan' => 'nullable|string|max:50',
+            'jumlah' => 'required|integer|min:1',
+            'satuan_id' => 'nullable|exists:satuan_bahans,id',
             'total' => 'required|numeric|min:0',
             'metode_pembayaran' => 'nullable|string|max:100',
             'catatan' => 'nullable|string',
             'bukti' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048', // max 2MB
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $buktiPath = null;
@@ -71,15 +79,16 @@ class Create extends Component
             'tanggal_pengeluaran' => $this->tanggal_pengeluaran,
             'kategori' => $this->kategori,
             'title' => $this->title,
-            'satuan' => $this->satuan,
+            'jumlah' => $this->jumlah,
+            'satuan_id' => $this->satuan_id,
             'total' => $this->total,
             'metode_pembayaran' => $this->metode_pembayaran,
             'catatan' => $this->catatan,
             'bukti' => $buktiPath,
-            'branch_id' => Auth::user()->branch_id, // Added branch_id if applicable
+            'branch_id' => $this->branch_id ?: Auth::user()->branch_id,
         ]);
 
-        $this->reset(['tanggal_pengeluaran', 'kategori', 'title', 'satuan', 'total', 'metode_pembayaran', 'catatan', 'bukti']);
+        $this->reset(['tanggal_pengeluaran', 'kategori', 'title', 'jumlah', 'satuan_id', 'total', 'metode_pembayaran', 'catatan', 'bukti', 'branch_id']);
         $this->tanggal_pengeluaran = now()->format('Y-m-d');
 
         $this->dispatch('showToast', type: 'success', message: 'Data pengeluaran berhasil disimpan!');
@@ -91,11 +100,13 @@ class Create extends Component
             'tanggal_pengeluaran' => 'required|date',
             'kategori' => 'nullable|string|max:100',
             'title' => 'required|string|max:255',
-            'satuan' => 'nullable|string|max:50',
+            'jumlah' => 'required|integer|min:1',
+            'satuan_id' => 'nullable|exists:satuan_bahans,id',
             'total' => 'required|numeric|min:0',
             'metode_pembayaran' => 'nullable|string|max:100',
             'catatan' => 'nullable|string',
             'bukti' => 'nullable|max:2048', // max 2MB, can be string (old path) or file
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         $pengeluaran = Pengeluaran::findOrFail($id);
@@ -113,11 +124,13 @@ class Create extends Component
             'tanggal_pengeluaran' => $this->tanggal_pengeluaran,
             'kategori' => $this->kategori,
             'title' => $this->title,
-            'satuan' => $this->satuan,
+            'jumlah' => $this->jumlah,
+            'satuan_id' => $this->satuan_id,
             'total' => $this->total,
             'metode_pembayaran' => $this->metode_pembayaran,
             'catatan' => $this->catatan,
             'bukti' => $buktiPath,
+            'branch_id' => $this->branch_id ?: Auth::user()->branch_id,
         ]);
 
         $this->dispatch('showToast', type: 'success', message: 'Data pengeluaran berhasil diperbarui!');
@@ -146,9 +159,13 @@ class Create extends Component
     public function render()
     {
         $pageTitle = $this->pengeluaranId ? 'Edit Pengeluaran' : 'Tambah Pengeluaran';
+        $branches = Auth::user()->hasRole('superadmin') ? \App\Models\Branch::all() : collect([]);
+
         return view('livewire.pengeluaran.create', [
             'title' => $pageTitle,
-            'backUrl' => '/pengeluaran'
+            'backUrl' => '/pengeluaran',
+            'branches' => $branches,
+            'satuanBahans' => \App\Models\SatuanBahan::all(),
         ])->layout('layouts.app', ['title' => $pageTitle]);
     }
 }

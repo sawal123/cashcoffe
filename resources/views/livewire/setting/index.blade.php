@@ -79,6 +79,41 @@
                     @error('newIcon') <span class="text-xs text-red-500 font-medium">{{ $message }}</span> @enderror
                 </div>
 
+                <hr class="border-neutral-100 dark:border-neutral-700">
+
+                <!-- Parameter Kompensasi Global -->
+                <div class="space-y-4">
+                    <h6 class="font-bold text-neutral-800 dark:text-neutral-200 text-sm mb-1 flex items-center gap-2">
+                        <iconify-icon icon="lucide:banknote" class="text-primary-600"></iconify-icon>
+                        Parameter Kompensasi Kehadiran Global
+                    </h6>
+                    <p class="text-xs text-neutral-500 mb-3">Nilai potongan ini bersifat tetap (fixed) dan berlaku untuk seluruh karyawan saat perhitungan payroll.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <x-ui.input 
+                                type="number"
+                                step="0.01"
+                                wire:model="default_potongan_terlambat" 
+                                label="Potongan Terlambat (Rp/Hari)" 
+                                placeholder="Contoh: 10000" 
+                                required 
+                                class="!py-3"
+                            />
+                        </div>
+                        <div class="space-y-2">
+                            <x-ui.input 
+                                type="number"
+                                step="0.01"
+                                wire:model="default_potongan_alpha" 
+                                label="Potongan Tanpa Keterangan/Alpha (Rp/Hari)" 
+                                placeholder="Contoh: 20000" 
+                                required 
+                                class="!py-3"
+                            />
+                        </div>
+                    </div>
+                </div>
+
                 <div class="pt-4 flex items-center gap-3 justify-end">
                     <x-ui.button type="submit" color="primary" class="!px-8 !py-3 font-bold shadow-md hover:shadow-lg transition-all">
                         <iconify-icon icon="lucide:save" class="mr-2"></iconify-icon>

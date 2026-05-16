@@ -145,35 +145,40 @@
     </div>
 
     {{-- Premium Table --}}
-    <x-ui.table :headers="['#', 'Tanggal', 'Kategori', 'Deskripsi', ['name' => 'Satuan', 'align' => 'center'], ['name' => 'Total', 'align' => 'right'], 'Metode', ['name' => 'Bukti', 'align' => 'center'], ['name' => 'Aksi', 'align' => 'center']]">
+    <x-ui.table :headers="['#', 'Tanggal & Cabang', 'Kategori & Deskripsi', ['name' => 'Qty', 'align' => 'center'], ['name' => 'Total', 'align' => 'right'], 'Metode', ['name' => 'Bukti', 'align' => 'center'], ['name' => 'Aksi', 'align' => 'center']]">
         @forelse ($pengeluarans as $item)
             <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/30 transition-colors group">
                 <td data-label="#" class="px-6 py-6 text-xs font-bold text-neutral-300 group-hover:text-neutral-500">
                     {{ ($pengeluarans->currentPage() - 1) * $pengeluarans->perPage() + $loop->iteration }}
                 </td>
-                <td data-label="Tanggal" class="px-6 py-6 font-bold text-neutral-800 dark:text-neutral-200">
+                <td data-label="Tanggal & Cabang" class="px-6 py-6">
                     <span
-                        class="block text-sm">{{ \Carbon\Carbon::parse($item->tanggal_pengeluaran)->translatedFormat('d M') }}</span>
-                    <span
-                        class="block text-[10px] text-neutral-400 uppercase tracking-widest">{{ \Carbon\Carbon::parse($item->tanggal_pengeluaran)->translatedFormat('Y') }}</span>
-                </td>
-                <td data-label="Kategori" class="px-6 py-6">
-                    <span
-                        class="inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest {{ $catColors[$item->kategori] ?? $catColors['Lainnya'] }}">
-                        {{ $item->kategori ?? 'UMUM' }}
+                        class="block text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ \Carbon\Carbon::parse($item->tanggal_pengeluaran)->translatedFormat('d M Y') }}</span>
+                    <span class="block text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-widest mt-1">
+                        {{ $item->branch ? $item->branch->nama_cabang : 'Pusat' }}
                     </span>
                 </td>
-                <td data-label="Deskripsi" class="px-6 py-6">
+                <td data-label="Keperluan" class="px-6 py-6">
+                    <div class="mb-2">
+                        <span
+                            class="inline-flex px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest {{ $catColors[$item->kategori] ?? $catColors['Lainnya'] }}">
+                            {{ $item->kategori ?? 'UMUM' }}
+                        </span>
+                    </div>
                     <p class="text-xs font-bold text-neutral-700 dark:text-neutral-300 leading-relaxed">
                         {{ $item->title }}
                     </p>
                     @if($item->catatan)
-                        <p class="text-[10px] text-neutral-400 mt-1 italic">{{ Str::limit($item->catatan, 30) }}</p>
+                        <p class="text-[10px] text-neutral-400 mt-1 italic line-clamp-1">{{ $item->catatan }}</p>
                     @endif
                 </td>
-                <td data-label="Satuan" class="px-6 py-6 text-center">
-                    <span
-                        class="text-[10px] font-black text-neutral-300 dark:text-neutral-600 uppercase tracking-widest bg-neutral-50 dark:bg-neutral-900 px-2 py-1 rounded-md">{{ $item->satuan ?? '-' }}</span>
+                <td data-label="Qty" class="px-6 py-6 text-center">
+                    <div class="inline-flex flex-col items-center">
+                        <span class="text-xs font-black text-neutral-800 dark:text-neutral-200">{{ $item->jumlah ?? '1' }}</span>
+                        <span class="text-[9px] font-bold text-neutral-400 uppercase tracking-tighter">
+                            {{ $item->satuanBahan ? $item->satuanBahan->nama_satuan : ($item->satuan ?? '-') }}
+                        </span>
+                    </div>
                 </td>
                 <td data-label="Total" class="px-6 py-6 text-right">
                     <span class="block text-[10px] text-neutral-300 font-bold -mb-1">Rp</span>
@@ -217,7 +222,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="9" class="text-center py-20">
+                <td colspan="8" class="text-center py-20">
                     <div class="flex flex-col items-center">
                         <iconify-icon icon="lucide:folder-search" class="text-5xl text-neutral-200 mb-2"></iconify-icon>
                         <p class="text-sm font-bold text-neutral-400 tracking-wide">Tidak ada data ditemukan</p>
