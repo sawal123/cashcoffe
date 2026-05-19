@@ -37,9 +37,8 @@ class Verifikasi extends Component
                 $lon1 = floatval(trim($coords[1]));
                 $lat2 = floatval($user->branch->latitude);
                 $lon2 = floatval($user->branch->longitude);
-                
                 $distance = $this->getDistance($lat1, $lon1, $lat2, $lon2);
-                $radius = $user->branch->radius_meter ?? 20;
+                $radius = $user->branch->radius ?? $user->branch->radius_meter ?? 20;
 
                 if ($distance > $radius) {
                     session()->flash('error', 'Anda berada di luar radius cabang (' . $radius . 'm). Jarak Anda: ' . round($distance) . 'm');
@@ -58,7 +57,10 @@ class Verifikasi extends Component
         if ($this->type === 'masuk') {
             // Kita sudah menangani pengecekan ganda di handleClockIn
             $filename = $this->storeImage($this->fotoBase64);
-            $this->handleClockIn($user, $tanggal_hari_ini, $filename, $this->lokasiStr);
+            $redirect = $this->handleClockIn($user, $tanggal_hari_ini, $filename, $this->lokasiStr);
+            if ($redirect) {
+                return $redirect;
+            }
         } else {
             if (!$absensi) {
                 session()->flash('error', 'Anda belum melakukan Clock-in untuk shift yang aktif atau semua shift hari ini sudah selesai.');
@@ -66,7 +68,10 @@ class Verifikasi extends Component
             }
 
             $filename = $this->storeImage($this->fotoBase64);
-            $this->handleClockOut($absensi, $filename, $this->lokasiStr);
+            $redirect = $this->handleClockOut($absensi, $filename, $this->lokasiStr);
+            if ($redirect) {
+                return $redirect;
+            }
         }
 
         return redirect()->to('/absen');
@@ -95,7 +100,7 @@ class Verifikasi extends Component
         // Cari semua plotting shift untuk user hari ini
         $allUserShifts = UserShift::with('shift')
             ->where('user_id', $user->id)
-            ->where('tanggal', $tanggal)
+            ->whereDate('tanggal', $tanggal)
             ->get();
 
         if ($allUserShifts->isEmpty()) {
@@ -107,7 +112,7 @@ class Verifikasi extends Component
         $availableShift = null;
         foreach ($allUserShifts as $us) {
             $alreadyClocked = Absensi::where('user_id', $user->id)
-                ->where('tanggal', $tanggal)
+                ->whereDate('tanggal', $tanggal)
                 ->where('shift_id', $us->shift_id)
                 ->exists();
 
@@ -136,6 +141,17 @@ class Verifikasi extends Component
         $jamMasukJadwal = $shift->jam_masuk;
         $maksimalTelat = $shift->maksimal_telat_menit ?? 60;
         $dendaTelat = $shift->denda_telat ?? 20000;
+
+        // LOGIKA BARU: Validasi Earliest Check-In (Maksimal N menit sebelum shift)
+        $waktuSekarang = \Carbon\Carbon::now();
+        $jamMasukShift = \Carbon\Carbon::parse($availableShift->tanggal)->copy()->setTimeFromTimeString($jamMasukJadwal);
+        $batasAwalMenit = $shift->batas_awal_absen_menit ?? 60;
+        $batasAwalAbsen = $jamMasukShift->copy()->subMinutes($batasAwalMenit);
+
+        if ($waktuSekarang->lt($batasAwalAbsen)) {
+            session()->flash('error', 'Gagal melakukan absensi. Anda hanya diperbolehkan absen masuk maksimal ' . $this->formatBatasMenit($batasAwalMenit) . ' sebelum shift dimulai.');
+            return redirect()->to('/absen/clock-in');
+        }
         
         // Cek jika ini Double Shift (baik via ID 3 atau flag is_double_shift)
         $isDouble = ($shift->id == 3 || $availableShift->is_double_shift);
@@ -219,8 +235,18 @@ class Verifikasi extends Component
         $user = Auth::user();
         $branchLat = $user->branch->latitude ?? -6.200000;
         $branchLng = $user->branch->longitude ?? 106.816666;
-        $branchRadius = $user->branch->radius_meter ?? 20;
+        $branchRadius = $user->branch->radius ?? $user->branch->radius_meter ?? 20;
 
         return view('livewire.absensi.verifikasi', compact('branchLat', 'branchLng', 'branchRadius'))->layout('layouts.absensi');
+    }
+
+    private function formatBatasMenit($menit)
+    {
+        if ($menit >= 60) {
+            $jam = floor($menit / 60);
+            $sisaMenit = $menit % 60;
+            return $jam . ' jam' . ($sisaMenit > 0 ? ' ' . $sisaMenit . ' menit' : '');
+        }
+        return $menit . ' menit';
     }
 }

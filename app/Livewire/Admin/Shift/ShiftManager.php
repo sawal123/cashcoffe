@@ -14,6 +14,7 @@ class ShiftManager extends Component
     public $nama_shift, $jam_masuk, $jam_keluar, $branch_id;
     public $denda_telat = 20000;
     public $maksimal_telat_menit = 60;
+    public $batas_awal_absen_menit = 60;
     
     public $shiftId;
     public $isEdit = false;
@@ -25,6 +26,7 @@ class ShiftManager extends Component
         'branch_id' => 'nullable|exists:branches,id',
         'denda_telat' => 'required|numeric|min:0',
         'maksimal_telat_menit' => 'required|integer|min:0',
+        'batas_awal_absen_menit' => 'required|integer|min:0',
     ];
 
     public function render()
@@ -36,7 +38,10 @@ class ShiftManager extends Component
 
     public function resetFields()
     {
-        $this->reset(['nama_shift', 'jam_masuk', 'jam_keluar', 'branch_id', 'denda_telat', 'maksimal_telat_menit', 'shiftId', 'isEdit']);
+        $this->reset(['nama_shift', 'jam_masuk', 'jam_keluar', 'branch_id', 'denda_telat', 'maksimal_telat_menit', 'batas_awal_absen_menit', 'shiftId', 'isEdit']);
+        $this->denda_telat = 20000;
+        $this->maksimal_telat_menit = 60;
+        $this->batas_awal_absen_menit = 60;
     }
 
     public function saveShift()
@@ -50,6 +55,7 @@ class ShiftManager extends Component
             'branch_id' => $this->branch_id ?: null,
             'denda_telat' => $this->denda_telat,
             'maksimal_telat_menit' => $this->maksimal_telat_menit,
+            'batas_awal_absen_menit' => $this->batas_awal_absen_menit,
         ];
 
         if ($this->isEdit) {
@@ -73,6 +79,7 @@ class ShiftManager extends Component
         $this->branch_id = $shift->branch_id;
         $this->denda_telat = $shift->denda_telat;
         $this->maksimal_telat_menit = $shift->maksimal_telat_menit;
+        $this->batas_awal_absen_menit = $shift->batas_awal_absen_menit ?? 60;
         $this->isEdit = true;
     }
 

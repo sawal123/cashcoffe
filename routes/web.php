@@ -1,10 +1,11 @@
 <?php
 
 use App\Exports\OrdersExport;
+use App\Http\Controllers\StruckController;
 use App\Livewire\Absensi\ClockIn as AbsensiClockIn;
+use App\Livewire\Absensi\History;
 use App\Livewire\Absensi\Home;
 use App\Livewire\Absensi\Login;
-use App\Livewire\Absensi\History;
 use App\Livewire\Absensi\Profile;
 use App\Livewire\Absensi\Verifikasi;
 use Illuminate\Http\Request;
@@ -12,7 +13,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
-use App\Http\Controllers\StruckController;
 
 Route::view('/', 'welcome');
 
@@ -35,7 +35,7 @@ Route::prefix('absen')
     });
 
 Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () {
-    
+
     Route::get('/dashboard', App\Livewire\Dashboard\Index::class)->name('dashboard.index');
 
     // Menu
@@ -58,11 +58,6 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     Route::get('/discount/{id}/edit', App\Livewire\Discount\CreateDiscount::class)->name('discount.edit');
     Route::get('/discount-approval', App\Livewire\Discount\ApprovalList::class)->name('discount-approval.index');
 
-    // Gudang
-    Route::get('/gudang', App\Livewire\Gudang\TableGudang::class)->name('gudang.index');
-    Route::get('/gudang/create', App\Livewire\Gudang\CreateGudang::class)->name('gudang.create');
-    Route::get('/gudang/{gudangId}/edit', App\Livewire\Gudang\CreateGudang::class)->name('gudang.edit');
-
     // Member
     Route::get('/member', App\Livewire\Member\TableMember::class)->name('member.index');
     Route::get('/member/create', App\Livewire\Member\CreateMember::class)->name('member.create');
@@ -79,31 +74,10 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     // Transaksi
     Route::get('/transaksi', App\Livewire\Transaksi\Transaksi::class)->name('transaksi.index');
 
-    // Riwayat Gudang
-    Route::get('/riwayat-gudang', App\Livewire\RiwayatGudang\TableRiwayat::class)->name('riwayat-gudang.index');
-
     // Stock Dapur
     Route::get('/stock-dapur', App\Livewire\Stock\StockDapur::class)->name('stock-dapur.index');
     Route::get('/stock-dapur/create', App\Livewire\Stock\StockDapurCreate::class)->name('stock-dapur.create');
     Route::get('/stock-dapur/{stockId}/edit', App\Livewire\Stock\StockDapurCreate::class)->name('stock-dapur.edit');
-
-    // Riwayat Stock
-    Route::get('/riwayat-stock', App\Livewire\Stock\RiwayatStock::class)->name('riwayat-stock.index');
-    Route::get('/riwayat-stock/create', App\Livewire\Stock\StockAdd::class)->name('riwayat-stock.create');
-    Route::get('/riwayat-stock/{stockId}/edit', App\Livewire\Stock\StockAdd::class)->name('riwayat-stock.edit');
-
-    // Absense
-    Route::get('/absense', App\Livewire\Absense\TableAbsense::class)->name('absense.index');
-    Route::get('/absense/requests', App\Livewire\Absense\ManageRequest::class)->name('absense.requests');
-    Route::get('/absense/schedule', App\Livewire\Admin\Shift\ShiftSchedule::class)->name('absense.schedule');
-    Route::get('/absense/shift-master', App\Livewire\Admin\Shift\ShiftManager::class)->name('absense.shift-master');
-    Route::get('/absense/{userId}', App\Livewire\Absense\ShowAbsense::class)->name('absense.show');
-
-    // User
-    Route::get('/user', App\Livewire\User\TableUser::class)->name('user.index');
-    Route::get('/user/create', App\Livewire\User\CreateUser::class)->name('user.create');
-    Route::get('/user/jabatan', App\Livewire\User\TableJabatan::class)->name('user.jabatan');
-    Route::get('/user/{userId}/edit', App\Livewire\User\CreateUser::class)->name('user.edit');
 
     // Asset Management
     Route::get('/asset', App\Livewire\Asset\Index::class)->name('asset.index');
@@ -126,6 +100,32 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
         Route::get('/variant-group', App\Livewire\Variant\TableVariantGroup::class)->name('variant-group.index');
         Route::get('/variant-option/{id}/ingredients', App\Livewire\Variant\ManageVariantIngredient::class)->name('variant-option.ingredients');
         Route::get('/setting', App\Livewire\Setting\Index::class)->name('setting.index');
+
+        // Absense
+        Route::get('/absense', App\Livewire\Absense\TableAbsense::class)->name('absense.index');
+        Route::get('/absense/requests', App\Livewire\Absense\ManageRequest::class)->name('absense.requests');
+        Route::get('/absense/schedule', App\Livewire\Admin\Shift\ShiftSchedule::class)->name('absense.schedule');
+        Route::get('/absense/shift-master', App\Livewire\Admin\Shift\ShiftManager::class)->name('absense.shift-master');
+        Route::get('/absense/{userId}', App\Livewire\Absense\ShowAbsense::class)->name('absense.show');
+
+        // Gudang
+        Route::get('/gudang', App\Livewire\Gudang\TableGudang::class)->name('gudang.index');
+        Route::get('/gudang/create', App\Livewire\Gudang\CreateGudang::class)->name('gudang.create');
+        Route::get('/gudang/{gudangId}/edit', App\Livewire\Gudang\CreateGudang::class)->name('gudang.edit');
+
+        // Riwayat Stock
+        Route::get('/riwayat-stock', App\Livewire\Stock\RiwayatStock::class)->name('riwayat-stock.index');
+        Route::get('/riwayat-stock/create', App\Livewire\Stock\StockAdd::class)->name('riwayat-stock.create');
+        Route::get('/riwayat-stock/{stockId}/edit', App\Livewire\Stock\StockAdd::class)->name('riwayat-stock.edit');
+
+        // User
+        Route::get('/user', App\Livewire\User\TableUser::class)->name('user.index');
+        Route::get('/user/create', App\Livewire\User\CreateUser::class)->name('user.create');
+        Route::get('/user/jabatan', App\Livewire\User\TableJabatan::class)->name('user.jabatan');
+        Route::get('/user/{userId}/edit', App\Livewire\User\CreateUser::class)->name('user.edit');
+
+        // Riwayat Gudang
+        Route::get('/riwayat-gudang', App\Livewire\RiwayatGudang\TableRiwayat::class)->name('riwayat-gudang.index');
     });
 
     Route::middleware(['role:manager'])->group(function () {
@@ -135,6 +135,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
 
 Route::post('/logout', function () {
     Auth::logout();
+
     return redirect('/login');
 })->name('logout');
 
@@ -152,5 +153,6 @@ Route::get('/reverse-geocode', function (Request $request) {
         'lat' => $request->lat,
         'lon' => $request->lon,
     ]);
+
     return $response->json();
 });
