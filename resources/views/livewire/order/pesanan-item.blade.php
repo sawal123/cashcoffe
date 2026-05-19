@@ -480,9 +480,9 @@
                 @if ($status !== 'dibatalkan' && $status !== 'selesai')
                     <button type="button" wire:click="{{ $submit }}"
                         class="w-full px-8 py-4 text-lg bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/30 font-bold transition-all active:scale-95"
-                        :disabled="$wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
-                                {{ $totalAfterDiscount }})" :class="($wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
-                                {{ $totalAfterDiscount }})) ? 'opacity-50 grayscale cursor-not-allowed' :
+                        :disabled="!$wire.nama_costumer || !$wire.metode_pembayaran || {{ count($pesanan) }} === 0 || ($wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
+                                {{ $totalAfterDiscount }}))" :class="(!$wire.nama_costumer || !$wire.metode_pembayaran || {{ count($pesanan) }} === 0 || ($wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
+                                {{ $totalAfterDiscount }}))) ? 'opacity-50 grayscale cursor-not-allowed' :
                             'hover:bg-blue-700 animate-pulse-slow'">
                         {{ $teks }} Pesanan
                     </button>

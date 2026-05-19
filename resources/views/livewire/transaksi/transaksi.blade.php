@@ -32,6 +32,30 @@
         </div>
     @endif
 
+    {{-- Sales Channel Stats --}}
+    @if (!empty($totalPerChannel))
+        <div class="mb-8">
+            <h3 class="text-[10px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-widest mb-3">Total per Sales Channel</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                @foreach ($totalPerChannel as $channel => $total)
+                    <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-2xl p-4 flex items-center justify-between shadow-sm hover:shadow transition-all group">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center">
+                                <iconify-icon icon="{{ strtolower($channel) == 'dine in' ? 'lucide:utensils' : (strtolower($channel) == 'take away' ? 'lucide:shopping-bag' : 'lucide:shopping-cart') }}" class="text-base"></iconify-icon>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-black text-neutral-400 dark:text-neutral-500 uppercase tracking-wider">{{ $channel }}</span>
+                                <span class="text-sm font-black text-neutral-800 dark:text-neutral-200">
+                                    Rp {{ number_format($total, 0, ',', '.') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Filters & Actions Bar --}}
     <div
         class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-3xl p-4 mb-8 shadow-sm">

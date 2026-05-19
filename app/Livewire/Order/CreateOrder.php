@@ -17,7 +17,6 @@ class CreateOrder extends Component
 {
     // Panggil Trait di sini
     use HandlesCartInput, HandlesOrderSubmit;
-
     use WithPagination;
 
     public $adminPassword = ''; // Menyimpan inputan password admin di modal
@@ -29,6 +28,7 @@ class CreateOrder extends Component
     public $orderId = null;
 
     public $title = 'Buat Pesanan Baru';
+
     public $backUrl = '/order';
 
     public $submit = 'saveOrder';
@@ -58,11 +58,13 @@ class CreateOrder extends Component
     public $discount_value;
 
     public $sales_channel_id = 1;
+
     public $salesChannels = [];
 
     public $perPage = 12;
 
     public $metode_pembayaran = null;
+
     public $cashMethodId = null;
 
     public $status = null;
@@ -107,7 +109,7 @@ class CreateOrder extends Component
         $this->mejas = Meja::all();
         $this->salesChannels = \App\Models\SalesChannel::where('is_active', true)->get();
         $this->pembayaran = \App\Models\PaymentMethod::where('is_active', true)->get();
-        
+
         $cashMethod = $this->pembayaran->firstWhere('kode_metode', 'tunai');
         $this->cashMethodId = $cashMethod ? $cashMethod->id : null;
     }
@@ -142,13 +144,13 @@ class CreateOrder extends Component
                 ->first();
 
             $menu = \App\Models\Menu::find($item['id']);
-            $hargaBase = ($tieredPrice) 
+            $hargaBase = ($tieredPrice)
                 ? (($tieredPrice->h_promo > 0) ? $tieredPrice->h_promo : $tieredPrice->harga)
                 : (($menu->h_promo > 0) ? $menu->h_promo : $menu->harga);
 
             // Update Variant Extra Price
             $extraPrice = 0;
-            if (!empty($item['selected_options'])) {
+            if (! empty($item['selected_options'])) {
                 $extraPrice = \App\Models\VariantPrice::whereIn('variant_option_id', $item['selected_options'])
                     ->where('price_tier_id', $priceTierId)
                     ->where('sales_channel_id', $this->sales_channel_id)
@@ -168,7 +170,7 @@ class CreateOrder extends Component
     {
         $discMessage = null;
         $discountValue = 0;
-        $result = null; 
+        $result = null;
         $itemDiscounts = []; // UI display
 
         $cekMember = $this->member ? Member::with('user')->where('phone', $this->member)->first() : null;
@@ -210,30 +212,34 @@ class CreateOrder extends Component
                     $discMessage = 'Diskon sudah mencapai batas penggunaan.';
                 } else {
                     $itemScopeDiscounts = 0;
-                    
+
                     // Loop pesanan u/ cek discount item/category
                     if ($disc->scope !== 'global') {
                         // lazy load items
                         $disc->loadMissing('discountItems');
-                        
+
                         // Pre-fetch all menus in cart to avoid N+1
                         $cartMenuIds = collect($this->pesanan)->pluck('id')->unique()->toArray();
                         $cartMenus = Menu::whereIn('id', $cartMenuIds)->get()->keyBy('id');
 
                         foreach ($this->pesanan as $key => $p) {
                             $menuDisplay = $cartMenus->get($p['id']);
-                            if(!$menuDisplay) continue;
-                            
+                            if (! $menuDisplay) {
+                                continue;
+                            }
+
                             $isEligible = false;
                             foreach ($disc->discountItems as $di) {
                                 if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menuDisplay->id) {
-                                    $isEligible = true; break;
+                                    $isEligible = true;
+                                    break;
                                 }
                                 if ($di->model_type === 'App\Models\Category' && $di->model_id == $menuDisplay->categories_id) {
-                                    $isEligible = true; break;
+                                    $isEligible = true;
+                                    break;
                                 }
                             }
-                            
+
                             if ($isEligible) {
                                 $potonganPerItem = 0;
                                 if ($disc->jenis_diskon === 'persentase') {
@@ -249,7 +255,7 @@ class CreateOrder extends Component
                                 $itemScopeDiscounts += $potonganPerItem;
                             }
                         }
-                        
+
                         $discountValue = $itemScopeDiscounts;
                         $discMessage = 'Diskon Terpilih (Item/Kategori) berhasil diterapkan.';
                     } else {
@@ -291,18 +297,18 @@ class CreateOrder extends Component
         if ($cekMember) {
             $memMessage = 'Member Tersedia ('.$cekMember->user->name.')';
             // $this->dispatch('showToast', message: $memMessage, type: 'success', title: 'Success');
-            
+
             // Get favorite items
             $memberFavorites = \App\Models\PesananItem::whereHas('pesanan', function ($q) use ($cekMember) {
                 $q->where('member_id', $cekMember->id)->where('status', 'selesai');
             })
-            ->select('menus_id', \Illuminate\Support\Facades\DB::raw('sum(qty) as total_qty'))
-            ->groupBy('menus_id')
-            ->orderByDesc('total_qty')
-            ->limit(3)
-            ->with('menu')
-            ->get();
-            
+                ->select('menus_id', \Illuminate\Support\Facades\DB::raw('sum(qty) as total_qty'))
+                ->groupBy('menus_id')
+                ->orderByDesc('total_qty')
+                ->limit(3)
+                ->with('menu')
+                ->get();
+
         } else {
             $memMessage = $this->member ? 'Member Tidak Tersedia ' : '';
         }
@@ -313,20 +319,20 @@ class CreateOrder extends Component
         $user = auth()->user();
         $priceTierId = $user->branch ? $user->branch->price_tier_id : (\App\Models\PriceTier::first()?->id ?? 1);
 
-        $categories = Category::whereHas('menus', function($q) use ($priceTierId, $user) {
+        $categories = Category::whereHas('menus', function ($q) use ($priceTierId) {
             $q->where('is_active', true)
-              ->where('nama_menu', 'like', '%'.$this->search.'%')
-              ->whereHas('menuPrices', function ($p) use ($priceTierId) {
-                  $p->where('price_tier_id', $priceTierId)
-                    ->where('sales_channel_id', $this->sales_channel_id);
-              });
+                ->where('nama_menu', 'like', '%'.$this->search.'%')
+                ->whereHas('menuPrices', function ($p) use ($priceTierId) {
+                    $p->where('price_tier_id', $priceTierId)
+                        ->where('sales_channel_id', $this->sales_channel_id);
+                });
         })->with([
             'menus' => function ($query) use ($priceTierId, $user) {
                 $query->where('is_active', true)
                     ->where('nama_menu', 'like', '%'.$this->search.'%')
                     ->whereHas('menuPrices', function ($q) use ($priceTierId) {
                         $q->where('price_tier_id', $priceTierId)
-                          ->where('sales_channel_id', $this->sales_channel_id);
+                            ->where('sales_channel_id', $this->sales_channel_id);
                     })
                     ->where(function ($q) use ($user) {
                         $q->whereNotExists(function ($sub) use ($user) {
@@ -337,9 +343,9 @@ class CreateOrder extends Component
                                 ->where('is_available', false);
                         });
                     })
-                    ->with(['variantGroups', 'menuPrices' => function($q) use ($priceTierId) {
+                    ->with(['variantGroups', 'menuPrices' => function ($q) use ($priceTierId) {
                         $q->where('price_tier_id', $priceTierId)
-                          ->where('sales_channel_id', $this->sales_channel_id);
+                            ->where('sales_channel_id', $this->sales_channel_id);
                     }]);
             },
         ])->get();
@@ -372,7 +378,7 @@ class CreateOrder extends Component
             'memberPoints' => $cekMember ? $cekMember->points : 0,
             'availableDiscountsList' => $availableDiscounts,
             'title' => $this->title,
-            'backUrl' => $this->backUrl
+            'backUrl' => $this->backUrl,
         ])->layout('layouts.app', ['title' => $this->title]);
     }
 }

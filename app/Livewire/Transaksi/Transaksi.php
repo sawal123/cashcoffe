@@ -23,6 +23,7 @@ class Transaksi extends Component
     public $dateTo;
     public $perPage = 20;
     public $totalPerMetode = [];
+    public $totalPerChannel = [];
     public $totalOmset = 0;
     protected $queryString = [
         'search' => ['except' => ''],
@@ -307,7 +308,7 @@ class Transaksi extends Component
 
             // 👉 JIKA USER PILIH TANGGAL
             ->when($this->dateFrom && $this->dateTo, function ($q) {
-                $q->whereBetween('created_at', [
+                $q->whereBetween('pesanans.created_at', [
                     Carbon::parse($this->dateFrom)->startOfDay(),
                     Carbon::parse($this->dateTo)->endOfDay(),
                 ]);
@@ -315,7 +316,7 @@ class Transaksi extends Component
 
             // 👉 DEFAULT: HARI INI
             ->when(!$this->dateFrom && !$this->dateTo, function ($q) {
-                $q->whereDate('created_at', Carbon::today());
+                $q->whereDate('pesanans.created_at', Carbon::today());
             });
 
         // Hitung total per metode pembayaran
@@ -325,6 +326,15 @@ class Transaksi extends Component
             ->selectRaw('payment_methods.nama_metode, SUM(total - discount_value) as total')
             ->groupBy('payment_methods.nama_metode')
             ->pluck('total', 'payment_methods.nama_metode')
+            ->toArray();
+
+        // Hitung total per sales channel
+        $this->totalPerChannel = $query->clone()
+            ->where('status', 'selesai')
+            ->join('sales_channels', 'pesanans.sales_channel_id', '=', 'sales_channels.id')
+            ->selectRaw('sales_channels.nama_channel, SUM(total - discount_value) as total')
+            ->groupBy('sales_channels.nama_channel')
+            ->pluck('total', 'sales_channels.nama_channel')
             ->toArray();
 
         // Hitung total omset keseluruhan
@@ -337,7 +347,7 @@ class Transaksi extends Component
                   ->orWhereNull('pesanans.payment_method_id');
             })
             ->sum(DB::raw('total - discount_value'));
-        $orders = $query->latest()->paginate($this->perPage);
+        $orders = $query->latest('pesanans.created_at')->paginate($this->perPage);
 
         return view('livewire.transaksi.transaksi', [
             'orders' => $orders

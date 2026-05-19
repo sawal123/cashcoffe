@@ -112,6 +112,21 @@ trait HandlesOrderSubmit
     {
         if (!$this->orderId) return;
 
+        if (empty($this->pesanan)) {
+            $this->dispatch('showToast', message: 'Pesanan masih kosong', type: 'error', title: 'Error');
+            return;
+        }
+
+        if (! $this->nama_costumer) {
+            $this->dispatch('showToast', message: 'Nama costumer tidak boleh kosong!', type: 'error', title: 'Error');
+            return;
+        }
+
+        if (! $this->metode_pembayaran) {
+            $this->dispatch('showToast', message: 'Metode pembayaran wajib dipilih!', type: 'error', title: 'Error');
+            return;
+        }
+
         DB::beginTransaction();
         try {
             $pesanan = Pesanan::with('items')->findOrFail($this->orderId);
@@ -240,6 +255,11 @@ trait HandlesOrderSubmit
 
         if (! $this->nama_costumer) {
             $this->dispatch('showToast', message: 'Nama costumer tidak boleh kosong!', type: 'error', title: 'Error');
+            return;
+        }
+
+        if (! $this->metode_pembayaran) {
+            $this->dispatch('showToast', message: 'Metode pembayaran wajib dipilih!', type: 'error', title: 'Error');
             return;
         }
 
