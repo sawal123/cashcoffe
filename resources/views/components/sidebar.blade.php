@@ -193,7 +193,8 @@
                 </a>
             </li>
             <li>
-                <a href="/absense" wire:navigate class="{{ request()->is('absense') ? 'active-page' : '' }}" data-exact-match>
+                <a href="/absense" wire:navigate class="{{ request()->is('absense') ? 'active-page' : '' }}"
+                    data-exact-match>
                     <iconify-icon icon="solar:user-id-bold" class="menu-icon"></iconify-icon>
                     <span>Monitoring Absensi</span>
                 </a>
@@ -260,6 +261,20 @@
                     class="{{ request()->is('menu-ingredient*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:chef-hat-broken" class="menu-icon"></iconify-icon>
                     <span>Komposisi Menu</span>
+                </a>
+            </li>
+            <li>
+                <a href="/sales-channel" wire:navigate
+                    class="{{ request()->is('sales-channel*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:tag-price-bold" class="menu-icon"></iconify-icon>
+                    <span>Sales Channel</span>
+                </a>
+            </li>
+            <li>
+                <a href="/payment-method" wire:navigate
+                    class="{{ request()->is('payment-method*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:card-2-bold" class="menu-icon"></iconify-icon>
+                    <span>Metode Pembayaran</span>
                 </a>
             </li>
             <li>

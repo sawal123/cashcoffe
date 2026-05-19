@@ -61,37 +61,43 @@
             />
         </div>
 
-        {{-- Section: Harga Per Tier --}}
+        {{-- Section: Harga Per Tier & Channel --}}
         <div class="col-span-12 mt-4">
             <h4 class="text-md font-bold text-neutral-800 dark:text-neutral-200 mb-4 border-b pb-2 flex items-center gap-2">
                 <iconify-icon icon="solar:tag-price-bold-duotone" class="text-xl text-blue-500"></iconify-icon>
-                Pengaturan Harga Jual (Berdasarkan Tier)
+                Pengaturan Harga Jual (Berdasarkan Tier & Sales Channel)
             </h4>
             <div class="grid grid-cols-12 gap-6">
                 @foreach ($tiers as $tier)
-                    <div class="md:col-span-12 lg:col-span-6 col-span-12 p-4 bg-neutral-100 dark:bg-neutral-800/50 rounded-2xl border border-neutral-200 dark:border-neutral-700">
-                        <div class="flex items-center justify-between mb-3">
-                            <span class="font-bold text-neutral-700 dark:text-neutral-300">{{ $tier->nama_tier }}</span>
-                            <span class="text-[10px] px-2 py-1 bg-blue-100 text-blue-600 rounded-lg font-bold">POS ACTIVE</span>
+                    <div class="md:col-span-12 col-span-12 p-4 bg-neutral-100 dark:bg-neutral-800/50 rounded-2xl border border-neutral-200 dark:border-neutral-700">
+                        <div class="flex items-center justify-between mb-4 border-b border-neutral-200 dark:border-neutral-700 pb-2">
+                            <span class="font-bold text-lg text-neutral-700 dark:text-neutral-300">Tier: {{ $tier->nama_tier }}</span>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <x-ui.input 
-                                label="Harga Jual" 
-                                type="number" 
-                                step="1"
-                                wire:model.lazy="tieredPrices.tier_{{ $tier->id }}.harga" 
-                                prefix="Rp" 
-                                placeholder="0" 
-                                required 
-                            />
-                            <x-ui.input 
-                                label="Harga Promo" 
-                                type="number" 
-                                step="1"
-                                wire:model.lazy="tieredPrices.tier_{{ $tier->id }}.h_promo" 
-                                prefix="Rp" 
-                                placeholder="0" 
-                            />
+                        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                            @foreach($salesChannels as $channel)
+                                <div class="p-3 bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-700">
+                                    <div class="font-bold text-sm text-neutral-600 dark:text-neutral-400 mb-2">Channel: {{ $channel->nama_channel }}</div>
+                                    <div class="grid grid-cols-1 gap-3">
+                                        <x-ui.input 
+                                            label="Harga Jual" 
+                                            type="number" 
+                                            step="1"
+                                            wire:model.lazy="tieredPrices.tier_{{ $tier->id }}.channel_{{ $channel->id }}.harga" 
+                                            prefix="Rp" 
+                                            placeholder="0" 
+                                            required 
+                                        />
+                                        <x-ui.input 
+                                            label="Harga Promo" 
+                                            type="number" 
+                                            step="1"
+                                            wire:model.lazy="tieredPrices.tier_{{ $tier->id }}.channel_{{ $channel->id }}.h_promo" 
+                                            prefix="Rp" 
+                                            placeholder="0" 
+                                        />
+                                    </div>
+                                </div>
+                            @endforeach
                         </div>
                     </div>
                 @endforeach

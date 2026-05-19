@@ -36,34 +36,38 @@ class TableOmset extends Component
     {
         // 🔹 Omset normal (bukan komplemen)
         $this->dataOmset = DB::table('pesanans')
+            ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
             ->select(
-                DB::raw('DATE(created_at) as tanggal'),
-                DB::raw('COUNT(id) as jumlah_pesanan'),
-                DB::raw('SUM(total) as total_omset'),
-                DB::raw('SUM(total_profit) as total_profit')
+                DB::raw('DATE(pesanans.created_at) as tanggal'),
+                DB::raw('COUNT(pesanans.id) as jumlah_pesanan'),
+                DB::raw('SUM(pesanans.total) as total_omset'),
+                DB::raw('SUM(pesanans.total_profit) as total_profit')
             )
-            ->whereNull('deleted_at')
-            ->where('status', 'selesai')
-            ->whereMonth('created_at', $this->bulan)
-            ->whereYear('created_at', $this->tahun)
-            ->where('metode_pembayaran', '!=', 'komplemen')
-            ->where('metode_pembayaran', '!=', 'dibatalkan')
+            ->whereNull('pesanans.deleted_at')
+            ->where('pesanans.status', 'selesai')
+            ->whereMonth('pesanans.created_at', $this->bulan)
+            ->whereYear('pesanans.created_at', $this->tahun)
+            ->where(function($q) {
+                $q->where('payment_methods.kode_metode', '!=', 'komplemen')
+                  ->orWhereNull('pesanans.payment_method_id');
+            })
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'desc')
             ->get();
 
         // 🔹 Data komplemen (metode pembayaran = 'komplemen')
         $this->dataKomplemen = DB::table('pesanans')
+            ->join('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
             ->select(
-                DB::raw('DATE(created_at) as tanggal'),
-                DB::raw('COUNT(id) as jumlah_komplemen'),
-                DB::raw('SUM(total) as total_komplemen'),
-                DB::raw('SUM(total_profit) as total_profit_komplemen')
+                DB::raw('DATE(pesanans.created_at) as tanggal'),
+                DB::raw('COUNT(pesanans.id) as jumlah_komplemen'),
+                DB::raw('SUM(pesanans.total) as total_komplemen'),
+                DB::raw('SUM(pesanans.total_profit) as total_profit_komplemen')
             )
-            ->where('status', 'selesai')
-            ->whereMonth('created_at', $this->bulan)
-            ->whereYear('created_at', $this->tahun)
-            ->where('metode_pembayaran', '=', 'komplemen')
+            ->where('pesanans.status', 'selesai')
+            ->whereMonth('pesanans.created_at', $this->bulan)
+            ->whereYear('pesanans.created_at', $this->tahun)
+            ->where('payment_methods.kode_metode', '=', 'komplemen')
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'desc')
             ->get();
@@ -76,7 +80,6 @@ class TableOmset extends Component
                 DB::raw('SUM(pesanan_items.qty) as jumlah_menu')
             )
             ->where('pesanans.status', 'selesai')
-            ->where('metode_pembayaran', '!=', 'dibatalkan')
             ->whereMonth('pesanans.created_at', $this->bulan)
             ->whereYear('pesanans.created_at', $this->tahun)
             ->groupBy('tanggal')

@@ -14,6 +14,16 @@
 
     {{-- Kiri: Produk --}}
     <div class="flex-1 min-w-0" id="menu">
+        {{-- Sales Channel Selection --}}
+        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+            @foreach($salesChannels as $channel)
+                <button wire:click="$set('sales_channel_id', {{ $channel->id }})" 
+                    class="px-6 py-2.5 rounded-full font-bold text-sm transition-all whitespace-nowrap {{ $sales_channel_id == $channel->id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700' }}">
+                    {{ $channel->nama_channel }}
+                </button>
+            @endforeach
+        </div>
+
         {{-- Search & Category Filter --}}
         <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-6 relative z-10">
             <div class="shrink-0">

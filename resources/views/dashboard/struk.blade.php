@@ -183,11 +183,11 @@
             </tr>
             <tr>
                 <td>Bayar</td>
-                <td class="right">{{ strtoupper($pesanan->metode_pembayaran) }}</td>
+                <td class="right">{{ $pesanan->paymentMethod ? strtoupper($pesanan->paymentMethod->nama_metode) : 'BELUM BAYAR' }}</td>
             </tr>
         </table>
 
-        @if ($pesanan->metode_pembayaran === 'tunai')
+        @if ($pesanan->paymentMethod && $pesanan->paymentMethod->kode_metode === 'tunai')
             <div class="separator"></div>
             <table>
                 <tr>

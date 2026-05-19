@@ -40,4 +40,9 @@ class VariantOption extends Model
             'ingredient_id'
         )->withPivot('qty')->withTimestamps();
     }
+
+    public function variantPrices()
+    {
+        return $this->hasMany(VariantPrice::class);
+    }
 }

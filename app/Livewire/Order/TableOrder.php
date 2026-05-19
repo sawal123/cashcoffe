@@ -47,7 +47,7 @@ class TableOrder extends Component
         $pesanan = Pesanan::with(['items', 'discount'])->findOrFail(base64_decode($id));
 
         // Jika belum pilih metode pembayaran, batalkan proses
-        if ($pesanan->metode_pembayaran === null) {
+        if ($pesanan->payment_method_id === null) {
             $this->dispatch('showToast', message: 'Metode pembayaran harus dipilih!', type: 'info', title: 'Info');
             return;
         }
@@ -149,6 +149,7 @@ class TableOrder extends Component
             'items.menus:id,nama_menu',
             'items.variants',
             'user:id,name',
+            'paymentMethod',
         ])->findOrFail($id);
 
         $this->selectedOrderItems = $this->detailOrder->items;
@@ -174,20 +175,24 @@ class TableOrder extends Component
     public function render()
     {
         $this->totalPerMetode = Pesanan::where('status', 'selesai')
-            ->whereNotNull('metode_pembayaran')
-            ->whereDate('created_at', Carbon::today())
-            ->selectRaw('metode_pembayaran, SUM(total - discount_value) as total')
-            ->groupBy('metode_pembayaran')
-            ->pluck('total', 'metode_pembayaran')
+            ->join('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
+            ->whereDate('pesanans.created_at', Carbon::today())
+            ->selectRaw('payment_methods.nama_metode, SUM(total - discount_value) as total')
+            ->groupBy('payment_methods.nama_metode')
+            ->pluck('total', 'payment_methods.nama_metode')
             ->toArray();
 
         $this->totalOmset = Pesanan::where('status', 'selesai')
-            ->where('metode_pembayaran', '!=', 'komplemen')
-            ->whereNotNull('metode_pembayaran')
-            ->whereDate('created_at', Carbon::today())
+            ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
+            ->where(function ($q) {
+                $q->where('payment_methods.kode_metode', '!=', 'komplemen')
+                  ->orWhereNull('pesanans.payment_method_id');
+            })
+            ->whereDate('pesanans.created_at', Carbon::today())
             ->sum(DB::raw('total - discount_value'));
         // $orders = $query->latest()->paginate($this->perPage);
         $order = Pesanan::query()
+            ->with(['salesChannel', 'user', 'paymentMethod'])
             ->whereDate('created_at', Carbon::today())
             ->where(function ($query) {
                 $query->where('kode', 'like', '%' . $this->search . '%')

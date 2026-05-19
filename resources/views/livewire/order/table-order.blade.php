@@ -42,6 +42,7 @@
         ['name' => '#', 'align' => 'center'],
         'Kode',
         'Nama Pelanggan',
+        ['name' => 'Tipe Order', 'align' => 'center'],
         ['name' => 'Status', 'align' => 'center'],
         'Metode',
         'Total',
@@ -60,6 +61,11 @@
                 <td data-label="Pelanggan" class="px-4 sm:px-6 py-4">
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ $item->nama ?: '-' }}</span>
                 </td>
+                <td data-label="Tipe Order" class="px-4 sm:px-6 py-4 text-center">
+                    <span class="px-2 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-200">
+                        {{ $item->salesChannel->nama_channel ?? 'Dine In' }}
+                    </span>
+                </td>
                 <td data-label="Status" class="px-4 sm:px-6 py-4 text-center">
                     @php
                         $statusClasses = [
@@ -74,7 +80,7 @@
                     </span>
                 </td>
                 <td data-label="Metode" class="px-4 sm:px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">
-                    {{ $item->metode_pembayaran ? ucwords($item->metode_pembayaran) : 'Belum Bayar' }}
+                    {{ $item->paymentMethod ? $item->paymentMethod->nama_metode : 'Belum Bayar' }}
                 </td>
                 <td data-label="Total" class="px-4 sm:px-6 py-4">
                     <span class="font-bold text-neutral-900 dark:text-white">Rp{{ number_format($item->total - $item->discount_value, 0, ',', '.') }}</span>
@@ -188,7 +194,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="9" class="text-center py-12 text-neutral-500">
+                <td colspan="10" class="text-center py-12 text-neutral-500">
                     <div class="flex flex-col items-center justify-center gap-3">
                         <iconify-icon icon="mingcute:ghost-line" class="text-4xl"></iconify-icon>
                         <span class="text-sm">Tidak ada pesanan ditemukan.</span>
@@ -233,14 +239,18 @@
                 </div>
 
                 {{-- Info Row --}}
-                <div class="grid grid-cols-2 gap-3 mb-5">
+                <div class="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
                     <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
                         <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Pelanggan</span>
                         <span class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $detailOrder->nama ?: '-' }}</span>
                     </div>
                     <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
+                        <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Tipe Order</span>
+                        <span class="text-sm font-bold text-indigo-600">{{ $detailOrder->salesChannel->nama_channel ?? 'Dine In' }}</span>
+                    </div>
+                    <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
                         <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Metode Bayar</span>
-                        <span class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ ucwords($detailOrder->metode_pembayaran ?? '-') }}</span>
+                        <span class="text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $detailOrder->paymentMethod ? $detailOrder->paymentMethod->nama_metode : '-' }}</span>
                     </div>
                     <div class="bg-neutral-50 dark:bg-neutral-900 rounded-2xl p-3">
                         <span class="text-[10px] font-bold text-neutral-400 uppercase tracking-widest block mb-1">Kasir</span>

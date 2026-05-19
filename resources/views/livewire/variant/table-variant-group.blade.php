@@ -152,20 +152,33 @@
                                 </button>
                             </div>
 
-                            <div class="space-y-4">
+                            <div class="space-y-6">
                                 @foreach($options as $index => $option)
-                                    <div class="flex gap-4 items-center animate-in fade-in slide-in-from-top-2 duration-300">
-                                        <div class="flex-1">
-                                            <x-ui.input wire:model="options.{{ $index }}.nama_opsi" placeholder="Nama Opsi" />
+                                    <div class="flex flex-col gap-3 p-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div class="flex justify-between items-center gap-4">
+                                            <div class="flex-1">
+                                                <x-ui.input wire:model="options.{{ $index }}.nama_opsi" placeholder="Nama Opsi" />
+                                            </div>
+                                            <button wire:click="removeOption({{ $index }})"
+                                                class="p-2 text-neutral-400 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20">
+                                                <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
+                                            </button>
                                         </div>
-                                        <div class="w-48">
-                                            <x-ui.input type="number" wire:model="options.{{ $index }}.extra_price" prefix="Rp"
-                                                placeholder="0" />
+                                        
+                                        {{-- Matrix Pricing --}}
+                                        <div class="mt-2 space-y-3">
+                                            <h5 class="text-xs font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-neutral-800 pb-2">Harga Tambahan (Berdasarkan Tier & Channel)</h5>
+                                            @foreach($tiers as $tier)
+                                                <div class="bg-neutral-50 dark:bg-neutral-800 p-3 rounded-xl">
+                                                    <div class="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Tier: {{ $tier->nama_tier }}</div>
+                                                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                                        @foreach($salesChannels as $channel)
+                                                            <x-ui.input type="number" label="{{ $channel->nama_channel }}" wire:model.lazy="options.{{ $index }}.prices.tier_{{ $tier->id }}.channel_{{ $channel->id }}" prefix="Rp" placeholder="0" />
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endforeach
                                         </div>
-                                        <button wire:click="removeOption({{ $index }})"
-                                            class="p-2 text-neutral-400 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20">
-                                            <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
-                                        </button>
                                     </div>
                                 @endforeach
                             </div>

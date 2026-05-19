@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 class Transaksi extends Component
 {
     use WithPagination;
-    public $pembayaran = ['tunai', 'qris', 'transfer', 'kartu', 'shopeefood', 'gofood', 'grabfood', 'komplemen'];
+    public $pembayaran = [];
     public $search = '';
     public $filterPembayaran = '';
     public $dateFrom;
@@ -35,6 +35,11 @@ class Transaksi extends Component
     public $status;
     public $detailOrder;
     public $metode_pembayaran;
+
+    public function mount()
+    {
+        $this->pembayaran = \App\Models\PaymentMethod::where('is_active', true)->get();
+    }
 
 
     public function updating($field)
@@ -58,11 +63,11 @@ class Transaksi extends Component
             'id',
             'kode',
             'status',
-            'metode_pembayaran'
+            'payment_method_id'
         )->findOrFail($id);
 
         $this->status = $this->selectedOrder->status;
-        $this->metode_pembayaran = $this->selectedOrder->metode_pembayaran;
+        $this->metode_pembayaran = $this->selectedOrder->payment_method_id;
 
         $this->dispatch('open-modal', name: 'edit-status-order');
     }
@@ -122,7 +127,7 @@ class Transaksi extends Component
         // =========================
         $pesanan->update([
             'status' => $newStatus,
-            'metode_pembayaran' => $this->metode_pembayaran,
+            'payment_method_id' => $this->metode_pembayaran ?: null,
         ]);
 
         if ($pesanan->status === 'dibatalkan') {
@@ -280,7 +285,7 @@ class Transaksi extends Component
     public function render()
     {
         $query = Pesanan::query()
-            ->with('user')
+            ->with(['user', 'paymentMethod'])
 
             ->when($this->search, function ($q) {
                 $q->where(function ($query) {
@@ -294,9 +299,9 @@ class Transaksi extends Component
 
             ->when($this->filterPembayaran, function ($q) {
                 if ($this->filterPembayaran === 'belum') {
-                    $q->whereNull('metode_pembayaran');
+                    $q->whereNull('payment_method_id');
                 } else {
-                    $q->where('metode_pembayaran', $this->filterPembayaran);
+                    $q->where('payment_method_id', $this->filterPembayaran);
                 }
             })
 
@@ -316,18 +321,21 @@ class Transaksi extends Component
         // Hitung total per metode pembayaran
         $this->totalPerMetode = $query->clone()
             ->where('status', 'selesai')
-            ->whereNotNull('metode_pembayaran')
-            ->selectRaw('metode_pembayaran, SUM(total - discount_value) as total')
-            ->groupBy('metode_pembayaran')
-            ->pluck('total', 'metode_pembayaran')
+            ->join('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
+            ->selectRaw('payment_methods.nama_metode, SUM(total - discount_value) as total')
+            ->groupBy('payment_methods.nama_metode')
+            ->pluck('total', 'payment_methods.nama_metode')
             ->toArray();
 
         // Hitung total omset keseluruhan
         $this->totalOmset = $query->clone()
             ->where('status', 'selesai')
             ->where('status', '!=', 'dibatalkan')
-            ->where('metode_pembayaran', '!=', 'komplemen')
-            ->whereNotNull('metode_pembayaran')
+            ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
+            ->where(function ($q) {
+                $q->where('payment_methods.kode_metode', '!=', 'komplemen')
+                  ->orWhereNull('pesanans.payment_method_id');
+            })
             ->sum(DB::raw('total - discount_value'));
         $orders = $query->latest()->paginate($this->perPage);
 

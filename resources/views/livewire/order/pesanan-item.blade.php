@@ -187,29 +187,26 @@
                 @foreach ($pembayaran as $pay)
                             @php
                                 $icon = 'mingcute:bank-card-line';
-                                if (strtolower($pay) == 'tunai') {
+                                if ($pay->kode_metode === 'tunai') {
                                     $icon = 'mingcute:wallet-line';
-                                }
-                                if (strtolower($pay) == 'qris') {
+                                } elseif ($pay->kode_metode === 'qris') {
                                     $icon = 'mingcute:qrcode-line';
-                                }
-                                if (strtolower($pay) == 'transfer') {
+                                } elseif ($pay->kode_metode === 'transfer') {
                                     $icon = 'mingcute:transfer-line';
-                                }
-                                if (strtolower($pay) == 'debit') {
+                                } elseif ($pay->kode_metode === 'debit' || $pay->kode_metode === 'kartu') {
                                     $icon = 'mingcute:credit-card-line';
                                 }
                             @endphp
                             <button type="button" @if ($loop->index >= 4) x-show="expanded" x-transition @endif
-                                wire:click="$set('metode_pembayaran','{{ $pay }}')"
-                                @click="if('{{ strtolower($pay) }}' === 'tunai') $dispatch('open-tunai-modal')"
+                                wire:click="$set('metode_pembayaran','{{ $pay->id }}')"
+                                @click="if('{{ $pay->kode_metode }}' === 'tunai') $dispatch('open-tunai-modal')"
                                 class="flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all duration-300 group
-                                        {{ $metode_pembayaran === $pay
+                                        {{ $metode_pembayaran == $pay->id
                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-95'
                     : 'bg-white dark:bg-neutral-800 border-neutral-100 dark:border-neutral-700 text-neutral-500 dark:text-neutral-400 hover:border-blue-300 dark:hover:border-blue-900 group-active:scale-95' }}">
                                 <iconify-icon icon="{{ $icon }}" class="text-xl mb-1"></iconify-icon>
                                 <span
-                                    class="text-[9px] font-black uppercase tracking-tighter text-center leading-none">{{ $pay }}</span>
+                                    class="text-[9px] font-black uppercase tracking-tighter text-center leading-none">{{ $pay->nama_metode }}</span>
                             </button>
                 @endforeach
             </div>
@@ -483,8 +480,8 @@
                 @if ($status !== 'dibatalkan' && $status !== 'selesai')
                     <button type="button" wire:click="{{ $submit }}"
                         class="w-full px-8 py-4 text-lg bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/30 font-bold transition-all active:scale-95"
-                        :disabled="$wire.metode_pembayaran === 'tunai' && (!$wire.uang_tunai || $wire.uang_tunai <
-                                {{ $totalAfterDiscount }})" :class="($wire.metode_pembayaran === 'tunai' && (!$wire.uang_tunai || $wire.uang_tunai <
+                        :disabled="$wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
+                                {{ $totalAfterDiscount }})" :class="($wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
                                 {{ $totalAfterDiscount }})) ? 'opacity-50 grayscale cursor-not-allowed' :
                             'hover:bg-blue-700 animate-pulse-slow'">
                         {{ $teks }} Pesanan

@@ -116,6 +116,8 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
 
     Route::middleware(['role:superadmin'])->group(function () {
         Route::get('/branch', App\Livewire\Branch\Index::class)->name('branch.index');
+        Route::get('/sales-channel', App\Livewire\SalesChannel\Index::class)->name('sales-channel.index');
+        Route::get('/payment-method', App\Livewire\PaymentMethod\Index::class)->name('payment-method.index');
         Route::get('/price-tier', App\Livewire\Tier\Index::class)->name('price-tier.index');
         Route::get('/category', App\Livewire\Category\TableCategory::class)->name('category.index');
         Route::get('/category/create', App\Livewire\Category\CategoryCreate::class)->name('category.create');

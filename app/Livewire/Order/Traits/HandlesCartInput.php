@@ -35,6 +35,7 @@ trait HandlesCartInput
 
         $tieredPrice = \App\Models\MenuPrice::where('menu_id', $id)
             ->where('price_tier_id', $priceTierId)
+            ->where('sales_channel_id', $this->sales_channel_id)
             ->first();
 
         $harga = ($tieredPrice) 
@@ -114,7 +115,13 @@ trait HandlesCartInput
         }
 
         if (count($allSelectedOptionIds) > 0) {
-            $total = \App\Models\VariantOption::whereIn('id', $allSelectedOptionIds)->sum('extra_price');
+            $user = Auth::user();
+            $priceTierId = $user->branch ? $user->branch->price_tier_id : 1;
+            
+            $total = \App\Models\VariantPrice::whereIn('variant_option_id', $allSelectedOptionIds)
+                ->where('price_tier_id', $priceTierId)
+                ->where('sales_channel_id', $this->sales_channel_id)
+                ->sum('extra_price');
         }
 
         $this->totalExtraPrice = (int) $total;
@@ -233,7 +240,11 @@ trait HandlesCartInput
 
     public function getIsCashProperty()
     {
-        return $this->metode_pembayaran === 'tunai';
+        if (!$this->metode_pembayaran) {
+            return false;
+        }
+        $pm = \App\Models\PaymentMethod::find($this->metode_pembayaran);
+        return $pm && $pm->kode_metode === 'tunai';
     }
 
 

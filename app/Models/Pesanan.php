@@ -9,8 +9,25 @@ use App\Traits\BelongsToBranch;
 class Pesanan extends Model
 {
     use SoftDeletes, BelongsToBranch;
-    //
-    protected $guarded = [];
+
+    protected $fillable = [
+        'kode',
+        'nama',
+        'user_id',
+        'mejas_id',
+        'discount_id',
+        'status',
+        'metode_pembayaran',
+        'payment_method_id',
+        'sales_channel_id',
+        'total',
+        'total_profit',
+        'discount_value',
+        'catatan',
+        'uang_tunai',
+        'kembalian'
+    ];
+
     public function items()
     {
         return $this->hasMany(PesananItem::class, 'pesanans_id');
@@ -31,5 +48,15 @@ class Pesanan extends Model
     public function member()
     {
         return $this->belongsTo(Member::class, 'member_id');
+    }
+
+    public function salesChannel()
+    {
+        return $this->belongsTo(SalesChannel::class, 'sales_channel_id');
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
     }
 }

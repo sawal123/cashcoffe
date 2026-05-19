@@ -13,7 +13,7 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping
     public function collection()
     {
         // Kamu bisa ubah query sesuai kebutuhan, misalnya hanya status "selesai"
-        return Pesanan::where('status', 'selesai')
+        return Pesanan::with('paymentMethod')->where('status', 'selesai')
             ->latest()
             ->get();
     }
@@ -37,7 +37,7 @@ class OrdersExport implements FromCollection, WithHeadings, WithMapping
             $order->kode,
             $order->nama ?? '-',
             ucfirst($order->status),
-            ucfirst($order->metode_pembayaran ?? 'Belum Bayar'),
+            ucfirst($order->paymentMethod->nama_metode ?? 'Belum Bayar'),
             'Rp ' . number_format($order->total - $order->discount_value, 0, ',', '.'),
             $order->user->name ?? '-',
             $order->created_at->format('d M Y | H:i'),

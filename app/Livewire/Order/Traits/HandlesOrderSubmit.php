@@ -20,7 +20,7 @@ trait HandlesOrderSubmit
 
         $pesanan = Pesanan::with(['items.menu', 'items.variants', 'discount'])->findOrFail($id);
         $this->mejas_id = $pesanan->mejas_id;
-        $this->metode_pembayaran = $pesanan->metode_pembayaran;
+        $this->metode_pembayaran = $pesanan->payment_method_id;
         $this->status = $pesanan->status;
 
         $this->discountId = $pesanan->discount_id;
@@ -207,9 +207,10 @@ trait HandlesOrderSubmit
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
                 'member_id' => $this->member ? (\App\Models\Member::where('phone', $this->member)->value('id')) : null,
-                'metode_pembayaran' => $this->metode_pembayaran ?? null,
+                'payment_method_id' => $this->metode_pembayaran ?: null,
                 'discount_id' => $this->discount_id,
                 'discount_value' => $discountAmount,
+                'sales_channel_id' => $this->sales_channel_id,
                 'total' => $total,
                 'total_profit' => $totalProfit,
                 'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
@@ -256,7 +257,8 @@ trait HandlesOrderSubmit
                 'member_id' => $this->member ? (\App\Models\Member::where('phone', $this->member)->value('id')) : null,
                 'discount_id' => $this->discountId,
                 'discount_value' => 0,
-                'metode_pembayaran' => $this->metode_pembayaran ?? null,
+                'payment_method_id' => $this->metode_pembayaran ?: null,
+                'sales_channel_id' => $this->sales_channel_id,
                 'total' => 0,
                 'total_profit' => 0,
                 'catatan' => null,
@@ -363,6 +365,7 @@ trait HandlesOrderSubmit
                 'discount_id' => $this->discountId,
                 'nama' => $this->nama_costumer,
                 'discount_value' => $discountAmount,
+                'sales_channel_id' => $this->sales_channel_id,
                 'total' => $total,
                 'total_profit' => $totalProfit,
                 'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,

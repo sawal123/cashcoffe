@@ -47,7 +47,7 @@ class CreateOrder extends Component
 
     public $pesanan = [];
 
-    public $pembayaran = ['tunai', 'qris', 'transfer', 'kartu', 'shopeefood', 'gofood', 'grabfood', 'komplemen'];
+    public $pembayaran = [];
 
     public $mejas_id;
 
@@ -57,9 +57,13 @@ class CreateOrder extends Component
 
     public $discount_value;
 
+    public $sales_channel_id = 1;
+    public $salesChannels = [];
+
     public $perPage = 12;
 
     public $metode_pembayaran = null;
+    public $cashMethodId = null;
 
     public $status = null;
 
@@ -101,6 +105,11 @@ class CreateOrder extends Component
             $this->editOrder(base64_decode($this->orderId));
         }
         $this->mejas = Meja::all();
+        $this->salesChannels = \App\Models\SalesChannel::where('is_active', true)->get();
+        $this->pembayaran = \App\Models\PaymentMethod::where('is_active', true)->get();
+        
+        $cashMethod = $this->pembayaran->firstWhere('kode_metode', 'tunai');
+        $this->cashMethodId = $cashMethod ? $cashMethod->id : null;
     }
 
     public function updatedMember($value)
@@ -114,9 +123,40 @@ class CreateOrder extends Component
         }
     }
 
-    public function updatingSearch()
+    public function updatedSearch()
     {
         $this->resetPage();
+    }
+
+    public function updatedSalesChannelId()
+    {
+        // Re-calculate cart prices when sales channel changes
+        $user = auth()->user();
+        $priceTierId = $user->branch ? $user->branch->price_tier_id : 1;
+
+        foreach ($this->pesanan as $key => $item) {
+            // Update Base Price
+            $tieredPrice = \App\Models\MenuPrice::where('menu_id', $item['id'])
+                ->where('price_tier_id', $priceTierId)
+                ->where('sales_channel_id', $this->sales_channel_id)
+                ->first();
+
+            $menu = \App\Models\Menu::find($item['id']);
+            $hargaBase = ($tieredPrice) 
+                ? (($tieredPrice->h_promo > 0) ? $tieredPrice->h_promo : $tieredPrice->harga)
+                : (($menu->h_promo > 0) ? $menu->h_promo : $menu->harga);
+
+            // Update Variant Extra Price
+            $extraPrice = 0;
+            if (!empty($item['selected_options'])) {
+                $extraPrice = \App\Models\VariantPrice::whereIn('variant_option_id', $item['selected_options'])
+                    ->where('price_tier_id', $priceTierId)
+                    ->where('sales_channel_id', $this->sales_channel_id)
+                    ->sum('extra_price');
+            }
+
+            $this->pesanan[$key]['harga'] = (int) ($hargaBase + $extraPrice);
+        }
     }
 
     public function updatingSelectedCategoryId()
@@ -277,14 +317,16 @@ class CreateOrder extends Component
             $q->where('is_active', true)
               ->where('nama_menu', 'like', '%'.$this->search.'%')
               ->whereHas('menuPrices', function ($p) use ($priceTierId) {
-                  $p->where('price_tier_id', $priceTierId);
+                  $p->where('price_tier_id', $priceTierId)
+                    ->where('sales_channel_id', $this->sales_channel_id);
               });
         })->with([
             'menus' => function ($query) use ($priceTierId, $user) {
                 $query->where('is_active', true)
                     ->where('nama_menu', 'like', '%'.$this->search.'%')
                     ->whereHas('menuPrices', function ($q) use ($priceTierId) {
-                        $q->where('price_tier_id', $priceTierId);
+                        $q->where('price_tier_id', $priceTierId)
+                          ->where('sales_channel_id', $this->sales_channel_id);
                     })
                     ->where(function ($q) use ($user) {
                         $q->whereNotExists(function ($sub) use ($user) {
@@ -296,7 +338,8 @@ class CreateOrder extends Component
                         });
                     })
                     ->with(['variantGroups', 'menuPrices' => function($q) use ($priceTierId) {
-                        $q->where('price_tier_id', $priceTierId);
+                        $q->where('price_tier_id', $priceTierId)
+                          ->where('sales_channel_id', $this->sales_channel_id);
                     }]);
             },
         ])->get();

@@ -17,18 +17,33 @@ class Index extends Component
     public function render()
     {
         $omset = Pesanan::where('status', 'selesai')
-            ->where('metode_pembayaran', '!=', 'komplemen')
-            ->whereDate('created_at', Carbon::today())
-            ->sum('total');
+            ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
+            ->where(function($q) {
+                $q->where('payment_methods.kode_metode', '!=', 'komplemen')
+                  ->orWhereNull('pesanans.payment_method_id');
+            })
+            ->whereDate('pesanans.created_at', Carbon::today())
+            ->sum('pesanans.total');
 
         $sellMenu = PesananItem::whereHas('pesanan', function ($query) {
             $query->where('status', 'selesai')
-                ->where('metode_pembayaran', '!=', 'komplemen')
+                ->where(function($q) {
+                    $q->whereHas('paymentMethod', function($pm) {
+                        $pm->where('kode_metode', '!=', 'komplemen');
+                    })->orWhereNull('payment_method_id');
+                })
                 ->whereDate('created_at', Carbon::today());
         })->where('qty', '>', 0)
             ->sum('qty');
 
-        $totalOrder = Pesanan::where('status', 'selesai')->where('metode_pembayaran', '!=', 'komplemen')->whereDate('created_at', Carbon::today())->count();
+        $totalOrder = Pesanan::where('status', 'selesai')
+            ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
+            ->where(function($q) {
+                $q->where('payment_methods.kode_metode', '!=', 'komplemen')
+                  ->orWhereNull('pesanans.payment_method_id');
+            })
+            ->whereDate('pesanans.created_at', Carbon::today())
+            ->count();
         $proses = Pesanan::where('status', '!=', 'selesai')->where('status', '!=', 'dibatalkan')->whereDate('created_at', Carbon::today())->count();
         
         $cards = [
@@ -59,14 +74,14 @@ class Index extends Component
         ];
 
         $omsetPerTanggal = DB::table('pesanans')
-            ->whereNull('deleted_at')
-            ->where('status', 'selesai')
-            ->whereNotNull('metode_pembayaran')
-            ->where('metode_pembayaran', '!=', 'komplemen')
-            ->where('created_at', '>=', now()->subDays(9)->startOfDay())
+            ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
+            ->whereNull('pesanans.deleted_at')
+            ->where('pesanans.status', 'selesai')
+            ->where('payment_methods.kode_metode', '!=', 'komplemen')
+            ->where('pesanans.created_at', '>=', now()->subDays(9)->startOfDay())
             ->selectRaw('
-                DATE(created_at) as tanggal,
-                SUM(total - discount_value) as omset
+                DATE(pesanans.created_at) as tanggal,
+                SUM(pesanans.total - pesanans.discount_value) as omset
             ')
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'asc')

@@ -12,10 +12,11 @@ class Create extends Component
     use WithFileUploads;
     public $nama_menu, $categories_id, $is_active = false, $deskripsi, $gambar;
     public $h_pokok;
-    public $tieredPrices = []; // [tier_id => ['harga' => X, 'h_promo' => Y]]
+    public $tieredPrices = []; // [tier_id => [channel_id => ['harga' => X, 'h_promo' => Y]]]
     public $menuId = null, $gambarUrl = null;
     public $title = 'Tambah Menu Baru';
     public $backUrl = '/menu';
+    public $salesChannels = [];
 
     public function updatedGambar()
     {
@@ -32,8 +33,8 @@ class Create extends Component
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'gambar' => 'nullable|image|max:1024',
-            'tieredPrices.*.harga' => 'required|numeric|min:0',
-            'tieredPrices.*.h_promo' => 'nullable|numeric|min:0',
+            'tieredPrices.*.*.harga' => 'required|numeric|min:0',
+            'tieredPrices.*.*.h_promo' => 'nullable|numeric|min:0',
         ]);
         // dd($this->gambar);
         try {
@@ -51,22 +52,26 @@ class Create extends Component
                 'gambar'       => $gambarPath,
             ]);
 
-            // Simpan Harga Bertingkat
-            foreach ($this->tieredPrices as $key => $priceData) {
-                $tierId = str_replace('tier_', '', $key);
-                \App\Models\MenuPrice::create([
-                    'menu_id' => $menu->id,
-                    'price_tier_id' => $tierId,
-                    'harga' => (int) round($priceData['harga'] ?? 0),
-                    'h_promo' => (int) round($priceData['h_promo'] ?? 0),
-                ]);
+            // Simpan Harga Bertingkat & Sales Channel
+            foreach ($this->tieredPrices as $tierKey => $channelData) {
+                $tierId = str_replace('tier_', '', $tierKey);
+                foreach ($channelData as $channelKey => $priceData) {
+                    $channelId = str_replace('channel_', '', $channelKey);
+                    \App\Models\MenuPrice::create([
+                        'menu_id' => $menu->id,
+                        'price_tier_id' => $tierId,
+                        'sales_channel_id' => $channelId,
+                        'harga' => (int) round($priceData['harga'] ?? 0),
+                        'h_promo' => (int) round($priceData['h_promo'] ?? 0),
+                    ]);
+                }
             }
             $this->dispatch('refresh-menu');
             $this->dispatch('reset-upload');
             $this->dispatch('showToast', message: 'Menu Berhasil Dibuat', type: 'success', title: 'Success');
             $this->resetForm();
         } catch (\Exception $e) {
-            Log::error('Gagal simpan menu: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Gagal simpan menu: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat menyimpan menu.');
         }
     }
@@ -84,8 +89,8 @@ class Create extends Component
             'is_active' => 'boolean',
             'deskripsi' => 'nullable|string',
             'gambar' => 'nullable|image|max:1024',
-            'tieredPrices.*.harga' => 'required|numeric|min:0',
-            'tieredPrices.*.h_promo' => 'nullable|numeric|min:0',
+            'tieredPrices.*.*.harga' => 'required|numeric|min:0',
+            'tieredPrices.*.*.h_promo' => 'nullable|numeric|min:0',
         ]);
 
         try {
@@ -109,22 +114,29 @@ class Create extends Component
                 'deskripsi'    => $this->deskripsi,
             ]);
 
-            // Sync Harga Bertingkat
-            foreach ($this->tieredPrices as $key => $priceData) {
-                $tierId = str_replace('tier_', '', $key);
-                \App\Models\MenuPrice::updateOrCreate(
-                    ['menu_id' => $menu->id, 'price_tier_id' => $tierId],
-                    [
-                        'harga' => (int) round($priceData['harga'] ?? 0),
-                        'h_promo' => (int) round($priceData['h_promo'] ?? 0),
-                    ]
-                );
+            // Sync Harga Bertingkat & Sales Channel
+            foreach ($this->tieredPrices as $tierKey => $channelData) {
+                $tierId = str_replace('tier_', '', $tierKey);
+                foreach ($channelData as $channelKey => $priceData) {
+                    $channelId = str_replace('channel_', '', $channelKey);
+                    \App\Models\MenuPrice::updateOrCreate(
+                        [
+                            'menu_id' => $menu->id, 
+                            'price_tier_id' => $tierId,
+                            'sales_channel_id' => $channelId
+                        ],
+                        [
+                            'harga' => (int) round($priceData['harga'] ?? 0),
+                            'h_promo' => (int) round($priceData['h_promo'] ?? 0),
+                        ]
+                    );
+                }
             }
             $this->dispatch('refresh-menu');
             // $this->dispatch('reset-upload');
             $this->dispatch('showToast', message: 'Menu Berhasil Diupdate', type: 'success', title: 'Success');
         } catch (\Exception $e) {
-            Log::error('Gagal update menu: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Gagal update menu: ' . $e->getMessage());
             session()->flash('error', 'Terjadi kesalahan saat mengupdate menu.');
         }
     }
@@ -133,10 +145,13 @@ class Create extends Component
     {
         $this->hidden = !$this->gambarUrl ? 'hidden' : '';
         $tiers = \App\Models\PriceTier::all();
+        $this->salesChannels = \App\Models\SalesChannel::where('is_active', true)->get();
 
-        // Inisialisasi tieredPrices dengan tier yang ada
+        // Inisialisasi tieredPrices dengan tier & channel yang ada
         foreach ($tiers as $tier) {
-            $this->tieredPrices['tier_' . $tier->id] = ['harga' => 0, 'h_promo' => 0];
+            foreach ($this->salesChannels as $channel) {
+                $this->tieredPrices['tier_' . $tier->id]['channel_' . $channel->id] = ['harga' => 0, 'h_promo' => 0];
+            }
         }
 
         if ($menuId) {
@@ -151,14 +166,12 @@ class Create extends Component
                 $this->deskripsi = $menu->deskripsi;
 
                 // Load existing prices from menu_prices
-                foreach ($tiers as $tier) {
-                    $mp = $menu->menuPrices()->where('price_tier_id', $tier->id)->first();
-                    if ($mp) {
-                        $this->tieredPrices['tier_' . $tier->id] = [
-                            'harga' => (int) $mp->harga,
-                            'h_promo' => (int) $mp->h_promo,
-                        ];
-                    }
+                $existingPrices = $menu->menuPrices()->get();
+                foreach ($existingPrices as $mp) {
+                    $this->tieredPrices['tier_' . $mp->price_tier_id]['channel_' . $mp->sales_channel_id] = [
+                        'harga' => (int) $mp->harga,
+                        'h_promo' => (int) $mp->h_promo,
+                    ];
                 }
 
                 if ($menu->gambar) {
@@ -179,8 +192,11 @@ class Create extends Component
         $this->h_pokok = '';
         
         // Reset tiered prices
-        foreach ($this->tieredPrices as $key => $val) {
-            $this->tieredPrices[$key] = ['harga' => 0, 'h_promo' => 0];
+        $tiers = \App\Models\PriceTier::all();
+        foreach ($tiers as $tier) {
+            foreach ($this->salesChannels as $channel) {
+                $this->tieredPrices['tier_' . $tier->id]['channel_' . $channel->id] = ['harga' => 0, 'h_promo' => 0];
+            }
         }
     }
     public function render()
