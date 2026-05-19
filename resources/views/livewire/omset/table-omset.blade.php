@@ -6,7 +6,8 @@
     <x-toast />
     <div class="space-y-6">
         {{-- CARD TOTAL BULANAN --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+            {{-- Omset Card --}}
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
@@ -21,13 +22,14 @@
                 </p>
             </div>
 
+            {{-- Profit Estimasi Card --}}
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
                         <iconify-icon icon="mingcute:high-light" class="text-xl"></iconify-icon>
                     </div>
                     <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
-                        Profit Bulan Ini
+                        Profit Estimasi
                     </h4>
                 </div>
                 <p class="text-2xl font-bold text-green-600 dark:text-green-400">
@@ -35,17 +37,48 @@
                 </p>
             </div>
 
+            {{-- Komplemen Card --}}
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
                         <iconify-icon icon="mingcute:gift-line" class="text-xl"></iconify-icon>
                     </div>
                     <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
-                        Komplemen Bulan Ini
+                        Komplemen
                     </h4>
                 </div>
                 <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">
                     Rp {{ number_format($totalKomplemen, 0, ',', '.') }}
+                </p>
+            </div>
+
+            {{-- Pengeluaran Card --}}
+            <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                        <iconify-icon icon="mingcute:bank-card-line" class="text-xl"></iconify-icon>
+                    </div>
+                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                        Pengeluaran
+                    </h4>
+                </div>
+                <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+                    Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}
+                </p>
+            </div>
+
+            {{-- Profit Bersih Card --}}
+            <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
+                <div class="flex items-center gap-4 mb-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                        <iconify-icon icon="mingcute:currency-dollar-2-line" class="text-xl"></iconify-icon>
+                    </div>
+                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                        Profit Bersih
+                    </h4>
+                </div>
+                <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    Rp {{ number_format($netProfit, 0, ',', '.') }}
                 </p>
             </div>
         </div>
@@ -77,8 +110,10 @@
             ['name' => 'Pesanan', 'align' => 'center'],
             ['name' => 'Menu', 'align' => 'center'],
             ['name' => 'Komplemen', 'align' => 'center'],
+            'Pengeluaran',
             'Omset Total',
-            'Estimated Profit'
+            'Estimated Profit',
+            'Nett Profit'
         ]">
             @forelse ($dataOmset as $index => $item)
                 <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
@@ -99,6 +134,11 @@
                             {{ number_format($item->total_komplemen, 0, ',', '.') }}
                         </span>
                     </td>
+                    <td data-label="Pengeluaran" class="px-6 py-4">
+                        <span class="font-bold text-red-600 dark:text-red-400">
+                            Rp {{ number_format($item->total_pengeluaran, 0, ',', '.') }}
+                        </span>
+                    </td>
                     <td data-label="Omset Total" class="px-6 py-4">
                         <span class="font-bold text-neutral-900 dark:text-white">
                             Rp {{ number_format($item->total_omset, 0, ',', '.') }}
@@ -109,10 +149,15 @@
                             Rp {{ number_format($item->total_profit, 0, ',', '.') }}
                         </span>
                     </td>
+                    <td data-label="Nett Profit" class="px-6 py-4">
+                        <span class="font-bold {{ $item->net_profit >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400' }}">
+                            Rp {{ number_format($item->net_profit, 0, ',', '.') }}
+                        </span>
+                    </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="7" class="text-center py-12 text-neutral-500">
+                    <td colspan="9" class="text-center py-12 text-neutral-500">
                         <div class="flex flex-col items-center justify-center gap-3">
                             <iconify-icon icon="mingcute:ghost-line" class="text-4xl"></iconify-icon>
                             <span class="text-sm">Tidak ada data omset untuk bulan ini.</span>

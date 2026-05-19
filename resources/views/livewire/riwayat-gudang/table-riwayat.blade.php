@@ -4,7 +4,8 @@
         <div class="flex gap-2">
             <x-droppage perPage="{{ $perPage }}" />
             <div class="sm:w-[300px] w-full">
-                <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari nama bahan..." class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
+                <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari nama bahan..."
+                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
             </div>
         </div>
 
@@ -46,11 +47,13 @@
                 </td>
                 <td data-label="Tipe" class="px-6 py-4 text-center">
                     @if ($item->tipe === 'masuk')
-                        <span class="px-3 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
+                        <span
+                            class="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-200 border border-emerald-100 dark:border-emerald-800 text-[10px] font-black uppercase tracking-widest">
                             MASUK
                         </span>
                     @else
-                        <span class="px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-100 text-[10px] font-black uppercase tracking-widest">
+                        <span
+                            class="px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-900 text-rose-600 dark:text-rose-200 border border-rose-100 dark:border-rose-800 text-[10px] font-black uppercase tracking-widest">
                             KELUAR
                         </span>
                     @endif
@@ -76,7 +79,8 @@
                 <td data-label="Aksi" class="px-6 py-4">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/gudang/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                        <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id) ) }} })" />
+                        <x-ui.action-delete
+                            @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
                     </div>
                 </td>
             </tr>
@@ -99,7 +103,8 @@
     {{-- Modal Delete --}}
     <x-mdal name="confirm-delete">
         <div class="px-6 py-6 text-center">
-            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
+            <div
+                class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
                 <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
             </div>
 
@@ -114,7 +119,9 @@
                     Batal
                 </button>
 
-                <x-ui.button type="button" color="danger" @click="$wire.deleteRiwayat(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })" class="!px-5 !py-2.5">
+                <x-ui.button type="button" color="danger"
+                    @click="$wire.deleteRiwayat(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })"
+                    class="!px-5 !py-2.5">
                     Ya, Hapus
                 </x-ui.button>
             </div>

@@ -81,7 +81,7 @@
                 </td>
                 <td data-label="Status" class="px-4 sm:px-6 py-4 text-center">
                     <span
-                        class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-red-100 text-red-700 border-red-200' }}">
+                        class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400' }}">
                         {{ $item->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>

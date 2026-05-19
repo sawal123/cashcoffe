@@ -17,11 +17,11 @@
         </div>
 
         @hasrole('superadmin')
-            <div class="flex justify-end gap-2">
-                <x-ui.button wire:click="openModal" icon="mingcute:add-circle-line">
-                    Tambah Aset
-                </x-ui.button>
-            </div>
+        <div class="flex justify-end gap-2">
+            <x-ui.button wire:click="openModal" icon="mingcute:add-circle-line">
+                Tambah Aset
+            </x-ui.button>
+        </div>
         @endhasrole
     </div>
 
@@ -58,21 +58,23 @@
                     </span>
                 </td>
                 <td data-label="Kategori" class="px-4 sm:px-6 py-4">
-                    <span class="text-xs font-semibold px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+                    <span
+                        class="text-xs font-semibold px-2 py-1 rounded-lg bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
                         {{ $item->kategori }}
                     </span>
                 </td>
                 <td data-label="Kondisi" class="px-4 sm:px-6 py-4 text-center">
                     @php
                         $kondisiClasses = [
-                            'Baik' => 'bg-green-100 text-green-700 border-green-200',
-                            'Rusak Ringan' => 'bg-amber-100 text-amber-700 border-amber-200',
-                            'Rusak Berat' => 'bg-rose-100 text-rose-700 border-rose-200',
-                            'Dalam Perbaikan' => 'bg-blue-100 text-blue-700 border-blue-200',
+                            'Baik' => 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400',
+                            'Rusak Ringan' => 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400',
+                            'Rusak Berat' => 'bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/30 dark:text-rose-400',
+                            'Dalam Perbaikan' => 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400',
                         ];
-                        $kondisiClass = $kondisiClasses[$item->kondisi] ?? 'bg-neutral-100 text-neutral-700 border-neutral-200';
+                        $kondisiClass = $kondisiClasses[$item->kondisi] ?? 'bg-neutral-100 text-neutral-700 border-neutral-200 dark:bg-neutral-900/30 dark:text-neutral-400';
                     @endphp
-                    <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $kondisiClass }}">
+                    <span
+                        class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $kondisiClass }}">
                         {{ $item->kondisi }}
                     </span>
                 </td>
@@ -88,7 +90,8 @@
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit wire:click="editAsset({{ $item->id }})" />
                         @hasrole('superadmin')
-                            <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ $item->id }} })" />
+                        <x-ui.action-delete
+                            @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ $item->id }} })" />
                         @endhasrole
                     </div>
                 </td>
@@ -115,16 +118,19 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {{-- Branch (Hanya Superadmin) --}}
                 <div class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Cabang</label>
+                    <label
+                        class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Cabang</label>
                     @if(auth()->user()->hasRole('superadmin'))
-                        <select wire:model="branch_id" class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all">
+                        <select wire:model="branch_id"
+                            class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all">
                             <option value="">Pilih Cabang</option>
                             @foreach($branches as $branch)
                                 <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
                             @endforeach
                         </select>
                     @else
-                        <div class="p-3 bg-neutral-100 dark:bg-neutral-800 rounded-2xl text-sm font-bold text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
+                        <div
+                            class="p-3 bg-neutral-100 dark:bg-neutral-800 rounded-2xl text-sm font-bold text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-700">
                             {{ auth()->user()->branch->nama_cabang ?? '-' }}
                         </div>
                         <input type="hidden" wire:model="branch_id">
@@ -134,29 +140,37 @@
 
                 {{-- Kode Aset --}}
                 <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Kode Aset</label>
-                    <x-ui.input wire:model="kode_aset" placeholder="Contoh: AST-JKT-001" :disabled="auth()->user()->hasRole('manager') && $isEdit" />
+                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Kode
+                        Aset</label>
+                    <x-ui.input wire:model="kode_aset" placeholder="Contoh: AST-JKT-001"
+                        :disabled="auth()->user()->hasRole('manager') && $isEdit" />
                     @error('kode_aset') <span class="text-xs text-rose-500 mt-1">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Nama Aset --}}
                 <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Nama Aset</label>
-                    <x-ui.input wire:model="nama_aset" placeholder="Nama Barang" :disabled="auth()->user()->hasRole('manager') && $isEdit" />
+                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Nama
+                        Aset</label>
+                    <x-ui.input wire:model="nama_aset" placeholder="Nama Barang"
+                        :disabled="auth()->user()->hasRole('manager') && $isEdit" />
                     @error('nama_aset') <span class="text-xs text-rose-500 mt-1">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Qty --}}
                 <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Jumlah (Qty)</label>
-                    <x-ui.input type="number" wire:model="qty" placeholder="1" :disabled="auth()->user()->hasRole('manager') && $isEdit" />
+                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Jumlah
+                        (Qty)</label>
+                    <x-ui.input type="number" wire:model="qty" placeholder="1"
+                        :disabled="auth()->user()->hasRole('manager') && $isEdit" />
                     @error('qty') <span class="text-xs text-rose-500 mt-1">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Kategori --}}
                 <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Kategori</label>
-                    <select wire:model="kategori" :disabled="auth()->user()->hasRole('manager') && $isEdit" class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all">
+                    <label
+                        class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Kategori</label>
+                    <select wire:model="kategori" :disabled="auth()->user()->hasRole('manager') && $isEdit"
+                        class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all">
                         <option value="">Pilih Kategori</option>
                         <option value="Elektronik">Elektronik</option>
                         <option value="Furniture">Furniture</option>
@@ -168,8 +182,10 @@
 
                 {{-- Kondisi --}}
                 <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Kondisi</label>
-                    <select wire:model="kondisi" class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all">
+                    <label
+                        class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Kondisi</label>
+                    <select wire:model="kondisi"
+                        class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all">
                         <option value="Baik">Baik</option>
                         <option value="Rusak Ringan">Rusak Ringan</option>
                         <option value="Rusak Berat">Rusak Berat</option>
@@ -180,22 +196,28 @@
 
                 {{-- Tanggal Pembelian --}}
                 <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Tanggal Pembelian</label>
+                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Tanggal
+                        Pembelian</label>
                     <x-ui.input type="date" wire:model="tanggal_pembelian" :disabled="auth()->user()->hasRole('manager') && $isEdit" />
                     @error('tanggal_pembelian') <span class="text-xs text-rose-500 mt-1">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Harga Beli --}}
                 <div>
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Harga Beli</label>
-                    <x-ui.input type="number" wire:model="harga_beli" placeholder="0" :disabled="auth()->user()->hasRole('manager') && $isEdit" />
+                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Harga
+                        Beli</label>
+                    <x-ui.input type="number" wire:model="harga_beli" placeholder="0"
+                        :disabled="auth()->user()->hasRole('manager') && $isEdit" />
                     @error('harga_beli') <span class="text-xs text-rose-500 mt-1">{{ $message }}</span> @enderror
                 </div>
 
                 {{-- Keterangan --}}
                 <div class="col-span-1 md:col-span-2">
-                    <label class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Keterangan</label>
-                    <textarea wire:model="keterangan" rows="3" class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all" placeholder="Catatan tambahan..."></textarea>
+                    <label
+                        class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Keterangan</label>
+                    <textarea wire:model="keterangan" rows="3"
+                        class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all"
+                        placeholder="Catatan tambahan..."></textarea>
                     @error('keterangan') <span class="text-xs text-rose-500 mt-1">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -217,7 +239,8 @@
     {{-- Modal Delete --}}
     <x-mdal name="confirm-delete">
         <div class="px-6 py-6 text-center">
-            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
+            <div
+                class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
                 <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
             </div>
 
@@ -231,7 +254,9 @@
                     class="px-5 py-2.5 rounded-2xl border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50 text-sm font-bold transition">
                     Batal
                 </button>
-                <x-ui.button type="button" color="danger" @click="$wire.deleteAsset(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })" class="!px-5 !py-2.5">
+                <x-ui.button type="button" color="danger"
+                    @click="$wire.deleteAsset(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })"
+                    class="!px-5 !py-2.5">
                     Ya, Hapus
                 </x-ui.button>
             </div>

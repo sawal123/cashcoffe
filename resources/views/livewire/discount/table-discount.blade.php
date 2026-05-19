@@ -9,7 +9,8 @@
         <div class="flex gap-2">
             <x-droppage perPage="{{ $perPage }}" />
             <div class="sm:w-[300px]">
-                <x-ui.input wire:model.live="search" placeholder="Cari diskon..." class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
+                <x-ui.input wire:model.live="search" placeholder="Cari diskon..."
+                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700" />
             </div>
         </div>
         <div class="flex gap-2">
@@ -37,7 +38,8 @@
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ $item->nama_diskon }}</span>
                 </td>
                 <td data-label="Jenis" class="px-6 py-4">
-                    <span class="text-sm border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 capitalize">
+                    <span
+                        class="text-sm border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 capitalize">
                         {{ $item->jenis_diskon }}
                     </span>
                 </td>
@@ -54,14 +56,16 @@
                     {{ $item->digunakan ?? '0' }}
                 </td>
                 <td data-label="Status" class="px-6 py-4 text-center">
-                    <span class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full {{ $item->is_active ? 'bg-green-100 text-green-700 border border-green-200' : 'bg-red-100 text-red-700 border border-red-200' }}">
+                    <span
+                        class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400' }}">
                         {{ $item->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
                 <td data-label="Aksi" class="px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/discount/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                        <x-ui.action-delete @click="$dispatch('open-modal', {name : 'confirm-delete', id : '{{ base64_encode($item->id) }}'})" />
+                        <x-ui.action-delete
+                            @click="$dispatch('open-modal', {name : 'confirm-delete', id : '{{ base64_encode($item->id) }}'})" />
                     </div>
                 </td>
             </tr>
@@ -83,7 +87,8 @@
 
     <x-mdal name="confirm-delete">
         <div class="px-6 py-6 text-center">
-            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
+            <div
+                class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
                 <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
             </div>
 
@@ -98,7 +103,9 @@
                     Batal
                 </button>
 
-                <x-ui.button type="button" color="danger" @click="$wire.delete(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })" class="!px-5 !py-2.5">
+                <x-ui.button type="button" color="danger"
+                    @click="$wire.delete(selectedId); $dispatch('close-modal', { name: 'confirm-delete' })"
+                    class="!px-5 !py-2.5">
                     Ya, Hapus
                 </x-ui.button>
             </div>

@@ -13,6 +13,7 @@ class TableOmset extends Component
     public $merged = []; // ← tambahkan ini
     public $dataOmset = [];
     public $dataKomplemen = [];
+    public $dataPengeluaran = [];
     public $dataQty;
 
     public function mount()
@@ -34,6 +35,9 @@ class TableOmset extends Component
 
     public function hitungOmsetBulanan()
     {
+        $user = auth()->user();
+        $branchId = ($user && $user->branch_id && !$user->hasRole('superadmin')) ? $user->branch_id : null;
+
         // 🔹 Omset normal (bukan komplemen)
         $this->dataOmset = DB::table('pesanans')
             ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
@@ -51,6 +55,9 @@ class TableOmset extends Component
                 $q->where('payment_methods.kode_metode', '!=', 'komplemen')
                   ->orWhereNull('pesanans.payment_method_id');
             })
+            ->when($branchId, function($q) use ($branchId) {
+                $q->where('pesanans.branch_id', $branchId);
+            })
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'desc')
             ->get();
@@ -64,10 +71,14 @@ class TableOmset extends Component
                 DB::raw('SUM(pesanans.total) as total_komplemen'),
                 DB::raw('SUM(pesanans.total_profit) as total_profit_komplemen')
             )
+            ->whereNull('pesanans.deleted_at')
             ->where('pesanans.status', 'selesai')
             ->whereMonth('pesanans.created_at', $this->bulan)
             ->whereYear('pesanans.created_at', $this->tahun)
             ->where('payment_methods.kode_metode', '=', 'komplemen')
+            ->when($branchId, function($q) use ($branchId) {
+                $q->where('pesanans.branch_id', $branchId);
+            })
             ->groupBy('tanggal')
             ->orderBy('tanggal', 'desc')
             ->get();
@@ -79,45 +90,80 @@ class TableOmset extends Component
                 DB::raw('DATE(pesanans.created_at) as tanggal'),
                 DB::raw('SUM(pesanan_items.qty) as jumlah_menu')
             )
+            ->whereNull('pesanans.deleted_at')
             ->where('pesanans.status', 'selesai')
             ->whereMonth('pesanans.created_at', $this->bulan)
             ->whereYear('pesanans.created_at', $this->tahun)
+            ->when($branchId, function($q) use ($branchId) {
+                $q->where('pesanans.branch_id', $branchId);
+            })
             ->groupBy('tanggal')
             ->get();
 
-        // 🔹 Gabungkan hasil berdasarkan tanggal
-        $this->merged = $this->dataOmset->map(function ($item) {
-            // jumlah menu
-            $qty = $this->dataQty->firstWhere('tanggal', $item->tanggal);
-            $item->jumlah_menu = $qty->jumlah_menu ?? 0;
+        // 🔹 Data pengeluaran
+        $this->dataPengeluaran = DB::table('pengeluarans')
+            ->select(
+                DB::raw('DATE(tanggal_pengeluaran) as tanggal'),
+                DB::raw('SUM(total) as total_pengeluaran')
+            )
+            ->whereNull('deleted_at')
+            ->whereMonth('tanggal_pengeluaran', $this->bulan)
+            ->whereYear('tanggal_pengeluaran', $this->tahun)
+            ->when($branchId, function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            })
+            ->groupBy('tanggal')
+            ->get();
 
-            // total komplemen
-            $komplemen = $this->dataKomplemen->firstWhere('tanggal', $item->tanggal);
-            $item->total_komplemen = $komplemen->total_komplemen ?? 0;
-            $item->jumlah_komplemen = $komplemen->jumlah_komplemen ?? 0;
+        // 🔹 Gabungkan hasil berdasarkan tanggal (termasuk tanggal yang hanya memiliki pengeluaran atau penjualan saja)
+        $allDates = collect()
+            ->merge($this->dataOmset->pluck('tanggal'))
+            ->merge($this->dataPengeluaran->pluck('tanggal'))
+            ->unique()
+            ->sortDesc();
 
-            return $item;
+        $this->merged = $allDates->map(function ($tanggal) {
+            $omset = $this->dataOmset->firstWhere('tanggal', $tanggal);
+            $qty = $this->dataQty->firstWhere('tanggal', $tanggal);
+            $komplemen = $this->dataKomplemen->firstWhere('tanggal', $tanggal);
+            $pengeluaran = $this->dataPengeluaran->firstWhere('tanggal', $tanggal);
+
+            $tOmset = $omset->total_omset ?? 0;
+            $tProfit = $omset->total_profit ?? 0;
+            $tPengeluaran = $pengeluaran->total_pengeluaran ?? 0;
+
+            return (object) [
+                'tanggal' => $tanggal,
+                'jumlah_pesanan' => $omset ? ($omset->jumlah_pesanan ?? 0) : 0,
+                'jumlah_menu' => $qty ? ($qty->jumlah_menu ?? 0) : 0,
+                'total_komplemen' => $komplemen ? ($komplemen->total_komplemen ?? 0) : 0,
+                'jumlah_komplemen' => $komplemen ? ($komplemen->jumlah_komplemen ?? 0) : 0,
+                'total_omset' => $tOmset,
+                'total_profit' => $tProfit,
+                'total_pengeluaran' => $tPengeluaran,
+                'net_profit' => $tProfit - $tPengeluaran,
+            ];
         });
+
+        // Timpa dataOmset agar berisi data hasil gabungan yang lengkap (termasuk properti jumlah_menu)
+        $this->dataOmset = $this->merged;
     }
-
-
 
     public function render()
     {
         $totalOmset = $this->dataOmset->sum('total_omset');
         $totalProfit = $this->dataOmset->sum('total_profit');
-
-        // Tambahan total untuk pembayaran "komplemen"
-        $totalKomplemen = $this->dataKomplemen->sum('total_komplemen');
-        $totalProfitKomplemen = $this->dataKomplemen->sum('total_profit_komplemen');
+        $totalKomplemen = $this->dataOmset->sum('total_komplemen');
+        $totalPengeluaran = $this->dataOmset->sum('total_pengeluaran');
+        $netProfit = $totalProfit - $totalPengeluaran;
 
         return view('livewire.omset.table-omset', [
-            'dataOmset' => $this->merged, // hasil gabungan normal
-            'dataKomplemen' => $this->dataKomplemen, // hasil khusus komplemen
+            'dataOmset' => $this->dataOmset,
             'totalOmset' => $totalOmset,
             'totalProfit' => $totalProfit,
             'totalKomplemen' => $totalKomplemen,
-            'totalProfitKomplemen' => $totalProfitKomplemen,
+            'totalPengeluaran' => $totalPengeluaran,
+            'netProfit' => $netProfit,
             'title' => 'Laporan Omset & Keuntungan'
         ])->layout('layouts.app', ['title' => 'Laporan Omset']);
     }
