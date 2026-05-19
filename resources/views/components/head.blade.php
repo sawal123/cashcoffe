@@ -7,6 +7,8 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
         rel="stylesheet">
+    <!-- Material Symbols -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <!-- remix icon font css  -->
     <link rel="stylesheet" href="{{ asset('assets/css/remixicon.css') }}">
     <!-- Apex Chart css -->
@@ -152,6 +154,19 @@
         .dark .ts-control input {
             color: #e5e7eb !important;
             /* text-neutral-200 */
+        }
+
+        /* GLOBAL SELECT FIX - REMOVE DOUBLE ARROWS */
+        select {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            background-image: none !important;
+        }
+
+        /* For IE/Edge */
+        select::-ms-expand {
+            display: none !important;
         }
     </style>
 

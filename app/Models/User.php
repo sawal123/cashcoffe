@@ -28,6 +28,7 @@ class User extends Authenticatable
         'gaji_pokok',
         'tunjangan_harian',
         'hak_cuti',
+        'jatah_cuti',
     ];
 
     /**
@@ -78,5 +79,10 @@ class User extends Authenticatable
     public function jabatan()
     {
         return $this->belongsTo(Jabatan::class, 'jabatan_id');
+    }
+
+    public function userShifts()
+    {
+        return $this->hasMany(UserShift::class);
     }
 }

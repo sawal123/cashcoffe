@@ -205,6 +205,20 @@
                     <span>Persetujuan Izin</span>
                 </a>
             </li>
+            <li>
+                <a href="/absense/schedule" wire:navigate
+                    class="{{ request()->is('absense/schedule') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:calendar-date-bold" class="menu-icon"></iconify-icon>
+                    <span>Plotting Shift</span>
+                </a>
+            </li>
+            <li>
+                <a href="/absense/shift-master" wire:navigate
+                    class="{{ request()->is('absense/shift-master') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:clock-circle-bold" class="menu-icon"></iconify-icon>
+                    <span>Master Data Shift</span>
+                </a>
+            </li>
             @endrole
 
 

@@ -19,6 +19,7 @@ class Branch extends Model
         'latitude',
         'longitude',
         'radius',
+        'radius_meter',
     ];
 
     public function users()

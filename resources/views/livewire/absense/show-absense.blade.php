@@ -320,21 +320,23 @@
                 <label class="text-xs text-neutral-500 mb-1 block">
                     Status Kehadiran
                 </label>
-                <select wire:model="status" class="w-full rounded-lg border border-slate-300 dark:border-slate-700
-               bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
-               px-3 py-2 text-sm focus:outline-none focus:ring-2
-               focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer">
-                    <option value="">-- Pilih Status --</option>
-                    <option value="hadir">Hadir</option>
-                    <option value="terlambat">Terlambat</option>
-                    <option value="izin">Izin</option>
-                    <option value="sakit">Sakit</option>
-                    <option value="cuti">Cuti</option>
-                    <option value="alpha">Alpha</option>
-                    <option value="wfh">WFH</option>
-                    <option value="dinas_luar">Dinas Luar</option>
-                    <option value="complete">Complete</option>
-                </select>
+                <div class="relative">
+                    <select wire:model="status" class="w-full rounded-lg border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
+                   px-3 py-2 text-sm focus:outline-none focus:ring-2
+                   focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer appearance-none bg-none">
+                        <option value="">-- Pilih Status --</option>
+                        <option value="hadir">Hadir</option>
+                        <option value="terlambat">Terlambat</option>
+                        <option value="izin">Izin</option>
+                        <option value="sakit">Sakit</option>
+                        <option value="cuti">Cuti</option>
+                        <option value="alpha">Alpha</option>
+                        <option value="wfh">WFH</option>
+                        <option value="dinas_luar">Dinas Luar</option>
+                        <option value="complete">Complete</option>
+                    </select>
+                    <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
             </div>
 
             {{-- KETERANGAN --}}

@@ -5,13 +5,14 @@
             <h1 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface font-bold">Riwayat Kehadiran</h1>
             <p class="font-body-md text-body-md text-on-surface-variant">Kelola dan pantau catatan waktu kerja Anda.</p>
         </div>
-        <div class="flex items-center gap-2 bg-surface-container border border-outline-variant rounded-xl px-4 py-2 shadow-sm">
+        <div class="flex items-center gap-2 bg-surface-container border border-outline-variant rounded-xl px-4 py-2 shadow-sm relative pr-2">
             <span class="material-symbols-outlined text-secondary">calendar_month</span>
-            <select wire:model.live="selectedMonth" class="bg-transparent border-none focus:ring-0 font-button text-button text-primary cursor-pointer appearance-none pr-8 font-medium">
+            <select wire:model.live="selectedMonth" class="bg-transparent border-none focus:ring-0 font-button text-button text-primary cursor-pointer appearance-none bg-none pr-6 font-medium">
                 @foreach ($months as $val => $label)
                     <option value="{{ $val }}">{{ $label }}</option>
                 @endforeach
             </select>
+            <span class="material-symbols-outlined text-primary pointer-events-none text-sm">expand_more</span>
         </div>
     </div>
 
@@ -72,7 +73,6 @@
                         <span class="font-label-md text-label-md text-secondary">Total</span>
                         <span class="font-body-lg text-body-lg font-semibold text-on-surface">{{ $jamKerjaItem }}</span>
                     </div>
-                </div>
 
                 <div class="mt-4 md:mt-0 w-full md:w-32 flex justify-end">
                     @if ($isTerlambat)

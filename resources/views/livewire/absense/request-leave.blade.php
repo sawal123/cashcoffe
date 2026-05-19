@@ -38,11 +38,14 @@
                     
                     <div class="space-y-base">
                         <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Jenis Izin</label>
-                        <select wire:model.live="jenis" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all">
-                            <option value="izin">Izin</option>
-                            <option value="sakit">Sakit</option>
-                            <option value="cuti">Cuti</option>
-                        </select>
+                        <div class="relative">
+                            <select wire:model.live="jenis" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none bg-none pr-10">
+                                <option value="izin">Izin</option>
+                                <option value="sakit">Sakit</option>
+                                <option value="cuti">Cuti</option>
+                            </select>
+                            <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
+                        </div>
                         @error('jenis') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
                     </div>
                     

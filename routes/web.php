@@ -95,6 +95,8 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     // Absense
     Route::get('/absense', App\Livewire\Absense\TableAbsense::class)->name('absense.index');
     Route::get('/absense/requests', App\Livewire\Absense\ManageRequest::class)->name('absense.requests');
+    Route::get('/absense/schedule', App\Livewire\Admin\Shift\ShiftSchedule::class)->name('absense.schedule');
+    Route::get('/absense/shift-master', App\Livewire\Admin\Shift\ShiftManager::class)->name('absense.shift-master');
     Route::get('/absense/{userId}', App\Livewire\Absense\ShowAbsense::class)->name('absense.show');
 
     // User

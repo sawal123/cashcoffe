@@ -137,6 +137,23 @@
             let capturedLat = -6.200000;
             let capturedLng = 106.816666;
 
+            function getDistanceFromLatLonInM(lat1, lon1, lat2, lon2) {
+                var R = 6371000; // Radius of the earth in m
+                var dLat = deg2rad(lat2-lat1);
+                var dLon = deg2rad(lon2-lon1); 
+                var a = 
+                    Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                    Math.sin(dLon/2) * Math.sin(dLon/2)
+                ; 
+                var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+                return R * c;
+            }
+
+            function deg2rad(deg) {
+                return deg * (Math.PI/180);
+            }
+
             // Inisialisasi Kamera & Fitur Deteksi Wajah
             async function startVerificationStream() {
                 try {
@@ -172,14 +189,25 @@
                             // Jika ketinggian bernilai mutlak 0.0 dengan akurasi tidak realistis
                             const isFakeGpsSuspected = (position.coords.altitude === 0 && position.coords.accuracy < 4);
 
+                            const branchLat = {{ $branchLat }};
+                            const branchLng = {{ $branchLng }};
+                            const branchRadius = {{ $branchRadius }};
+                            const distance = getDistanceFromLatLonInM(capturedLat, capturedLng, branchLat, branchLng);
+
                             if (isFakeGpsSuspected) {
                                 gpsLabel.innerText = "Terindikasi Fake GPS";
                                 gpsLabel.className = "text-red-500 font-bold";
                                 uiLocationText.innerText = "Akses Ditolak (Mock)";
+                                gpsVerified = false;
+                            } else if (distance > branchRadius) {
+                                gpsLabel.innerText = `Luar Radius (${Math.round(distance)}m)`;
+                                gpsLabel.className = "text-red-500 font-bold";
+                                uiLocationText.innerText = `Di Luar Area Cabang`;
+                                gpsVerified = false;
                             } else {
                                 gpsLabel.innerText = "Terverifikasi Valid";
                                 gpsLabel.className = "text-emerald-600 font-bold";
-                                uiLocationText.innerText = `HQ Zone (Lat: ${capturedLat.toFixed(4)})`;
+                                uiLocationText.innerText = `Dalam Radius (${Math.round(distance)}m)`;
                                 gpsVerified = true;
                             }
                             evaluateEnableCondition();

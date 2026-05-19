@@ -182,31 +182,37 @@
                     {{-- Status --}}
                     <div>
                         <label class="font-semibold ">Status</label>
-                        <select wire:model="status"
-                            class="w-full rounded-lg border border-slate-300 dark:border-slate-700
-               bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
-               px-3 py-2 text-sm focus:outline-none focus:ring-2
-               focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer">
-                            <option value="dibatalkan">Dibatalkan</option>
-                            <option value="diproses">Diproses</option>
-                            <option value="selesai">Selesai</option>
-                        </select>
+                        <div class="relative">
+                            <select wire:model="status"
+                                class="w-full rounded-lg border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
+                   px-3 py-2 text-sm focus:outline-none focus:ring-2
+                   focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer appearance-none bg-none pr-10">
+                                <option value="dibatalkan">Dibatalkan</option>
+                                <option value="diproses">Diproses</option>
+                                <option value="selesai">Selesai</option>
+                            </select>
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
+                        </div>
                     </div>
 
                     {{-- Metode Pembayaran --}}
                     <div>
                         <label class="font-semibold ">Metode Pembayaran</label>
-                        <select wire:model="metode_pembayaran"
-                            class="w-full rounded-lg border border-slate-300 dark:border-slate-700
-               bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
-               px-3 py-2 text-sm focus:outline-none focus:ring-2
-               focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer">
-                            <option value="">Belum Bayar</option>
-                            <option value="tunai">Tunai</option>
-                            <option value="qris">QRIS</option>
-                            <option value="transfer">Transfer</option>
-                            <option value="komplemen">Komplemen</option>
-                        </select>
+                        <div class="relative">
+                            <select wire:model="metode_pembayaran"
+                                class="w-full rounded-lg border border-slate-300 dark:border-slate-700
+                   bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200
+                   px-3 py-2 text-sm focus:outline-none focus:ring-2
+                   focus:ring-blue-500/40 focus:border-blue-500 transition cursor-pointer appearance-none bg-none pr-10">
+                                <option value="">Belum Bayar</option>
+                                <option value="tunai">Tunai</option>
+                                <option value="qris">QRIS</option>
+                                <option value="transfer">Transfer</option>
+                                <option value="komplemen">Komplemen</option>
+                            </select>
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
+                        </div>
                     </div>
 
                 </div>

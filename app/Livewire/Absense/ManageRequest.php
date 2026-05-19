@@ -39,12 +39,12 @@ class ManageRequest extends Component
                     $end = \Carbon\Carbon::parse($req->tanggal_selesai);
                     $days = $start->diffInDays($end) + 1;
 
-                    if ($user->hak_cuti < $days) {
-                        throw new \Exception('Gagal! Sisa hak cuti tidak mencukupi (Sisa: ' . $user->hak_cuti . ' hari, Pengajuan: ' . $days . ' hari).');
+                    if ($user->jatah_cuti < $days) {
+                        throw new \Exception('Gagal! Saldo jatah cuti tidak mencukupi (Saldo: ' . $user->jatah_cuti . ' hari, Pengajuan: ' . $days . ' hari).');
                     }
 
-                    // Potong hak cuti secara langsung di database
-                    $user->decrement('hak_cuti', $days);
+                    // Potong jatah cuti (akumulatif)
+                    $user->decrement('jatah_cuti', $days);
                 }
 
                 // Buat record di tabel absensis agar terhitung hadir/izin/cuti
@@ -88,8 +88,8 @@ class ManageRequest extends Component
                     $end = \Carbon\Carbon::parse($req->tanggal_selesai);
                     $days = $start->diffInDays($end) + 1;
 
-                    // Kembalikan hak cuti
-                    $user->increment('hak_cuti', $days);
+                    // Kembalikan saldo jatah cuti
+                    $user->increment('jatah_cuti', $days);
                 }
 
                 // Hapus record absensi yang terkait (untuk hari libur/cuti tersebut)
