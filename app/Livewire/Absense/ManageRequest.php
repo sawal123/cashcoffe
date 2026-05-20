@@ -8,17 +8,33 @@ use App\Models\Absensi;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Url;
 
 class ManageRequest extends Component
 {
     use WithPagination;
 
+    #[Url]
     public $type = 'leave'; // 'leave' or 'correction'
+
+    #[Url]
+    public $jenis = 'cuti'; // 'cuti', 'izin' or 'all'
+
     public $selectedId;
 
     public function setType($type)
     {
         $this->type = $type;
+        if ($type === 'correction') {
+            $this->jenis = 'all';
+        }
+        $this->resetPage();
+    }
+
+    public function setTab($type, $jenis)
+    {
+        $this->type = $type;
+        $this->jenis = $jenis;
         $this->resetPage();
     }
 
@@ -152,12 +168,30 @@ class ManageRequest extends Component
 
     public function render()
     {
-        $leaves = IzinAbsensi::with('user')->latest()->paginate(10);
+        $leavesQuery = IzinAbsensi::with('user')->latest();
+        if ($this->jenis === 'cuti') {
+            $leavesQuery->where('jenis', 'cuti');
+        } elseif ($this->jenis === 'izin') {
+            $leavesQuery->whereIn('jenis', ['izin', 'sakit']);
+        }
+        $leaves = $leavesQuery->paginate(10);
+
         $corrections = AttendanceCorrection::with('user')->latest()->paginate(10);
+
+        $title = 'Kelola Pengajuan Kehadiran';
+        if ($this->type === 'correction') {
+            $title = 'Persetujuan Perbaikan Absensi';
+        } elseif ($this->type === 'leave') {
+            if ($this->jenis === 'cuti') {
+                $title = 'Persetujuan Cuti';
+            } elseif ($this->jenis === 'izin') {
+                $title = 'Persetujuan Izin';
+            }
+        }
 
         return view('livewire.absense.manage-request', [
             'leaves' => $leaves,
             'corrections' => $corrections
-        ])->layout('layouts.app', ['title' => 'Kelola Pengajuan Kehadiran']);
+        ])->layout('layouts.app', ['title' => $title]);
     }
 }

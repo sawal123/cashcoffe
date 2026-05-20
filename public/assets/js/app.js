@@ -38,6 +38,7 @@ function initThemeToggle() {
 //  SIDEBAR ACTIVE HIGHLIGHT
 // ===================================
 function highlightActiveMenu() {
+    console.log("highlightActiveMenu active. currentUrl:", window.location.pathname, "search:", window.location.search);
     const currentUrl = window.location.pathname.replace(/\/$/, "") || "/";
     const sidebarMenu = document.getElementById("sidebar-menu");
     if (!sidebarMenu) return;
@@ -54,34 +55,60 @@ function highlightActiveMenu() {
 
     // --- Step 2: Tandai menu yang sesuai URL saat ini ---
     let activeLink = null;
+    let maxMatchScore = -1;
+    const currentParams = new URLSearchParams(window.location.search);
+
     sidebarMenu.querySelectorAll("a").forEach(link => {
         if (link.getAttribute("href") === "#") return;
 
-        const linkPath = link.pathname.replace(/\/$/, "") || "/";
+        const linkUrl = new URL(link.href, window.location.origin);
+        const linkPath = linkUrl.pathname.replace(/\/$/, "") || "/";
         const isExactMatch = currentUrl === linkPath;
         const isPrefixMatch = linkPath !== "/" && currentUrl.startsWith(linkPath + "/") && !link.hasAttribute("data-exact-match");
 
-        if (isExactMatch || isPrefixMatch) {
-            link.classList.add(activeClass);
-            activeLink = link;
-
-            const parentLi = link.closest("li");
-            if (parentLi) {
-                parentLi.classList.add(activeClass);
-
-                // Buka parent menu jika bertingkat
-                let ancestor = parentLi.parentElement;
-                while (ancestor && ancestor !== sidebarMenu) {
-                    if (ancestor.tagName === "LI") {
-                        ancestor.classList.add("show", "open");
+            if (isExactMatch || isPrefixMatch) {
+                let queryMatches = true;
+                let matchScore = 0;
+                
+                const linkParams = linkUrl.searchParams;
+                for (const [key, val] of linkParams.entries()) {
+                    matchScore++;
+                    if (currentParams.get(key) !== val) {
+                        const isDefaultLeaveCuti = (key === 'type' && val === 'leave' && !currentParams.has('type')) ||
+                                                   (key === 'jenis' && val === 'cuti' && !currentParams.has('jenis'));
+                        if (!isDefaultLeaveCuti) {
+                            queryMatches = false;
+                            break;
+                        }
                     }
-                    ancestor = ancestor.parentElement;
+                }
+
+                console.log("Checking match for link:", link.getAttribute("href"), "queryMatches:", queryMatches, "matchScore:", matchScore);
+
+                if (queryMatches && matchScore > maxMatchScore) {
+                    maxMatchScore = matchScore;
+                    activeLink = link;
                 }
             }
-        }
     });
 
+    console.log("Selected activeLink:", activeLink ? activeLink.getAttribute("href") : "none");
+
     if (activeLink) {
+        activeLink.classList.add(activeClass);
+        const parentLi = activeLink.closest("li");
+        if (parentLi) {
+            parentLi.classList.add(activeClass);
+
+            // Buka parent menu jika bertingkat
+            let ancestor = parentLi.parentElement;
+            while (ancestor && ancestor !== sidebarMenu) {
+                if (ancestor.tagName === "LI") {
+                    ancestor.classList.add("show", "open");
+                }
+                ancestor = ancestor.parentElement;
+            }
+        }
         activeLink.scrollIntoView({ block: "nearest" });
     }
 }

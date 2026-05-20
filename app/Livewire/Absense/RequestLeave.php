@@ -22,7 +22,8 @@ class RequestLeave extends Component
 
     public $bukti;
 
-    public $viewingRequest;
+    public $isEditMode = false;
+    public $editingId = null;
 
     public function viewRequest($id)
     {
@@ -45,36 +46,103 @@ class RequestLeave extends Component
         $this->tanggal_selesai = now()->format('Y-m-d');
     }
 
+    public function editRequest($id)
+    {
+        $req = IzinAbsensi::where('user_id', Auth::id())
+            ->where('status', 'pending')
+            ->findOrFail($id);
+
+        $this->isEditMode = true;
+        $this->editingId = $id;
+        $this->tanggal_mulai = $req->tanggal_mulai;
+        $this->tanggal_selesai = $req->tanggal_selesai;
+        $this->jenis = $req->jenis;
+        $this->alasan = $req->alasan;
+        $this->bukti = null;
+        $this->resetErrorBag();
+    }
+
+    public function cancelEdit()
+    {
+        $this->isEditMode = false;
+        $this->editingId = null;
+        $this->tanggal_mulai = now()->format('Y-m-d');
+        $this->tanggal_selesai = now()->format('Y-m-d');
+        $this->jenis = 'izin';
+        $this->alasan = '';
+        $this->bukti = null;
+        $this->resetErrorBag();
+    }
+
+    public function deleteRequest($id)
+    {
+        $req = IzinAbsensi::where('user_id', Auth::id())
+            ->where('status', 'pending')
+            ->findOrFail($id);
+
+        if ($req->bukti) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($req->bukti);
+        }
+
+        $req->delete();
+        $this->dispatch('showToast', type: 'info', message: 'Pengajuan izin/cuti berhasil dibatalkan.');
+    }
+
     public function submit()
     {
         $this->validate();
 
         $user = Auth::user();
         if ($this->jenis === 'cuti') {
-            if ($user->hak_cuti < $this->total_hari) {
-                $this->dispatch('showToast', type: 'error', message: 'Gagal! Sisa hak cuti Anda tidak mencukupi (Sisa: '.$user->hak_cuti.' hari, Pengajuan: '.$this->total_hari.' hari).');
+            if ($user->jatah_cuti < $this->total_hari) {
+                $this->dispatch('showToast', type: 'error', message: 'Gagal! Sisa jatah cuti Anda tidak mencukupi (Sisa: '.$user->jatah_cuti.' hari, Pengajuan: '.$this->total_hari.' hari).');
 
                 return;
             }
         }
 
-        $buktiPath = null;
-        if ($this->bukti) {
-            $buktiPath = $this->bukti->store('izin_absensi', 'public');
+        if ($this->isEditMode) {
+            $req = IzinAbsensi::where('user_id', $user->id)
+                ->where('status', 'pending')
+                ->findOrFail($this->editingId);
+
+            $updateData = [
+                'tanggal_mulai' => $this->tanggal_mulai,
+                'tanggal_selesai' => $this->tanggal_selesai,
+                'jenis' => $this->jenis,
+                'alasan' => $this->alasan,
+            ];
+
+            if ($this->bukti) {
+                if ($req->bukti) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($req->bukti);
+                }
+                $updateData['bukti'] = $this->bukti->store('izin_absensi', 'public');
+            }
+
+            $req->update($updateData);
+
+            $this->cancelEdit();
+            $this->dispatch('showToast', type: 'success', message: 'Pengajuan izin/cuti berhasil diperbarui.');
+        } else {
+            $buktiPath = null;
+            if ($this->bukti) {
+                $buktiPath = $this->bukti->store('izin_absensi', 'public');
+            }
+
+            IzinAbsensi::create([
+                'user_id' => $user->id,
+                'tanggal_mulai' => $this->tanggal_mulai,
+                'tanggal_selesai' => $this->tanggal_selesai,
+                'jenis' => $this->jenis,
+                'alasan' => $this->alasan,
+                'bukti' => $buktiPath,
+                'status' => 'pending',
+            ]);
+
+            $this->reset(['alasan', 'bukti']);
+            $this->dispatch('showToast', type: 'success', message: 'Permohonan izin/cuti berhasil dikirim.');
         }
-
-        IzinAbsensi::create([
-            'user_id' => $user->id,
-            'tanggal_mulai' => $this->tanggal_mulai,
-            'tanggal_selesai' => $this->tanggal_selesai,
-            'jenis' => $this->jenis,
-            'alasan' => $this->alasan,
-            'bukti' => $buktiPath,
-            'status' => 'pending',
-        ]);
-
-        $this->reset(['alasan', 'bukti']);
-        $this->dispatch('showToast', type: 'success', message: 'Permohonan izin/cuti berhasil dikirim.');
     }
 
     public function getTotalHariProperty()
@@ -97,7 +165,7 @@ class RequestLeave extends Component
     public function getIsQuotaExceededProperty()
     {
         if ($this->jenis === 'cuti' && $this->total_hari > 0) {
-            return Auth::user()->hak_cuti < $this->total_hari;
+            return Auth::user()->jatah_cuti < $this->total_hari;
         }
 
         return false;

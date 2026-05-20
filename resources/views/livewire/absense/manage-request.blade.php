@@ -1,20 +1,34 @@
 <div>
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">Kelola Pengajuan Kehadiran</h6>
+        <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">
+            @if($type === 'correction')
+                Persetujuan Perbaikan Absensi
+            @elseif($type === 'leave' && $jenis === 'cuti')
+                Persetujuan Cuti Karyawan
+            @elseif($type === 'leave' && $jenis === 'izin')
+                Persetujuan Izin & Sakit Karyawan
+            @else
+                Kelola Pengajuan Kehadiran
+            @endif
+        </h6>
         <x-breadcrumb title="Persetujuan" />
     </div>
 
     <x-toast />
 
     {{-- Tabs --}}
-    <div class="flex items-center gap-2 mb-8 bg-neutral-100 dark:bg-neutral-800 p-1.5 rounded-2xl w-fit">
-        <button wire:click="setType('leave')" 
-            class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all {{ $type == 'leave' ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-neutral-500 hover:text-neutral-700' }}">
-            Izin & Cuti
+    <div class="flex flex-wrap items-center gap-2 mb-8 bg-neutral-100 dark:bg-neutral-800 p-1.5 rounded-2xl w-fit">
+        <button wire:click="setTab('leave', 'cuti')" 
+            class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all {{ ($type == 'leave' && $jenis == 'cuti') ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-neutral-500 hover:text-neutral-700' }}">
+            Persetujuan Cuti
         </button>
-        <button wire:click="setType('correction')" 
+        <button wire:click="setTab('leave', 'izin')" 
+            class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all {{ ($type == 'leave' && $jenis == 'izin') ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-neutral-500 hover:text-neutral-700' }}">
+            Persetujuan Izin & Sakit
+        </button>
+        <button wire:click="setTab('correction', 'all')" 
             class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all {{ $type == 'correction' ? 'bg-white dark:bg-neutral-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-neutral-500 hover:text-neutral-700' }}">
-            Perbaikan Kehadiran
+            Perbaikan Absensi
         </button>
     </div>
 

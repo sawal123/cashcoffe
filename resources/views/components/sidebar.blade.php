@@ -200,10 +200,24 @@
                 </a>
             </li>
             <li>
-                <a href="/absense/requests" wire:navigate
-                    class="{{ request()->is('absense/requests') ? 'active-page' : '' }}">
-                    <iconify-icon icon="solar:clipboard-list-bold" class="menu-icon"></iconify-icon>
+                <a href="/absense/requests?type=leave&jenis=cuti" wire:navigate
+                    class="{{ (request()->is('absense/requests*') && request()->query('type', 'leave') === 'leave' && request()->query('jenis', 'cuti') === 'cuti') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:letter-opened-bold" class="menu-icon"></iconify-icon>
+                    <span>Persetujuan Cuti</span>
+                </a>
+            </li>
+            <li>
+                <a href="/absense/requests?type=leave&jenis=izin" wire:navigate
+                    class="{{ (request()->is('absense/requests*') && request()->query('type') === 'leave' && request()->query('jenis') === 'izin') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:document-text-bold" class="menu-icon"></iconify-icon>
                     <span>Persetujuan Izin</span>
+                </a>
+            </li>
+            <li>
+                <a href="/absense/requests?type=correction" wire:navigate
+                    class="{{ (request()->is('absense/requests*') && request()->query('type') === 'correction') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:clipboard-list-bold" class="menu-icon"></iconify-icon>
+                    <span>Perbaikan Absensi</span>
                 </a>
             </li>
             <li>

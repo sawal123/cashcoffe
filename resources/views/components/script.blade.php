@@ -31,7 +31,7 @@
         });
     </script>
     <!-- main js -->
-    <script src="{{ asset('assets/js/app.js') }}" data-navigate-once></script>
+    <script src="{{ asset('assets/js/app.js') }}?v=1.0.2" data-navigate-once></script>
 
 
 

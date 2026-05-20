@@ -9,7 +9,7 @@
         {{-- Form Side --}}
         <div class="lg:col-span-4">
             <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm sticky top-24">
-                <h4 class="font-title-lg text-on-surface mb-6 font-bold">Buat Pengajuan</h4>
+                <h4 class="font-title-lg text-on-surface mb-6 font-bold">{{ $isEditMode ? 'Edit Pengajuan' : 'Buat Pengajuan' }}</h4>
                 
                 <form wire:submit="submit" class="space-y-5">
                     <div class="space-y-base">
@@ -31,7 +31,7 @@
                         </div>
                         @if($this->is_quota_exceeded)
                             <p class="text-[10px] text-error font-bold mt-1 animate-pulse">
-                                ⚠️ Melebihi sisa hak cuti Anda (Sisa: {{ Auth::user()->hak_cuti }} Hari)
+                                ⚠️ Melebihi sisa jatah cuti Anda (Sisa: {{ Auth::user()->jatah_cuti }} Hari)
                             </p>
                         @endif
                     @endif
@@ -61,13 +61,21 @@
                         @error('bukti') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
                     </div>
 
-                    <div class="pt-4">
+                    <div class="pt-4 space-y-2">
                         <button type="submit" 
                             {{ $this->is_quota_exceeded ? 'disabled' : '' }}
                             class="w-full {{ $this->is_quota_exceeded ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary' }} font-button text-button py-4 px-6 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm font-bold">
-                            <span class="material-symbols-outlined text-[20px]">send</span>
-                            Kirim Pengajuan
+                            <span class="material-symbols-outlined text-[20px]">{{ $isEditMode ? 'save' : 'send' }}</span>
+                            {{ $isEditMode ? 'Simpan Perubahan' : 'Kirim Pengajuan' }}
                         </button>
+                        
+                        @if($isEditMode)
+                            <button type="button" wire:click="cancelEdit" 
+                                class="w-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-button text-button py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 font-bold border border-outline-variant">
+                                <span class="material-symbols-outlined text-[20px]">close</span>
+                                Batal Edit
+                            </button>
+                        @endif
                     </div>
                 </form>
             </div>
@@ -130,10 +138,27 @@
                                         </span>
                                     </td>
                                     <td class="px-6 py-5 text-center">
-                                        <button type="button" wire:click="viewRequest({{ $req->id }})" 
-                                            class="w-10 h-10 rounded-full hover:bg-surface-container transition-all flex items-center justify-center text-secondary">
-                                            <span class="material-symbols-outlined text-[20px]">info</span>
-                                        </button>
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button type="button" wire:click="viewRequest({{ $req->id }})" 
+                                                title="Detail"
+                                                class="w-8 h-8 rounded-full hover:bg-surface-container transition-all flex items-center justify-center text-secondary">
+                                                <span class="material-symbols-outlined text-[18px]">info</span>
+                                            </button>
+                                            @if($req->status === 'pending')
+                                                <button type="button" wire:click="editRequest({{ $req->id }})"
+                                                    title="Edit"
+                                                    class="w-8 h-8 rounded-full hover:bg-primary/10 text-primary transition-all flex items-center justify-center">
+                                                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                                                </button>
+                                                <button type="button" 
+                                                    wire:click="deleteRequest({{ $req->id }})"
+                                                    wire:confirm="Apakah Anda yakin ingin membatalkan pengajuan ini?"
+                                                    title="Batalkan"
+                                                    class="w-8 h-8 rounded-full hover:bg-error/10 text-error transition-all flex items-center justify-center">
+                                                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                                                </button>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
                             @empty
