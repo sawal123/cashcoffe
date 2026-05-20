@@ -108,6 +108,9 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
         Route::get('/absense/shift-master', App\Livewire\Admin\Shift\ShiftManager::class)->name('absense.shift-master');
         Route::get('/absense/{userId}', App\Livewire\Absense\ShowAbsense::class)->name('absense.show');
 
+        // Payroll
+        Route::get('/payroll/generasi', App\Livewire\Payroll\GenerasiGaji::class)->name('payroll.generasi');
+
         // Gudang
         Route::get('/gudang', App\Livewire\Gudang\TableGudang::class)->name('gudang.index');
         Route::get('/gudang/create', App\Livewire\Gudang\CreateGudang::class)->name('gudang.create');

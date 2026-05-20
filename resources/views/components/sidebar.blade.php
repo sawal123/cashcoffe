@@ -137,6 +137,12 @@
                     <span>Discount</span>
                 </a>
             </li>
+            <li>
+                <a href="/payroll/generasi" wire:navigate class="{{ request()->is('payroll*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:bill-list-bold" class="menu-icon"></iconify-icon>
+                    <span>Generasi Gaji</span>
+                </a>
+            </li>
             @endrole
             @unlessrole('kasir')
             <!-- GROUP: Gudang -->

@@ -8,22 +8,19 @@ class Payroll extends Model
 {
     protected $fillable = [
         'user_id',
-        'bulan',
-        'tahun',
-        'total_hadir',
-        'total_terlambat',
-        'total_izin',
-        'total_alpha',
+        'periode_mulai',
+        'periode_selesai',
         'gaji_pokok',
-        'total_tunjangan',
-        'total_potongan',
-        'take_home_pay',
-        'status_pembayaran',
-        'tanggal_pembayaran',
+        'insentif_double_shift',
+        'potongan_alpha',
+        'potongan_telat',
+        'potongan_tidak_clock_out',
+        'gaji_bersih',
     ];
 
     protected $casts = [
-        'tanggal_pembayaran' => 'datetime',
+        'periode_mulai' => 'date',
+        'periode_selesai' => 'date',
     ];
 
     public function user()

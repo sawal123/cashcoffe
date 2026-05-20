@@ -44,7 +44,26 @@ class PayrollService
             ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
             ->get();
 
-        $countAlpha = $absensis->where('status', 'alpha')->count();
+        $absensisMap = $absensis->keyBy('tanggal');
+
+        // Hitung Alpha berdasarkan hari lampau yang tidak ada data absensinya, atau yang statusnya 'alpha'
+        $countAlpha = 0;
+        $tempDate = $startDate->copy()->startOfDay();
+        while ($tempDate->lte($endDate)) {
+            if ($tempDate->isPast()) {
+                $dateStr = $tempDate->toDateString();
+                $item = $absensisMap->get($dateStr);
+                if ($item) {
+                    if ($item->status === 'alpha') {
+                        $countAlpha++;
+                    }
+                } else {
+                    $countAlpha++;
+                }
+            }
+            $tempDate->addDay();
+        }
+
         $countTerlambat = $absensis->where('status', 'terlambat')->count();
 
         // 3. Ambil data Double Shift dari UserShift
@@ -97,5 +116,42 @@ class PayrollService
                 'gaji_diterima' => $gajiDiterima,
             ]
         ];
+    }
+
+    /**
+     * Hitung gaji bulanan massal/tunggal dan simpan ke database.
+     *
+     * @param int $userId
+     * @param int $year
+     * @param int $month
+     * @return \App\Models\Payroll
+     * @throws \Exception
+     */
+    public function hitungGajiBulanan($userId, $year, $month)
+    {
+        try {
+            $endDate = Carbon::createFromDate($year, $month, 25)->endOfDay();
+            
+            $calc = $this->calculate($userId, $endDate);
+            
+            return \App\Models\Payroll::updateOrCreate(
+                [
+                    'user_id' => $userId,
+                    'periode_mulai' => $calc['periode']['start'],
+                    'periode_selesai' => $calc['periode']['end'],
+                ],
+                [
+                    'gaji_pokok' => $calc['komponen']['gaji_pokok'],
+                    'insentif_double_shift' => $calc['kalkulasi']['bonus_double_shift'],
+                    'potongan_alpha' => $calc['kalkulasi']['potongan_alpha'],
+                    'potongan_telat' => $calc['kalkulasi']['denda_terlambat'],
+                    'potongan_tidak_clock_out' => $calc['kalkulasi']['potongan_tidak_clock_out'],
+                    'gaji_bersih' => $calc['kalkulasi']['gaji_diterima'],
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::error("Gagal menghitung gaji bulanan untuk User ID {$userId}: " . $e->getMessage());
+            throw $e;
+        }
     }
 }
