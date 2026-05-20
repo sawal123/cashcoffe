@@ -114,9 +114,13 @@
                     @if ($absen)
                         @php
                             $statusColors = match ($absen->status) {
-                                'hadir'
+                                'hadir', 'complete'
                                     => 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
                                 'terlambat' => 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+                                'tidak clock out' => 'bg-orange-50 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400 border border-orange-200 dark:border-orange-900/50',
+                                'alpha' => 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
+                                'izin', 'sakit', 'cuti' => 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
+                                'wfh', 'dinas_luar' => 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
                                 default => 'bg-neutral-50 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400',
                             };
                         @endphp
@@ -240,6 +244,7 @@
                             <option value="sakit">Sakit</option>
                             <option value="cuti">Cuti</option>
                             <option value="alpha">Alpha</option>
+                            <option value="tidak clock out">Tidak Clock Out</option>
                         </select>
                     </div>
 
@@ -349,6 +354,7 @@
                             <option value="sakit">Sakit</option>
                             <option value="cuti">Cuti</option>
                             <option value="alpha">Alpha</option>
+                            <option value="tidak clock out">Tidak Clock Out</option>
                         </select>
                     </div>
 
@@ -698,7 +704,12 @@
                         <div class="text-right">
                             @php
                                 $denda = 0;
-                                if ($isLate && $activeShift) {
+                                if ($selectedAbsenDetail->status === 'tidak clock out') {
+                                    $denda = $selectedAbsenDetail->denda_missing_clockout;
+                                    if (($denda === null || $denda == 0) && $activeShift) {
+                                        $denda = $activeShift->denda_missing_clockout;
+                                    }
+                                } elseif ($isLate && $activeShift) {
                                     $denda = $activeShift->denda_telat ?? 20000;
                                 }
                             @endphp

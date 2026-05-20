@@ -15,6 +15,7 @@ class ShiftManager extends Component
     public $denda_telat = 20000;
     public $maksimal_telat_menit = 60;
     public $batas_awal_absen_menit = 60;
+    public $denda_missing_clockout = 0;
     
     public $shiftId;
     public $isEdit = false;
@@ -27,6 +28,7 @@ class ShiftManager extends Component
         'denda_telat' => 'required|numeric|min:0',
         'maksimal_telat_menit' => 'required|integer|min:0',
         'batas_awal_absen_menit' => 'required|integer|min:0',
+        'denda_missing_clockout' => 'required|numeric|min:0',
     ];
 
     public function render()
@@ -38,15 +40,26 @@ class ShiftManager extends Component
 
     public function resetFields()
     {
-        $this->reset(['nama_shift', 'jam_masuk', 'jam_keluar', 'branch_id', 'denda_telat', 'maksimal_telat_menit', 'batas_awal_absen_menit', 'shiftId', 'isEdit']);
+        $this->reset(['nama_shift', 'jam_masuk', 'jam_keluar', 'branch_id', 'denda_telat', 'maksimal_telat_menit', 'batas_awal_absen_menit', 'denda_missing_clockout', 'shiftId', 'isEdit']);
         $this->denda_telat = 20000;
         $this->maksimal_telat_menit = 60;
         $this->batas_awal_absen_menit = 60;
+        $this->denda_missing_clockout = 0;
     }
 
     public function saveShift()
     {
         $this->validate();
+
+        // Guard: only superadmin can modify/save denda_missing_clockout
+        if (!auth()->user()->hasRole('superadmin')) {
+            if ($this->isEdit) {
+                $oldShift = Shift::find($this->shiftId);
+                $this->denda_missing_clockout = $oldShift ? $oldShift->denda_missing_clockout : 0;
+            } else {
+                $this->denda_missing_clockout = 0;
+            }
+        }
 
         $data = [
             'nama_shift' => $this->nama_shift,
@@ -56,6 +69,7 @@ class ShiftManager extends Component
             'denda_telat' => $this->denda_telat,
             'maksimal_telat_menit' => $this->maksimal_telat_menit,
             'batas_awal_absen_menit' => $this->batas_awal_absen_menit,
+            'denda_missing_clockout' => $this->denda_missing_clockout,
         ];
 
         if ($this->isEdit) {
@@ -80,6 +94,7 @@ class ShiftManager extends Component
         $this->denda_telat = $shift->denda_telat;
         $this->maksimal_telat_menit = $shift->maksimal_telat_menit;
         $this->batas_awal_absen_menit = $shift->batas_awal_absen_menit ?? 60;
+        $this->denda_missing_clockout = $shift->denda_missing_clockout ?? 0;
         $this->isEdit = true;
     }
 

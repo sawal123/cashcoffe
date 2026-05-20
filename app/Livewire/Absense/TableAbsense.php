@@ -106,6 +106,12 @@ class TableAbsense extends Component
             'keterangan' => 'nullable|string',
         ]);
 
+        $denda = 0;
+        if ($this->status === 'tidak clock out') {
+            $shift = \App\Models\Shift::find($this->shiftId);
+            $denda = $shift ? $shift->denda_missing_clockout : 0;
+        }
+
         \App\Models\Absensi::create([
             'user_id' => $this->userIdForAbsen,
             'shift_id' => $this->shiftId,
@@ -114,6 +120,7 @@ class TableAbsense extends Component
             'jam_masuk' => $this->jamMasuk ?: null,
             'jam_keluar' => $this->jamKeluar ?: null,
             'keterangan' => $this->keterangan,
+            'denda_missing_clockout' => $denda,
         ]);
 
         $this->dispatch('close-modal', name: 'modal-tambah-absen');
@@ -148,6 +155,12 @@ class TableAbsense extends Component
             'keterangan' => 'nullable|string',
         ]);
 
+        $denda = 0;
+        if ($this->status === 'tidak clock out') {
+            $shift = \App\Models\Shift::find($this->shiftId);
+            $denda = $shift ? $shift->denda_missing_clockout : 0;
+        }
+
         $absen = \App\Models\Absensi::findOrFail($this->absensiId);
         $absen->update([
             'shift_id' => $this->shiftId,
@@ -155,6 +168,7 @@ class TableAbsense extends Component
             'jam_masuk' => $this->jamMasuk ?: null,
             'jam_keluar' => $this->jamKeluar ?: null,
             'keterangan' => $this->keterangan,
+            'denda_missing_clockout' => $denda,
         ]);
 
         $this->dispatch('close-modal', name: 'modal-detail-absen');

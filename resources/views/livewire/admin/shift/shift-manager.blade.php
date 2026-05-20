@@ -83,6 +83,16 @@
                         @enderror
                     </div>
 
+                    <div>
+                        <label class="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">Denda Lupa Clock Out (Rp)</label>
+                        <input type="number" wire:model="denda_missing_clockout"
+                            class="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-700 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl px-4 py-2 text-sm text-neutral-900 dark:text-neutral-100 transition-all {{ !auth()->user()->hasRole('superadmin') ? 'cursor-not-allowed opacity-60' : '' }}"
+                            {{ !auth()->user()->hasRole('superadmin') ? 'disabled' : '' }}
+                            required>
+                        @error('denda_missing_clockout') <span class="text-xs text-red-500 mt-1 block">{{ $message }}</span>
+                        @enderror
+                    </div>
+
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">Maks.
@@ -173,8 +183,10 @@
                                     </td>
                                     <td class="p-4">
                                         <div class="flex flex-col gap-0.5">
-                                            <span class="text-xs text-red-600 dark:text-red-400 font-semibold">Denda: Rp
+                                            <span class="text-xs text-red-600 dark:text-red-400 font-semibold">Denda Telat: Rp
                                                 {{ number_format($shift->denda_telat, 0, ',', '.') }}</span>
+                                            <span class="text-xs text-amber-600 dark:text-amber-400 font-semibold">Denda Lupa Clock Out: Rp
+                                                {{ number_format($shift->denda_missing_clockout, 0, ',', '.') }}</span>
                                             <div class="flex flex-col text-[10px] text-neutral-500 dark:text-neutral-400">
                                                 <span>Maks. Telat: {{ $shift->maksimal_telat_menit }} Menit</span>
                                                 <span>Batas Absen: {{ $shift->batas_awal_absen_menit ?? 60 }} Menit</span>

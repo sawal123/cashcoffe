@@ -6,7 +6,7 @@
         <p class="text-sm text-neutral-500 mb-4">{{ $user->email }}</p>
 
         {{-- SUMMARY --}}
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
 
             <div class="border dark:bg-neutral-600 rounded p-3 text-center">
                 <p class="text-xs ">Complete</p>
@@ -36,6 +36,11 @@
             <div class="border dark:bg-neutral-600 rounded p-3 text-center">
                 <p class="text-xs ">Alpha</p>
                 <p class="text-xl font-semibold ">{{ $totalAlpha }}</p>
+            </div>
+
+            <div class="border dark:bg-neutral-600 rounded p-3 text-center">
+                <p class="text-xs ">Lupa Clock Out</p>
+                <p class="text-xl font-semibold ">{{ $totalTidakClockOut }}</p>
             </div>
 
         </div>
@@ -157,6 +162,7 @@
                         $badge = match($item->status) {
                         'hadir' => 'bg-success-600',
                         'terlambat' => 'bg-warning-600',
+                        'tidak clock out' => 'bg-orange-500',
                         'izin', 'sakit', 'cuti' => 'bg-blue-600',
                         'alpha' => 'bg-danger-600',
                         'complete' => 'bg-neutral-600',
@@ -332,6 +338,7 @@
                         <option value="sakit">Sakit</option>
                         <option value="cuti">Cuti</option>
                         <option value="alpha">Alpha</option>
+                        <option value="tidak clock out">Tidak Clock Out</option>
                         <option value="wfh">WFH</option>
                         <option value="dinas_luar">Dinas Luar</option>
                         <option value="complete">Complete</option>

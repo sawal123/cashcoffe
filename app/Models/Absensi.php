@@ -19,6 +19,7 @@ class Absensi extends Model
         'lokasi_keluar',
         'status',
         'keterangan',
+        'denda_missing_clockout',
     ];
     public function shift()
     {

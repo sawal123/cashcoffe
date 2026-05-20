@@ -23,7 +23,7 @@ class PayrollService
      * @param Carbon|null $endDate (Default: Tanggal 25 bulan berjalan)
      * @return array
      */
-    public function calculate($userId, Carbon $endDate = null)
+    public function calculate($userId, ?Carbon $endDate = null)
     {
         if (!$endDate) {
             $endDate = Carbon::now()->day(25)->endOfDay();
@@ -54,14 +54,25 @@ class PayrollService
             ->where('is_double_shift', true)
             ->count();
 
+        $countTidakClockOut = $absensis->where('status', 'tidak clock out')->count();
+
         // 4. Kalkulasi Komponen
         $totalDoubleShiftBonus = $countDoubleShift * $nilaiHarian;
         $totalPotonganAlpha = $countAlpha * $nilaiHarian;
         $totalDendaTerlambat = $countTerlambat * self::DENDA_TERLAMBAT;
 
+        $totalPotonganTidakClockOut = 0;
+        foreach ($absensis->where('status', 'tidak clock out') as $abs) {
+            $denda = $abs->denda_missing_clockout;
+            if (($denda === null || $denda == 0) && $abs->shift) {
+                $denda = $abs->shift->denda_missing_clockout;
+            }
+            $totalPotonganTidakClockOut += $denda;
+        }
+
         // 5. Formula Akhir:
-        // Gaji_Diterima = Gaji_Pokok_Bulanan + (Total_Double_Shift * Nilai_Harian) - Total_Potongan_Alpha - Total_Denda_Keterlambatan
-        $gajiDiterima = $gajiPokok + $totalDoubleShiftBonus - $totalPotonganAlpha - $totalDendaTerlambat;
+        // Gaji_Diterima = Gaji_Pokok_Bulanan + (Total_Double_Shift * Nilai_Harian) - Total_Potongan_Alpha - Total_Denda_Keterlambatan - Total_Potongan_Tidak_Clock_Out
+        $gajiDiterima = $gajiPokok + $totalDoubleShiftBonus - $totalPotonganAlpha - $totalDendaTerlambat - $totalPotonganTidakClockOut;
 
         return [
             'user_id' => $userId,
@@ -76,11 +87,13 @@ class PayrollService
                 'count_alpha' => $countAlpha,
                 'count_terlambat' => $countTerlambat,
                 'count_double_shift' => $countDoubleShift,
+                'count_tidak_clock_out' => $countTidakClockOut,
             ],
             'kalkulasi' => [
                 'bonus_double_shift' => $totalDoubleShiftBonus,
                 'potongan_alpha' => $totalPotonganAlpha,
                 'denda_terlambat' => $totalDendaTerlambat,
+                'potongan_tidak_clock_out' => $totalPotonganTidakClockOut,
                 'gaji_diterima' => $gajiDiterima,
             ]
         ];

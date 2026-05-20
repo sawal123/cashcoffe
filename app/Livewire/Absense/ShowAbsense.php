@@ -38,9 +38,16 @@ class ShowAbsense extends Component
             'status' => 'required|string',
         ]);
 
+        $denda = 0;
+        if ($this->status === 'tidak clock out') {
+            $absen = Absensi::findOrFail($this->selectedId);
+            $denda = $absen->shift ? $absen->shift->denda_missing_clockout : 0;
+        }
+
         Absensi::where('id', $this->selectedId)->update([
             'status' => $this->status,
             'keterangan' => $this->keterangan,
+            'denda_missing_clockout' => $denda,
         ]);
 
         $this->reset(['selectedId', 'status', 'keterangan']);
@@ -121,6 +128,7 @@ class ShowAbsense extends Component
         $totalSakit     = 0;
         $totalCuti      = 0;
         $totalAlpha     = 0;
+        $totalTidakClockOut = 0;
 
         $calendar = collect();
 
@@ -144,6 +152,10 @@ class ShowAbsense extends Component
                     case 'terlambat':
                         $totalHadir++;
                         $totalTerlambat++;
+                        break;
+
+                    case 'tidak clock out':
+                        $totalTidakClockOut++;
                         break;
 
                     case 'izin':
@@ -188,6 +200,7 @@ class ShowAbsense extends Component
             'totalSakit',
             'totalCuti',
             'totalAlpha',
+            'totalTidakClockOut',
             'totalHari'
         ))->layout('layouts.app', ['title' => 'Detail Absensi']);
     }

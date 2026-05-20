@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('attendance:add-monthly-leave')->monthlyOn(26, '00:00');
+Schedule::command('attendance:auto-clock-out')->dailyAt('23:50');
