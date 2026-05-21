@@ -24,6 +24,9 @@ class RequestCorrection extends Component
     public $editingId = null;
     public $viewingCorrection = null;
 
+    public $showFormModal = false;
+    public $showDetailModal = false;
+
     protected $rules = [
         'tanggal' => 'required|date|before_or_equal:today',
         'jam_masuk_baru' => 'nullable|date_format:H:i',
@@ -41,7 +44,7 @@ class RequestCorrection extends Component
     {
         $this->viewingCorrection = null;
         $this->viewingCorrection = AttendanceCorrection::where('user_id', Auth::id())->findOrFail($id);
-        $this->dispatch('open-modal', name: 'view-correction-detail');
+        $this->showDetailModal = true;
     }
 
     public function createCorrection()
@@ -54,7 +57,7 @@ class RequestCorrection extends Component
         $this->alasan = '';
         $this->bukti = null;
         $this->resetErrorBag();
-        $this->dispatch('open-modal', name: 'form-request-correction');
+        $this->showFormModal = true;
     }
 
     public function editCorrection($id)
@@ -71,7 +74,7 @@ class RequestCorrection extends Component
         $this->alasan = $cor->alasan;
         $this->bukti = null;
         $this->resetErrorBag();
-        $this->dispatch('open-modal', name: 'form-request-correction');
+        $this->showFormModal = true;
     }
 
     public function cancelEdit()
@@ -84,7 +87,7 @@ class RequestCorrection extends Component
         $this->alasan = '';
         $this->bukti = null;
         $this->resetErrorBag();
-        $this->dispatch('close-modal', name: 'form-request-correction');
+        $this->showFormModal = false;
     }
 
     public function deleteCorrection($id)
@@ -140,6 +143,7 @@ class RequestCorrection extends Component
             $cor->update($updateData);
 
             $this->cancelEdit();
+            $this->showFormModal = false;
             $this->dispatch('showToast', type: 'success', message: 'Permohonan perbaikan kehadiran berhasil diperbarui.');
         } else {
             $buktiPath = null;
@@ -159,7 +163,7 @@ class RequestCorrection extends Component
             ]);
 
             $this->reset(['alasan', 'jam_masuk_baru', 'jam_keluar_baru', 'bukti']);
-            $this->dispatch('close-modal', name: 'form-request-correction');
+            $this->showFormModal = false;
             $this->dispatch('showToast', type: 'success', message: 'Permohonan perbaikan kehadiran berhasil dikirim.');
         }
     }

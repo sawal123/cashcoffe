@@ -26,11 +26,14 @@ class RequestLeave extends Component
     public $editingId = null;
     public $viewingRequest;
 
+    public $showFormModal = false;
+    public $showDetailModal = false;
+
     public function viewRequest($id)
     {
         $this->viewingRequest = null;
         $this->viewingRequest = IzinAbsensi::where('user_id', Auth::id())->findOrFail($id);
-        $this->dispatch('open-modal', name: 'view-request-detail');
+        $this->showDetailModal = true;
     }
 
     protected $rules = [
@@ -57,7 +60,7 @@ class RequestLeave extends Component
         $this->alasan = '';
         $this->bukti = null;
         $this->resetErrorBag();
-        $this->dispatch('open-modal', name: 'form-request-leave');
+        $this->showFormModal = true;
     }
 
     public function editRequest($id)
@@ -74,7 +77,7 @@ class RequestLeave extends Component
         $this->alasan = $req->alasan;
         $this->bukti = null;
         $this->resetErrorBag();
-        $this->dispatch('open-modal', name: 'form-request-leave');
+        $this->showFormModal = true;
     }
 
     public function cancelEdit()
@@ -87,7 +90,7 @@ class RequestLeave extends Component
         $this->alasan = '';
         $this->bukti = null;
         $this->resetErrorBag();
-        $this->dispatch('close-modal', name: 'form-request-leave');
+        $this->showFormModal = false;
     }
 
     public function deleteRequest($id)
@@ -139,6 +142,7 @@ class RequestLeave extends Component
             $req->update($updateData);
 
             $this->cancelEdit();
+            $this->showFormModal = false;
             $this->dispatch('showToast', type: 'success', message: 'Pengajuan izin/cuti berhasil diperbarui.');
         } else {
             $buktiPath = null;
@@ -157,7 +161,7 @@ class RequestLeave extends Component
             ]);
 
             $this->reset(['alasan', 'bukti']);
-            $this->dispatch('close-modal', name: 'form-request-leave');
+            $this->showFormModal = false;
             $this->dispatch('showToast', type: 'success', message: 'Permohonan izin/cuti berhasil dikirim.');
         }
     }
