@@ -172,12 +172,10 @@ class Verifikasi extends Component
                     'is_double_shift' => $isDouble,
                     'keterangan'=> 'Telat parah (' . $diffInMinutes . ' mnt) pada shift ' . $shift->nama_shift,
                 ]);
-                $user->increment('potongan_alpha', $dendaTelat);
                 session()->flash('error', 'Anda terlambat ' . $diffInMinutes . ' menit pada ' . $shift->nama_shift . '. Absen ditolak (Status: Alpha).');
                 return redirect()->to('/absen/clock-in');
             } else {
                 $status = 'terlambat';
-                $user->increment('potongan_terlambat', $dendaTelat);
             }
         }
 

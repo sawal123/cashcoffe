@@ -1,22 +1,15 @@
+apakah saya perlu menggunakan cronjob di server ?
+Ya, Anda perlu menambahkan satu Cronjob utama di server Anda.
 
-   InvalidArgumentException 
+Laravel menggunakan mekanisme Task Scheduler terpusat. Agar jadwal yang didefinisikan di dalam aplikasi (routes/console.php) dapat berjalan otomatis secara tepat waktu, Anda harus mendaftarkan Cronjob berikut pada server Anda:
 
-  Unexpected end of input
+bash
+* * * * * cd /path/ke/project/cashcoffe && php artisan schedule:run >> /dev/null 2>&1
+(Ganti /path/ke/project/cashcoffe dengan absolute path folder proyek Laravel Anda di server).
 
-  at vendor\psy\psysh\src\Shell.php:891
-    887▕ 
-    888▕         if (!$this->hasValidCode()) {
-    889▕             $this->popCodeStack();
-    890▕ 
-  ➜ 891▕             throw new \InvalidArgumentException('Unexpected end of input');
-    892▕         }
-    893▕     }
-    894▕ 
-    895▕     /**
+Mengapa ini diperlukan?
+Di dalam routes/console.php, terdapat 2 tugas otomatis yang sudah dijadwalkan:
 
-  1   vendor\psy\psysh\src\Shell.php:1390
-      Psy\Shell::setCode("App\Models\Pengeluaran::select('tanggal_pengeluaran')-")
-
-  2   vendor\laravel\tinker\src\Console\TinkerCommand.php:76
-      Psy\Shell::execute("App\Models\Pengeluaran::select('tanggal_pengeluaran')-")
-
+attendance:auto-clock-out (Berjalan otomatis setiap hari pukul 23:50): Mendeteksi karyawan yang lupa melakukan Clock Out, memperbarui status absensinya menjadi "tidak clock out", serta menerapkan denda lupa clock out secara otomatis.
+attendance:add-monthly-leave (Berjalan otomatis setiap tanggal 26 pukul 00:00): Menambahkan jatah cuti bulanan sebanyak 2 hari secara otomatis untuk seluruh karyawan aktif.
+Cukup daftarkan satu baris cronjob utama di atas, dan Laravel akan otomatis mengatur eksekusi kedua tugas tersebut sesuai waktunya masing-masing.

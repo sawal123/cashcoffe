@@ -13,6 +13,7 @@ class AttendanceCorrection extends Model
         'jam_masuk_baru',
         'jam_keluar_baru',
         'alasan',
+        'bukti',
         'status',
         'approved_by',
         'catatan_admin',

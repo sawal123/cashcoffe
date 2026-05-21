@@ -59,7 +59,14 @@
                             </span>
                         </td>
                         <td class="px-6 py-4">
-                            <p class="text-[11px] text-neutral-500 line-clamp-1 italic" title="{{ $req->alasan }}">{{ $req->alasan }}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-[11px] text-neutral-500 line-clamp-1 italic flex-grow" title="{{ $req->alasan }}">{{ $req->alasan }}</p>
+                                @if($req->bukti)
+                                    <a href="{{ asset('storage/' . $req->bukti) }}" target="_blank" class="text-blue-600 hover:text-blue-800 shrink-0 flex items-center" title="Lihat Bukti Lampiran">
+                                        <iconify-icon icon="lucide:image" class="text-base"></iconify-icon>
+                                    </a>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 text-center">
                             @php
@@ -125,7 +132,14 @@
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            <p class="text-[11px] text-neutral-500 line-clamp-1 italic">{{ $cor->alasan }}</p>
+                            <div class="flex items-center gap-2">
+                                <p class="text-[11px] text-neutral-500 line-clamp-1 italic flex-grow" title="{{ $cor->alasan }}">{{ $cor->alasan }}</p>
+                                @if($cor->bukti)
+                                    <a href="{{ asset('storage/' . $cor->bukti) }}" target="_blank" class="text-blue-600 hover:text-blue-800 shrink-0 flex items-center" title="Lihat Bukti Lampiran">
+                                        <iconify-icon icon="lucide:image" class="text-base"></iconify-icon>
+                                    </a>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 text-center">
                             @php

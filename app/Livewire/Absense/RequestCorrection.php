@@ -7,15 +7,17 @@ use App\Models\Absensi;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 
 class RequestCorrection extends Component
 {
-    use WithPagination;
+    use WithPagination, WithFileUploads;
 
     public $tanggal;
     public $jam_masuk_baru;
     public $jam_keluar_baru;
     public $alasan;
+    public $bukti;
     public $absensi_id;
 
     public $isEditMode = false;
@@ -27,6 +29,7 @@ class RequestCorrection extends Component
         'jam_masuk_baru' => 'nullable|date_format:H:i',
         'jam_keluar_baru' => 'nullable|date_format:H:i',
         'alasan' => 'required|string|min:10',
+        'bukti' => 'nullable|image|max:2048',
     ];
 
     public function mount()
@@ -41,6 +44,19 @@ class RequestCorrection extends Component
         $this->dispatch('open-modal', name: 'view-correction-detail');
     }
 
+    public function createCorrection()
+    {
+        $this->isEditMode = false;
+        $this->editingId = null;
+        $this->tanggal = now()->format('Y-m-d');
+        $this->jam_masuk_baru = null;
+        $this->jam_keluar_baru = null;
+        $this->alasan = '';
+        $this->bukti = null;
+        $this->resetErrorBag();
+        $this->dispatch('open-modal', name: 'form-request-correction');
+    }
+
     public function editCorrection($id)
     {
         $cor = AttendanceCorrection::where('user_id', Auth::id())
@@ -53,7 +69,9 @@ class RequestCorrection extends Component
         $this->jam_masuk_baru = $cor->jam_masuk_baru ? \Carbon\Carbon::parse($cor->jam_masuk_baru)->format('H:i') : null;
         $this->jam_keluar_baru = $cor->jam_keluar_baru ? \Carbon\Carbon::parse($cor->jam_keluar_baru)->format('H:i') : null;
         $this->alasan = $cor->alasan;
+        $this->bukti = null;
         $this->resetErrorBag();
+        $this->dispatch('open-modal', name: 'form-request-correction');
     }
 
     public function cancelEdit()
@@ -64,7 +82,9 @@ class RequestCorrection extends Component
         $this->jam_masuk_baru = null;
         $this->jam_keluar_baru = null;
         $this->alasan = '';
+        $this->bukti = null;
         $this->resetErrorBag();
+        $this->dispatch('close-modal', name: 'form-request-correction');
     }
 
     public function deleteCorrection($id)
@@ -73,12 +93,23 @@ class RequestCorrection extends Component
             ->where('status', 'pending')
             ->findOrFail($id);
 
+        if ($cor->bukti) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($cor->bukti);
+        }
+
         $cor->delete();
         $this->dispatch('showToast', type: 'info', message: 'Permohonan perbaikan kehadiran berhasil dibatalkan.');
     }
 
     public function submit()
     {
+        if ($this->jam_masuk_baru === '') {
+            $this->jam_masuk_baru = null;
+        }
+        if ($this->jam_keluar_baru === '') {
+            $this->jam_keluar_baru = null;
+        }
+
         $this->validate();
 
         // Find existing attendance for that date if any
@@ -91,17 +122,31 @@ class RequestCorrection extends Component
                 ->where('status', 'pending')
                 ->findOrFail($this->editingId);
 
-            $cor->update([
+            $updateData = [
                 'absensi_id' => $existing ? $existing->id : null,
                 'tanggal' => $this->tanggal,
                 'jam_masuk_baru' => $this->jam_masuk_baru,
                 'jam_keluar_baru' => $this->jam_keluar_baru,
                 'alasan' => $this->alasan,
-            ]);
+            ];
+
+            if ($this->bukti) {
+                if ($cor->bukti) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($cor->bukti);
+                }
+                $updateData['bukti'] = $this->bukti->store('perbaikan_absensi', 'public');
+            }
+
+            $cor->update($updateData);
 
             $this->cancelEdit();
             $this->dispatch('showToast', type: 'success', message: 'Permohonan perbaikan kehadiran berhasil diperbarui.');
         } else {
+            $buktiPath = null;
+            if ($this->bukti) {
+                $buktiPath = $this->bukti->store('perbaikan_absensi', 'public');
+            }
+
             AttendanceCorrection::create([
                 'user_id' => Auth::id(),
                 'absensi_id' => $existing ? $existing->id : null,
@@ -109,10 +154,12 @@ class RequestCorrection extends Component
                 'jam_masuk_baru' => $this->jam_masuk_baru,
                 'jam_keluar_baru' => $this->jam_keluar_baru,
                 'alasan' => $this->alasan,
+                'bukti' => $buktiPath,
                 'status' => 'pending',
             ]);
 
-            $this->reset(['alasan', 'jam_masuk_baru', 'jam_keluar_baru']);
+            $this->reset(['alasan', 'jam_masuk_baru', 'jam_keluar_baru', 'bukti']);
+            $this->dispatch('close-modal', name: 'form-request-correction');
             $this->dispatch('showToast', type: 'success', message: 'Permohonan perbaikan kehadiran berhasil dikirim.');
         }
     }

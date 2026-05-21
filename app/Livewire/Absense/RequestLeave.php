@@ -24,6 +24,7 @@ class RequestLeave extends Component
 
     public $isEditMode = false;
     public $editingId = null;
+    public $viewingRequest;
 
     public function viewRequest($id)
     {
@@ -46,6 +47,19 @@ class RequestLeave extends Component
         $this->tanggal_selesai = now()->format('Y-m-d');
     }
 
+    public function createRequest()
+    {
+        $this->isEditMode = false;
+        $this->editingId = null;
+        $this->tanggal_mulai = now()->format('Y-m-d');
+        $this->tanggal_selesai = now()->format('Y-m-d');
+        $this->jenis = 'izin';
+        $this->alasan = '';
+        $this->bukti = null;
+        $this->resetErrorBag();
+        $this->dispatch('open-modal', name: 'form-request-leave');
+    }
+
     public function editRequest($id)
     {
         $req = IzinAbsensi::where('user_id', Auth::id())
@@ -60,6 +74,7 @@ class RequestLeave extends Component
         $this->alasan = $req->alasan;
         $this->bukti = null;
         $this->resetErrorBag();
+        $this->dispatch('open-modal', name: 'form-request-leave');
     }
 
     public function cancelEdit()
@@ -72,6 +87,7 @@ class RequestLeave extends Component
         $this->alasan = '';
         $this->bukti = null;
         $this->resetErrorBag();
+        $this->dispatch('close-modal', name: 'form-request-leave');
     }
 
     public function deleteRequest($id)
@@ -141,6 +157,7 @@ class RequestLeave extends Component
             ]);
 
             $this->reset(['alasan', 'bukti']);
+            $this->dispatch('close-modal', name: 'form-request-leave');
             $this->dispatch('showToast', type: 'success', message: 'Permohonan izin/cuti berhasil dikirim.');
         }
     }

@@ -114,12 +114,16 @@
     </main>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        (function() {
             // Jam sistem real-time
-            setInterval(() => {
-                const now = new Date();
+            const timeInterval = setInterval(() => {
                 const el = document.getElementById('uiTimeText');
-                if (el) el.innerText = now.toLocaleTimeString('en-US', { hour12: true });
+                if (el) {
+                    const now = new Date();
+                    el.innerText = now.toLocaleTimeString('en-US', { hour12: true });
+                } else {
+                    clearInterval(timeInterval);
+                }
             }, 1000);
 
             const videoFeed = document.getElementById('cameraViewfinder');
@@ -131,8 +135,9 @@
             const triggerBtnLabel = document.getElementById('triggerBtnLabel');
             const aiScanLine = document.getElementById('aiScanLine');
 
-            let cameraStream;
-            let faceVerified = false;
+            let cameraStream = null;
+            let detectionInterval = null;
+            let cameraReady = false;
             let gpsVerified = false;
             let capturedLat = -6.200000;
             let capturedLng = 106.816666;
@@ -150,31 +155,87 @@
                 return R * c;
             }
 
+            // Fungsi untuk mengukur kecerahan rata-rata gambar kamera
+            function checkBrightness(videoElement) {
+                if (!videoElement || videoElement.videoWidth === 0) return 0;
+                
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = 40;
+                tempCanvas.height = 30;
+                const ctx = tempCanvas.getContext('2d');
+                if (!ctx) return 0;
+                
+                ctx.drawImage(videoElement, 0, 0, tempCanvas.width, tempCanvas.height);
+                try {
+                    const imgData = ctx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+                    const data = imgData.data;
+                    let totalLuminance = 0;
+                    const count = data.length / 4;
+                    
+                    for (let i = 0; i < data.length; i += 4) {
+                        const r = data[i];
+                        const g = data[i+1];
+                        const b = data[i+2];
+                        const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
+                        totalLuminance += luminance;
+                    }
+                    
+                    return totalLuminance / count;
+                } catch (e) {
+                    console.error("Error reading canvas image data:", e);
+                    return 50; // Fallback jika terjadi error
+                }
+            }
+
             function deg2rad(deg) {
                 return deg * (Math.PI/180);
             }
 
-            // Inisialisasi Kamera & Fitur Deteksi Wajah
+            // Inisialisasi Kamera & Cek Kecerahan
             async function startVerificationStream() {
                 try {
-                    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 } } });
+                    cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { 
+                            facingMode: 'user', 
+                            width: { ideal: 1280 } 
+                        } 
+                    });
                     if (videoFeed) {
                         videoFeed.srcObject = cameraStream;
-                        
-                        // Fitur Deteksi Wajah: Menganalisis pencahayaan dan penempatan frame
-                        setTimeout(() => {
-                            faceVerified = true;
-                            if (faceStatus) {
-                                faceStatus.className = "bg-emerald-600/95 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-lg border border-emerald-400 flex items-center gap-2 transition-all duration-300 scale-105";
-                                faceStatus.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span><span class="font-button text-button text-xs font-bold">Wajah Terdeteksi (Presisi AI)</span>`;
-                            }
-                            if (aiScanLine) aiScanLine.style.display = 'none';
-                            evaluateEnableCondition();
-                        }, 2000);
+                        startBrightnessCheckLoop();
                     }
                 } catch(e) {
+                    console.error("Camera access error:", e);
                     alert('Gagal mengakses kamera. Mohon aktifkan izin webkamera di peramban Anda.');
                 }
+            }
+
+            function startBrightnessCheckLoop() {
+                if (!videoFeed) return;
+                
+                detectionInterval = setInterval(() => {
+                    if (!videoFeed || videoFeed.paused || videoFeed.ended) return;
+                    
+                    const brightness = checkBrightness(videoFeed);
+                    const threshold = 30; // Kecerahan minimum agar kamera tidak dianggap gelap gulita / ditutup
+                    
+                    if (brightness >= threshold) {
+                        cameraReady = true;
+                        if (faceStatus) {
+                            faceStatus.className = "bg-emerald-600/95 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-lg border border-emerald-400 flex items-center gap-2 transition-all duration-300 scale-105";
+                            faceStatus.innerHTML = `<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span><span class="font-button text-button text-xs font-bold">Kamera & Pencahayaan Layak</span>`;
+                        }
+                        if (aiScanLine) aiScanLine.style.display = 'none';
+                    } else {
+                        cameraReady = false;
+                        if (faceStatus) {
+                            faceStatus.className = "bg-rose-600/95 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-lg border border-rose-400 flex items-center gap-2 transition-all duration-300";
+                            faceStatus.innerHTML = `<span class="material-symbols-outlined text-sm animate-pulse">lightbulb</span><span class="font-button text-button text-xs">Pencahayaan Terlalu Gelap atau Kamera Tertutup</span>`;
+                        }
+                        if (aiScanLine) aiScanLine.style.display = 'block';
+                    }
+                    evaluateEnableCondition();
+                }, 300);
             }
 
             // Fitur Lacak Fake GPS / Mock Guard
@@ -186,7 +247,6 @@
                             capturedLng = position.coords.longitude;
                             
                             // Deteksi Fake GPS / Mock Location:
-                            // Jika ketinggian bernilai mutlak 0.0 dengan akurasi tidak realistis
                             const isFakeGpsSuspected = (position.coords.altitude === 0 && position.coords.accuracy < 4);
 
                             const branchLat = {{ $branchLat }};
@@ -195,27 +255,35 @@
                             const distance = getDistanceFromLatLonInM(capturedLat, capturedLng, branchLat, branchLng);
 
                             if (isFakeGpsSuspected) {
-                                gpsLabel.innerText = "Terindikasi Fake GPS";
-                                gpsLabel.className = "text-red-500 font-bold";
-                                uiLocationText.innerText = "Akses Ditolak (Mock)";
+                                if (gpsLabel) {
+                                    gpsLabel.innerText = "Terindikasi Fake GPS";
+                                    gpsLabel.className = "text-red-500 font-bold";
+                                }
+                                if (uiLocationText) uiLocationText.innerText = "Akses Ditolak (Mock)";
                                 gpsVerified = false;
                             } else if (distance > branchRadius) {
-                                gpsLabel.innerText = `Luar Radius (${Math.round(distance)}m)`;
-                                gpsLabel.className = "text-red-500 font-bold";
-                                uiLocationText.innerText = `Di Luar Area Cabang`;
+                                if (gpsLabel) {
+                                    gpsLabel.innerText = `Luar Radius (${Math.round(distance)}m)`;
+                                    gpsLabel.className = "text-red-500 font-bold";
+                                }
+                                if (uiLocationText) uiLocationText.innerText = `Di Luar Area Cabang`;
                                 gpsVerified = false;
                             } else {
-                                gpsLabel.innerText = "Terverifikasi Valid";
-                                gpsLabel.className = "text-emerald-600 font-bold";
-                                uiLocationText.innerText = `Dalam Radius (${Math.round(distance)}m)`;
+                                if (gpsLabel) {
+                                    gpsLabel.innerText = "Terverifikasi Valid";
+                                    gpsLabel.className = "text-emerald-600 font-bold";
+                                }
+                                if (uiLocationText) uiLocationText.innerText = `Dalam Radius (${Math.round(distance)}m)`;
                                 gpsVerified = true;
                             }
                             evaluateEnableCondition();
                         },
                         (error) => {
-                            gpsLabel.innerText = "Gagal Mengunci Satelit";
-                            gpsLabel.className = "text-red-500 font-bold";
-                            uiLocationText.innerText = "Headquarters Office (Simulasi)";
+                            if (gpsLabel) {
+                                gpsLabel.innerText = "Gagal Mengunci Satelit";
+                                gpsLabel.className = "text-red-500 font-bold";
+                            }
+                            if (uiLocationText) uiLocationText.innerText = "Headquarters Office (Simulasi)";
                             // Mode fallback untuk kelancaran pengujian di localhost
                             capturedLat = -6.200000;
                             capturedLng = 106.816666;
@@ -225,17 +293,43 @@
                         { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
                     );
                 } else {
-                    gpsLabel.innerText = "Perangkat Tidak Mendukung";
+                    if (gpsLabel) gpsLabel.innerText = "Perangkat Tidak Mendukung";
                 }
             }
 
             function evaluateEnableCondition() {
-                if (faceVerified && gpsVerified) {
-                    submitTrigger.disabled = false;
-                    triggerBtnLabel.innerText = "Ambil Foto & Konfirmasi";
+                if (submitTrigger && triggerBtnLabel) {
+                    if (cameraReady && gpsVerified) {
+                        submitTrigger.disabled = false;
+                        triggerBtnLabel.innerText = "Ambil Foto & Konfirmasi";
+                    } else {
+                        submitTrigger.disabled = true;
+                        if (!cameraReady) {
+                            triggerBtnLabel.innerText = "Menunggu Pencahayaan Layak...";
+                        } else if (!gpsVerified) {
+                            triggerBtnLabel.innerText = "Menunggu Verifikasi GPS...";
+                        }
+                    }
                 }
             }
 
+            // Cleanup on navigation or window unload
+            const cleanup = () => {
+                if (cameraStream) {
+                    cameraStream.getTracks().forEach(track => track.stop());
+                    cameraStream = null;
+                }
+                if (detectionInterval) {
+                    clearInterval(detectionInterval);
+                    detectionInterval = null;
+                }
+                document.removeEventListener('livewire:navigating', cleanup);
+                window.removeEventListener('beforeunload', cleanup);
+            };
+            document.addEventListener('livewire:navigating', cleanup);
+            window.addEventListener('beforeunload', cleanup);
+
+            // Start processes immediately
             startVerificationStream();
             startGpsTracking();
 
@@ -245,7 +339,7 @@
                     if (!videoFeed || !videoFeed.videoWidth) return;
 
                     submitTrigger.disabled = true;
-                    triggerBtnLabel.innerText = "Mengamankan Enkripsi Kehadiran...";
+                    if (triggerBtnLabel) triggerBtnLabel.innerText = "Mengamankan Enkripsi Kehadiran...";
 
                     snapCanvas.width = videoFeed.videoWidth;
                     snapCanvas.height = videoFeed.videoHeight;
@@ -254,10 +348,8 @@
                     const base64Data = snapCanvas.toDataURL('image/jpeg', 0.85);
                     const locationData = `${capturedLat},${capturedLng}`;
 
-                    // Hentikan webkamera
-                    if (cameraStream) {
-                        cameraStream.getTracks().forEach(track => track.stop());
-                    }
+                    // Cleanup camera resources
+                    cleanup();
 
                     // Teruskan ke backend Livewire
                     @this.set('fotoBase64', base64Data);
@@ -265,6 +357,6 @@
                     @this.submitVerifikasi();
                 });
             }
-        });
+        })();
     </script>
 </div>

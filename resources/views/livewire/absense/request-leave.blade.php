@@ -1,92 +1,20 @@
 <main class="max-w-[1280px] mx-auto px-4 md:px-8 py-6">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6 text-center md:text-left">
         <h2 class="font-headline-lg-mobile md:font-headline-lg text-primary font-bold">Pengajuan Izin & Cuti</h2>
+        <button wire:click="createRequest"
+            class="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-container text-on-primary hover:text-on-primary-container font-bold rounded-xl shadow-sm active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-[20px]">add</span>
+            <span>Buat Pengajuan</span>
+        </button>
     </div>
 
     <x-toast />
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {{-- Form Side --}}
-        <div class="lg:col-span-4">
-            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 md:p-8 shadow-sm sticky top-24">
-                <h4 class="font-title-lg text-on-surface mb-6 font-bold">{{ $isEditMode ? 'Edit Pengajuan' : 'Buat Pengajuan' }}</h4>
-                
-                <form wire:submit="submit" class="space-y-5">
-                    <div class="space-y-base">
-                        <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Tanggal Mulai</label>
-                        <input type="date" wire:model.live="tanggal_mulai" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
-                        @error('tanggal_mulai') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="space-y-base">
-                        <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Tanggal Selesai</label>
-                        <input type="date" wire:model.live="tanggal_selesai" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
-                        @error('tanggal_selesai') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    @if($this->total_hari > 0)
-                        <div class="p-3 {{ $this->is_quota_exceeded ? 'bg-error/10 border-error/20' : 'bg-primary/5 border-primary/10' }} rounded-lg flex items-center justify-between transition-colors">
-                            <span class="text-xs font-bold {{ $this->is_quota_exceeded ? 'text-error' : 'text-primary' }} uppercase">Total Durasi:</span>
-                            <span class="text-sm font-black {{ $this->is_quota_exceeded ? 'text-error' : 'text-primary' }}">{{ $this->total_hari }} Hari</span>
-                        </div>
-                        @if($this->is_quota_exceeded)
-                            <p class="text-[10px] text-error font-bold mt-1 animate-pulse">
-                                ⚠️ Melebihi sisa jatah cuti Anda (Sisa: {{ Auth::user()->jatah_cuti }} Hari)
-                            </p>
-                        @endif
-                    @endif
-                    
-                    <div class="space-y-base">
-                        <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Jenis Izin</label>
-                        <div class="relative">
-                            <select wire:model.live="jenis" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none bg-none pr-10">
-                                <option value="izin">Izin</option>
-                                <option value="sakit">Sakit</option>
-                                <option value="cuti">Cuti</option>
-                            </select>
-                            <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
-                        </div>
-                        @error('jenis') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-                    
-                    <div class="space-y-base">
-                        <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Alasan</label>
-                        <textarea wire:model="alasan" rows="3" placeholder="Jelaskan alasan pengajuan Anda..." class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"></textarea>
-                        @error('alasan') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-                    
-                    <div class="space-y-base">
-                        <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Bukti (Opsional)</label>
-                        <input type="file" wire:model="bukti" class="w-full text-xs text-outline-variant file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary-container hover:file:bg-primary hover:file:text-on-primary transition-all" />
-                        @error('bukti') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
-                    </div>
-
-                    <div class="pt-4 space-y-2">
-                        <button type="submit" 
-                            {{ $this->is_quota_exceeded ? 'disabled' : '' }}
-                            class="w-full {{ $this->is_quota_exceeded ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary' }} font-button text-button py-4 px-6 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm font-bold">
-                            <span class="material-symbols-outlined text-[20px]">{{ $isEditMode ? 'save' : 'send' }}</span>
-                            {{ $isEditMode ? 'Simpan Perubahan' : 'Kirim Pengajuan' }}
-                        </button>
-                        
-                        @if($isEditMode)
-                            <button type="button" wire:click="cancelEdit" 
-                                class="w-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-button text-button py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 font-bold border border-outline-variant">
-                                <span class="material-symbols-outlined text-[20px]">close</span>
-                                Batal Edit
-                            </button>
-                        @endif
-                    </div>
-                </form>
+    <div class="w-full">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <div class="p-6 border-b border-outline-variant/60">
+                <h4 class="font-title-lg text-on-surface font-bold">Riwayat Pengajuan</h4>
             </div>
-        </div>
-
-        {{-- History Side --}}
-        <div class="lg:col-span-8">
-            <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-                <div class="p-6 border-b border-outline-variant/60">
-                    <h4 class="font-title-lg text-on-surface font-bold">Riwayat Pengajuan</h4>
-                </div>
                 
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -178,6 +106,83 @@
             </div>
         </div>
     </div>
+
+    {{-- Modal Form Pengajuan --}}
+    <x-mdal name="form-request-leave">
+        <div class="px-6 py-4 border-b border-neutral-100 dark:border-neutral-700 flex items-center justify-between bg-surface-container-lowest sticky top-0 z-10">
+            <h3 class="text-lg font-bold text-neutral-800 dark:text-neutral-100">{{ $isEditMode ? 'Edit Pengajuan' : 'Buat Pengajuan' }}</h3>
+        </div>
+        
+        <div class="p-6">
+            <form wire:submit="submit" class="space-y-5">
+                <div class="space-y-base">
+                    <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Tanggal Mulai</label>
+                    <input type="date" wire:model.live="tanggal_mulai" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                    @error('tanggal_mulai') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="space-y-base">
+                    <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Tanggal Selesai</label>
+                    <input type="date" wire:model.live="tanggal_selesai" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" />
+                    @error('tanggal_selesai') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                @if($this->total_hari > 0)
+                    <div class="p-3 {{ $this->is_quota_exceeded ? 'bg-error/10 border-error/20' : 'bg-primary/5 border-primary/10' }} rounded-lg flex items-center justify-between transition-colors">
+                        <span class="text-xs font-bold {{ $this->is_quota_exceeded ? 'text-error' : 'text-primary' }} uppercase">Total Durasi:</span>
+                        <span class="text-sm font-black {{ $this->is_quota_exceeded ? 'text-error' : 'text-primary' }}">{{ $this->total_hari }} Hari</span>
+                    </div>
+                    @if($this->is_quota_exceeded)
+                        <p class="text-[10px] text-error font-bold mt-1 animate-pulse">
+                            ⚠️ Melebihi sisa jatah cuti Anda (Sisa: {{ Auth::user()->jatah_cuti }} Hari)
+                        </p>
+                    @endif
+                @endif
+                
+                <div class="space-y-base">
+                    <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Jenis Izin</label>
+                    <div class="relative">
+                        <select wire:model.live="jenis" class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all appearance-none bg-none pr-10">
+                            <option value="izin">Izin</option>
+                            <option value="sakit">Sakit</option>
+                            <option value="cuti">Cuti</option>
+                        </select>
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
+                    </div>
+                    @error('jenis') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
+                </div>
+                
+                <div class="space-y-base">
+                    <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Alasan</label>
+                    <textarea wire:model="alasan" rows="3" placeholder="Jelaskan alasan pengajuan Anda..." class="w-full px-4 py-3 bg-surface border border-outline-variant rounded-lg font-body-md focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"></textarea>
+                    @error('alasan') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
+                </div>
+                
+                <div class="space-y-base">
+                    <label class="font-label-md text-on-surface-variant uppercase tracking-wider font-medium">Bukti (Opsional)</label>
+                    <input type="file" wire:model="bukti" class="w-full text-xs text-outline-variant file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-primary-container file:text-on-primary-container hover:file:bg-primary hover:file:text-on-primary transition-all" />
+                    @error('bukti') <span class="text-xs text-error mt-1 block">{{ $message }}</span> @enderror
+                </div>
+
+                <div class="pt-4 space-y-2">
+                    <button type="submit" 
+                        {{ $this->is_quota_exceeded ? 'disabled' : '' }}
+                        class="w-full {{ $this->is_quota_exceeded ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed' : 'bg-primary-container hover:bg-primary text-on-primary-container hover:text-on-primary' }} font-button text-button py-4 px-6 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm font-bold">
+                        <span class="material-symbols-outlined text-[20px]">{{ $isEditMode ? 'save' : 'send' }}</span>
+                        {{ $isEditMode ? 'Simpan Perubahan' : 'Kirim Pengajuan' }}
+                    </button>
+                    
+                    @if($isEditMode)
+                        <button type="button" wire:click="cancelEdit" 
+                            class="w-full bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 font-button text-button py-3 px-6 rounded-xl transition-all flex items-center justify-center gap-2 font-bold border border-outline-variant">
+                            <span class="material-symbols-outlined text-[20px]">close</span>
+                            Batal Edit
+                        </button>
+                    @endif
+                </div>
+            </form>
+        </div>
+    </x-mdal>
 
     {{-- Modal Detail Pengajuan --}}
     <x-mdal name="view-request-detail">
