@@ -100,6 +100,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
         Route::get('/variant-group', App\Livewire\Variant\TableVariantGroup::class)->name('variant-group.index');
         Route::get('/variant-option/{id}/ingredients', App\Livewire\Variant\ManageVariantIngredient::class)->name('variant-option.ingredients');
         Route::get('/setting', App\Livewire\Setting\Index::class)->name('setting.index');
+        Route::get('/ai-command-center', App\Livewire\Admin\AiCommandCenter::class)->name('ai-command-center.index');
 
         // Absense
         Route::get('/absense', App\Livewire\Absense\TableAbsense::class)->name('absense.index');

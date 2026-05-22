@@ -58,6 +58,15 @@
                 </a>
             </li>
 
+            @role('superadmin')
+            <li>
+                <a href="/ai-command-center" wire:navigate class="{{ request()->is('ai-command-center*') ? 'active-page' : '' }}">
+                    <iconify-icon icon="solar:cpu-bolt-bold" class="menu-icon"></iconify-icon>
+                    <span>AI Command Center</span>
+                </a>
+            </li>
+            @endrole
+
             <!-- GROUP: Menu & Order -->
 
             <li class="menu-title">
