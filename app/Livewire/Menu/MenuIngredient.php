@@ -6,10 +6,12 @@ use App\Models\Menu;
 use Livewire\Component;
 use App\Models\Ingredients;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use App\Models\MenuIngredients as MenuIngredients;
 
 class MenuIngredient extends Component
 {
+    #[Url(as: 'menu')]
     public $menu_id;
     public $ingredient_id;
     public $qty;
@@ -76,7 +78,8 @@ class MenuIngredient extends Component
     {
         return view('livewire.menu.menu-ingredient', [
             'menus' => Menu::all(),
-            'ingredients' => Ingredients::all()
+            'ingredients' => Ingredients::all(),
+            'selectedMenu' => $this->menu_id ? Menu::find($this->menu_id) : null,
         ])->layout('layouts.app', ['title' => 'Menu Ingredient']);
     }
 }

@@ -5,8 +5,11 @@
         <label
             class="block text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">Pilih
             Menu</label>
-        <div x-data
-            x-init="new TomSelect($refs.menuSelect, { allowEmptyOption: true, create: false, sortField: { field: 'text', direction: 'asc' } })">
+        <div x-data="{ menuSelect: null }"
+            x-init="
+                menuSelect = new TomSelect($refs.menuSelect, { allowEmptyOption: true, create: false, sortField: { field: 'text', direction: 'asc' } });
+                if (@js($menu_id)) menuSelect.setValue(@js($menu_id), true);
+            ">
             <select x-ref="menuSelect" wire:model.live="menu_id"
                 class="w-full bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#2a3045] text-slate-800 dark:text-slate-200 text-sm px-4 py-3 rounded-xl outline-none focus:border-amber-500 transition appearance-none">
                 <option value="">Pilih Menu:</option>
@@ -16,6 +19,13 @@
             </select>
         </div>
     </div>
+
+    @if($selectedMenu)
+        <div class="mb-6 rounded-2xl border border-amber-200 dark:border-amber-900/40  px-5 py-4">
+            <div class="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">Menu yang sedang diperbaiki</div>
+            <div class="mt-1 text-base font-black text-slate-900 dark:text-slate-100">{{ $selectedMenu->nama_menu }}</div>
+        </div>
+    @endif
 
     {{-- TAMBAH KOMPOSISI --}}
     <div

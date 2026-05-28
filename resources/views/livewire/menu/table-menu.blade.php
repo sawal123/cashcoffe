@@ -90,6 +90,12 @@
                 <td data-label="Aksi" class="px-4 sm:px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         @hasrole('superadmin')
+                            <a wire:key="ingredient-{{ $item->id }}"
+                                href="{{ route('menu-ingredient.index', ['menu' => $item->id]) }}"
+                                wire:navigate title="Lihat Komposisi Menu"
+                                class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
+                                <i class="ri-restaurant-2-line text-sm leading-none"></i>
+                            </a>
                             <a wire:key="var-{{ $item->id }}" href="{{ route('menu.variants', $item->id) }}"
                                 wire:navigate title="Kelola Varian"
                                 class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all">
