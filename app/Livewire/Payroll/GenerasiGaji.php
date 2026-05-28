@@ -59,6 +59,12 @@ class GenerasiGaji extends Component
     public function showDoubleShiftDetails($payrollId)
     {
         $payroll = Payroll::with('user')->findOrFail($payrollId);
+
+        if (!$payroll->user) {
+            $this->openDetailModal('Rincian Double Shift', 'double_shift', []);
+            return;
+        }
+
         $nilaiHarian = $payroll->gaji_pokok / PayrollService::DIVIDER_HARI_KERJA;
 
         $rows = UserShift::with('shift')
@@ -92,6 +98,12 @@ class GenerasiGaji extends Component
     public function showDeductionDetails($payrollId)
     {
         $payroll = Payroll::with('user')->findOrFail($payrollId);
+
+        if (!$payroll->user) {
+            $this->openDetailModal('Rincian Potongan', 'deduction', []);
+            return;
+        }
+
         $nilaiHarian = $payroll->gaji_pokok / PayrollService::DIVIDER_HARI_KERJA;
 
         $absensis = Absensi::with('shift')

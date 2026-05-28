@@ -88,9 +88,9 @@
                         <tr wire:key="payroll-row-{{ $pr->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20 transition-all text-neutral-700 dark:text-neutral-300">
                             <td class="py-4 px-6 font-medium">{{ $index + 1 }}</td>
                             <td class="py-4 px-6 font-semibold text-neutral-900 dark:text-neutral-100">
-                                {{ $pr->user->name }}
+                                {{ $pr->user->name ?? 'User tidak ditemukan' }}
                             </td>
-                            <td class="py-4 px-6">{{ $pr->user->jabatan->nama_jabatan ?? '-' }}</td>
+                            <td class="py-4 px-6">{{ $pr->user?->jabatan?->nama_jabatan ?? '-' }}</td>
                             <td class="py-4 px-6 text-right font-medium">Rp {{ number_format($pr->gaji_pokok, 0, ',', '.') }}</td>
                             <td class="py-4 px-6 text-right text-neutral-500">
                                 <div>Rp {{ number_format($pr->insentif_double_shift, 0, ',', '.') }}</div>
@@ -123,12 +123,18 @@
                                 </div>
                             </td>
                             <td class="py-4 px-6 text-center">
-                                <a href="{{ route('absense.show', $pr->user_id) }}"
-                                    wire:navigate
-                                    class="inline-flex items-center justify-center gap-1 rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white hover:bg-primary-700 transition-colors">
-                                    <i class="ri-time-line text-sm leading-none"></i>
-                                    <span>Detail Absen</span>
-                                </a>
+                                @if($pr->user)
+                                    <a href="{{ route('absense.show', $pr->user_id) }}"
+                                        wire:navigate
+                                        class="inline-flex items-center justify-center gap-1 rounded-lg bg-primary-600 px-3 py-2 text-xs font-semibold text-white hover:bg-primary-700 transition-colors">
+                                        <i class="ri-time-line text-sm leading-none"></i>
+                                        <span>Detail Absen</span>
+                                    </a>
+                                @else
+                                    <span class="inline-flex items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-700 px-3 py-2 text-xs font-semibold text-neutral-400">
+                                        Tidak tersedia
+                                    </span>
+                                @endif
                             </td>
                         </tr>
                     @empty
