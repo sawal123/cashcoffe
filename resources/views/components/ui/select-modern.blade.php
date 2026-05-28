@@ -24,10 +24,10 @@
     <button type="button" @click="open = !open" 
         class="h-[46px] px-5 flex items-center justify-between gap-2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl text-sm font-bold text-neutral-700 dark:text-neutral-300 hover:border-blue-500 transition-all active:scale-95 shadow-sm min-w-[200px]">
         <div class="flex items-center gap-2">
-            <iconify-icon icon="{{ $icon }}" class="text-lg text-neutral-400"></iconify-icon>
+            <i class="ri-filter-3-line text-lg leading-none text-neutral-400"></i>
             <span>{{ $activeLabel }}</span>
         </div>
-        <iconify-icon icon="mingcute:down-line" class="text-neutral-400 transition-transform" :class="open ? 'rotate-180' : ''"></iconify-icon>
+        <i class="ri-arrow-down-s-line text-lg leading-none text-neutral-400 transition-transform" :class="open ? 'rotate-180' : ''"></i>
     </button>
 
     <div x-show="open" @click.outside="open = false" x-transition:enter="transition ease-out duration-100"

@@ -11,7 +11,7 @@
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                        <iconify-icon icon="mingcute:wallet-line" class="text-xl"></iconify-icon>
+                        <i class="ri-wallet-3-line text-xl leading-none"></i>
                     </div>
                     <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
                         Omset Bulan Ini
@@ -26,7 +26,7 @@
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                        <iconify-icon icon="mingcute:high-light" class="text-xl"></iconify-icon>
+                        <i class="ri-line-chart-line text-xl leading-none"></i>
                     </div>
                     <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
                         Profit Estimasi
@@ -41,7 +41,7 @@
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                        <iconify-icon icon="mingcute:gift-line" class="text-xl"></iconify-icon>
+                        <i class="ri-gift-line text-xl leading-none"></i>
                     </div>
                     <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
                         Komplemen
@@ -56,7 +56,7 @@
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
-                        <iconify-icon icon="mingcute:bank-card-line" class="text-xl"></iconify-icon>
+                        <i class="ri-bank-card-line text-xl leading-none"></i>
                     </div>
                     <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
                         Pengeluaran
@@ -71,7 +71,7 @@
             <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
                 <div class="flex items-center gap-4 mb-3">
                     <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                        <iconify-icon icon="mingcute:currency-dollar-2-line" class="text-xl"></iconify-icon>
+                        <i class="ri-money-dollar-circle-line text-xl leading-none"></i>
                     </div>
                     <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
                         Profit Bersih
@@ -116,7 +116,7 @@
             'Nett Profit'
         ]">
             @forelse ($dataOmset as $index => $item)
-                <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
+                <tr wire:key="omset-row-{{ $item->tanggal }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
                     <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">{{ $index + 1 }}</td>
                     <td data-label="Tanggal" class="px-6 py-4">
                         <span class="font-semibold text-neutral-800 dark:text-neutral-200">
@@ -159,7 +159,7 @@
                 <tr>
                     <td colspan="9" class="text-center py-12 text-neutral-500">
                         <div class="flex flex-col items-center justify-center gap-3">
-                            <iconify-icon icon="mingcute:ghost-line" class="text-4xl"></iconify-icon>
+                            <i class="ri-inbox-line text-4xl leading-none"></i>
                             <span class="text-sm">Tidak ada data omset untuk bulan ini.</span>
                         </div>
                     </td>

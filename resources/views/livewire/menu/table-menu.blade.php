@@ -13,7 +13,7 @@
             <div class="w-full lg:max-w-[300px]  flex-none">
                 <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari menu..."
                     class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700"
-                    prefix='<iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>' />
+                    prefix='<i class="ri-search-line text-xl leading-none"></i>' />
             </div>
 
             {{-- Category Filter --}}
@@ -24,9 +24,11 @@
 
         @hasrole('superadmin')
             <div class="flex justify-end gap-2">
-                <x-ui.button-link href="/menu/create" icon="mingcute:add-circle-line">
+                <a href="/menu/create" wire:navigate
+                    class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 shadow-blue-500/30 text-white text-sm font-bold rounded-2xl shadow-lg transition-all active:scale-95">
+                    <i class="ri-add-circle-line mr-2 text-lg leading-none"></i>
                     Tambah Menu
-                </x-ui.button-link>
+                </a>
             </div>
         @endhasrole
     </div>
@@ -41,14 +43,14 @@
         ['name' => 'Action', 'align' => 'center'],
     ]">
         @forelse ($menu as $item)
-            <tr wire:key="{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
+            <tr wire:key="menu-row-{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
                 <td data-label="#" class="px-4 sm:px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($menu->currentPage() - 1) * $menu->perPage() + $loop->iteration }}
                 </td>
                 <td data-label="Item" class="px-4 sm:px-6 py-4">
                     <div class="flex items-center gap-3">
-                        <img src="{{ asset('storage/' . $item->gambar) }}" alt="{{ $item->nama_menu }}"
-                            class="shrink-0 rounded-2xl w-12 h-12 object-cover border border-neutral-100 dark:border-neutral-700 shadow-sm">
+                        <img src="{{ asset('storage/' . $item->gambar) }}" alt="{{ $item->nama_menu }}" loading="lazy" decoding="async"
+                            class="shrink-0 rounded-2xl w-12 h-12 object-cover bg-neutral-100 dark:bg-neutral-700 border border-neutral-100 dark:border-neutral-700 shadow-sm">
                         <div>
                             <p class="font-bold text-neutral-800 dark:text-neutral-200">{{ $item->nama_menu }}</p>
                             <p class="text-[10px] text-neutral-500 uppercase tracking-widest">
@@ -91,8 +93,7 @@
                             <a wire:key="var-{{ $item->id }}" href="{{ route('menu.variants', $item->id) }}"
                                 wire:navigate title="Kelola Varian"
                                 class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all">
-                                <iconify-icon wire:ignore wire:key="icon-var-{{ $item->id }}"
-                                    icon="solar:tuning-square-2-linear" class="text-lg"></iconify-icon>
+                                <i class="ri-equalizer-line text-sm leading-none"></i>
                             </a>
                             <x-ui.action-edit wire:key="edit-{{ $item->id }}"
                                 href="/menu/{{ base64_encode($item->id) }}/edit" wire:navigate />
@@ -109,7 +110,7 @@
             <tr>
                 <td colspan="7" class="text-center py-12 text-neutral-500">
                     <div class="flex flex-col items-center justify-center gap-3">
-                        <iconify-icon icon="mingcute:ghost-line" class="text-4xl"></iconify-icon>
+                        <i class="ri-inbox-line text-4xl leading-none"></i>
                         <span class="text-sm">Tidak ada menu ditemukan.</span>
                     </div>
                 </td>
@@ -125,7 +126,7 @@
         <div class="px-6 py-6 text-center">
             <div
                 class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
-                <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
+                <i class="ri-alert-line text-2xl leading-none"></i>
             </div>
 
             <h3 class="mb-1 text-lg font-bold text-neutral-900 dark:text-neutral-100">Hapus Menu Ini?</h3>

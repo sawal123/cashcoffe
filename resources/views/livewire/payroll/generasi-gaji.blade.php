@@ -12,7 +12,7 @@
     <!-- Main Card -->
     <div class="bg-white dark:bg-neutral-800 p-6 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 mb-8">
         <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-primary">analytics</span>
+            <i class="ri-bar-chart-2-line text-primary text-xl leading-none"></i>
             Panel Generasi Payroll
         </h2>
 
@@ -26,7 +26,7 @@
                             <option value="{{ $m }}">{{ \Carbon\Carbon::create()->month($m)->format('F') }}</option>
                         @endforeach
                     </select>
-                    <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
+                    <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-lg leading-none text-neutral-400 pointer-events-none"></i>
                 </div>
             </div>
 
@@ -39,7 +39,7 @@
                             <option value="{{ $y }}">{{ $y }}</option>
                         @endforeach
                     </select>
-                    <span class="absolute right-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-neutral-400 pointer-events-none">expand_more</span>
+                    <i class="ri-arrow-down-s-line absolute right-3 top-1/2 -translate-y-1/2 text-lg leading-none text-neutral-400 pointer-events-none"></i>
                 </div>
             </div>
 
@@ -47,7 +47,7 @@
             <div>
                 <button wire:click="hitungGajiMassal" wire:loading.attr="disabled"
                     class="w-full bg-primary-600 hover:bg-primary-700 text-white font-semibold py-2 px-4 rounded-xl text-sm transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50">
-                    <span wire:loading.remove class="material-symbols-outlined text-sm">settings_suggest</span>
+                    <i wire:loading.remove class="ri-settings-3-line text-sm leading-none"></i>
                     <span wire:loading class="animate-spin spinner-border w-4 h-4 border-2 rounded-full border-t-transparent border-white"></span>
                     <span>Hitung Gaji Massal</span>
                 </button>
@@ -55,7 +55,7 @@
         </div>
 
         <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300 rounded-xl border border-blue-100 dark:border-blue-800/30 flex items-center gap-3 text-xs md:text-sm">
-            <span class="material-symbols-outlined text-base">info</span>
+            <i class="ri-information-line text-base leading-none"></i>
             <span>Siklus Cut-Off terpilih dihitung dari <strong>{{ $startDateFormatted }}</strong> s/d <strong>{{ $endDateFormatted }}</strong>.</span>
         </div>
     </div>
@@ -85,7 +85,7 @@
                 </thead>
                 <tbody class="divide-y divide-neutral-200 dark:divide-neutral-700">
                     @forelse($payrolls as $index => $pr)
-                        <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20 transition-all text-neutral-700 dark:text-neutral-300">
+                        <tr wire:key="payroll-row-{{ $pr->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/20 transition-all text-neutral-700 dark:text-neutral-300">
                             <td class="py-4 px-6 font-medium">{{ $index + 1 }}</td>
                             <td class="py-4 px-6 font-semibold text-neutral-900 dark:text-neutral-100">
                                 {{ $pr->user->name }}
@@ -110,7 +110,7 @@
                     @empty
                         <tr>
                             <td colspan="8" class="py-8 text-center text-neutral-400 dark:text-neutral-500">
-                                <span class="material-symbols-outlined text-4xl block mb-2 opacity-55">payments</span>
+                                <i class="ri-wallet-3-line text-4xl block mb-2 opacity-55 leading-none"></i>
                                 <span>Belum ada data payroll untuk periode ini. Klik tombol di atas untuk melakukan kalkulasi.</span>
                             </td>
                         </tr>

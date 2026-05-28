@@ -15,7 +15,7 @@
             {{ $slot }}
         </select>
         <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-            <iconify-icon icon="lucide:chevron-down"></iconify-icon>
+            <i class="ri-arrow-down-s-line text-lg leading-none"></i>
         </div>
     </div>
     @error($attributes->get('wire:model') ?? $attributes->get('name'))

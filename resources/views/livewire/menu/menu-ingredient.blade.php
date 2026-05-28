@@ -1,7 +1,7 @@
 <div class="">
 
     {{-- SELECT MENU --}}
-    <div class="mb-6" wire:ignore>
+    <div class="mb-6" wire:ignore x-cloak>
         <label
             class="block text-[11px] font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400 mb-2">Pilih
             Menu</label>
@@ -26,10 +26,11 @@
         </h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4" wire:ignore>
-            <div>
+            <div x-data x-cloak
+                x-init="new TomSelect($refs.ingredientSelect, { allowEmptyOption: true, create: false, sortField: { field: 'text', direction: 'asc' } })">
                 <label
                     class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5">Bahan</label>
-                <select id="ingredientSelect" wire:model="ingredient_id"
+                <select id="ingredientSelect" x-ref="ingredientSelect" wire:model="ingredient_id"
                     class="w-full bg-slate-50 dark:bg-[#0f1117] border border-slate-200 dark:border-[#1e2a3a] text-slate-800 dark:text-slate-200 text-sm px-4 py-2.5 rounded-xl outline-none focus:border-amber-500 transition appearance-none">
                     <option value="">Pilih Bahan:</option>
                     @foreach ($ingredients as $i)
@@ -71,7 +72,7 @@
 
         <x-ui.table :headers="['Bahan', 'Qty', 'HPP', ['name' => 'Aksi', 'align' => 'right']]">
             @foreach ($this->menuIngredients as $row)
-                <tr class="hover:bg-slate-50 dark:hover:bg-[#1a2133] transition">
+                <tr wire:key="menu-ingredient-row-{{ $row->id }}" class="hover:bg-slate-50 dark:hover:bg-[#1a2133] transition">
                     <td data-label="Bahan" class="px-6 py-4 text-sm font-medium text-slate-700 dark:text-slate-100">
                         {{ $row->ingredient->nama_bahan }}
                     </td>
@@ -108,7 +109,7 @@
                     <td data-label="Aksi" class="px-6 py-5 text-right">
                         <button wire:click="saveHpp"
                             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-lg shadow-emerald-600/20 transition-all active:scale-95 whitespace-nowrap">
-                            <iconify-icon icon="lucide:save" class="text-sm"></iconify-icon>
+                            <i class="ri-save-line text-sm leading-none"></i>
                             Simpan HPP
                         </button>
                     </td>

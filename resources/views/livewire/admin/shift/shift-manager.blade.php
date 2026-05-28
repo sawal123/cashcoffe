@@ -13,7 +13,7 @@
     @if (session()->has('success'))
         <div
             class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 rounded-xl border border-emerald-200 dark:border-emerald-800/50 flex items-center gap-3 shadow-sm">
-            <span class="material-symbols-outlined">check_circle</span>
+            <i class="ri-checkbox-circle-line text-lg leading-none"></i>
             <span class="font-medium text-sm">{{ session('success') }}</span>
         </div>
     @endif
@@ -25,7 +25,7 @@
             <div
                 class="bg-white dark:bg-neutral-800 p-6 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 sticky top-24">
                 <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-6 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">{{ $isEdit ? 'edit' : 'add_circle' }}</span>
+                    <i class="{{ $isEdit ? 'ri-pencil-line' : 'ri-add-circle-line' }} text-primary text-xl leading-none"></i>
                     {{ $isEdit ? 'Edit Shift' : 'Tambah Shift Baru' }}
                 </h2>
 
@@ -119,7 +119,7 @@
                     <div class="flex gap-2 pt-4">
                         <button type="submit"
                             class="flex-1 bg-primary hover:bg-neutral-900 dark:hover:bg-neutral-700 text-white font-bold py-2.5 rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined text-[18px]">save</span>
+                            <i class="ri-save-line text-[18px] leading-none"></i>
                             {{ $isEdit ? 'Update' : 'Simpan' }}
                         </button>
                         @if($isEdit)
@@ -138,7 +138,7 @@
             <div
                 class="bg-white dark:bg-neutral-800 p-6 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 h-full">
                 <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-6 flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary">list</span>
+                    <i class="ri-list-check-2 text-primary text-xl leading-none"></i>
                     Daftar Shift Tersedia
                 </h2>
 
@@ -157,7 +157,7 @@
                         <tbody
                             class="divide-y divide-neutral-100 dark:divide-neutral-700 text-neutral-700 dark:text-neutral-300 text-sm">
                             @forelse($shifts as $shift)
-                                <tr class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition-colors">
+                                <tr wire:key="shift-row-{{ $shift->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition-colors">
                                     <td class="p-4 font-bold text-neutral-900 dark:text-neutral-100">
                                         {{ $shift->nama_shift }}
                                     </td>
@@ -165,7 +165,7 @@
                                         @if($shift->branch)
                                             <span
                                                 class="inline-flex items-center gap-1 bg-neutral-100 dark:bg-neutral-700/50 px-2 py-0.5 rounded-md text-[11px] font-medium text-neutral-600 dark:text-neutral-300">
-                                                <span class="material-symbols-outlined text-[12px]">store</span>
+                                                <i class="ri-store-2-line text-[12px] leading-none"></i>
                                                 {{ $shift->branch->nama_cabang }}
                                             </span>
                                         @else
@@ -198,13 +198,13 @@
                                             <button wire:click="editShift({{ $shift->id }})"
                                                 class="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg transition-colors"
                                                 title="Edit">
-                                                <span class="material-symbols-outlined text-[18px]">edit</span>
+                                                <i class="ri-pencil-line text-[18px] leading-none"></i>
                                             </button>
                                             <button wire:click="deleteShift({{ $shift->id }})"
                                                 wire:confirm="Yakin ingin menghapus shift ini?"
                                                 class="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors"
                                                 title="Hapus">
-                                                <span class="material-symbols-outlined text-[18px]">delete</span>
+                                                <i class="ri-delete-bin-line text-[18px] leading-none"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -214,7 +214,7 @@
                                     <td colspan="5" class="p-12 text-center">
                                         <div
                                             class="flex flex-col items-center gap-2 text-neutral-400 dark:text-neutral-500">
-                                            <span class="material-symbols-outlined text-4xl">schedule</span>
+                                            <i class="ri-time-line text-4xl leading-none"></i>
                                             <p>Belum ada data shift.</p>
                                         </div>
                                     </td>
