@@ -24,15 +24,15 @@
 </head>
 
 <body class="font-sans text-gray-900 antialiased">
-    <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 px-2 sm:pt-0 bg-gray-100">
-        <div>
+    <div class="auth-shell">
+        <div class="auth-logo-wrap">
             {{-- <a href="/" wire:navigate>
                 <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
             </a> --}}
-            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" style="width: 150px; max-height: 100px; object-fit: contain;" alt="site logo" class="light-logo">
+            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="auth-logo light-logo">
         </div>
 
-        <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-white shadow-md overflow-hidden sm:rounded-xl rounded-lg">
+        <div class="auth-card">
             {{ $slot }}
         </div>
     </div>

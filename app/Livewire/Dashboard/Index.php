@@ -110,9 +110,6 @@ class Index extends Component
         ])->layout('layouts.app', [
             'title' => $this->title,
             'subTitle' => $this->subTitle,
-            'data' => $data,
-            'categories' => $categories,
-            'script' => '<script src="' . asset('assets/js/homethreeChart.js') . '"></script>'
         ]);
     }
 }

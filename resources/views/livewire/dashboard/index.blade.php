@@ -85,9 +85,138 @@
                         </select>
                     </div>
 
-                    <div id="chart" class="pt-[28px] apexcharts-tooltip-style-1"></div>
+                    <div id="dashboard-sales-chart" class="pt-[28px] min-h-[364px] apexcharts-tooltip-style-1"
+                        data-series='@json($data ?? [])'
+                        data-categories='@json($categories ?? [])'></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+@script
+<script>
+    (() => {
+        const chartId = 'dashboard-sales-chart';
+        const cdnUrl = 'https://cdn.jsdelivr.net/npm/apexcharts';
+
+        function loadApexCharts() {
+            if (window.ApexCharts) {
+                return Promise.resolve();
+            }
+
+            const existingScript = document.querySelector(`script[src="${cdnUrl}"]`);
+            if (existingScript) {
+                return new Promise((resolve) => {
+                    existingScript.addEventListener('load', resolve, { once: true });
+                    if (window.ApexCharts) resolve();
+                });
+            }
+
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = cdnUrl;
+                script.defer = true;
+                script.dataset.navigateOnce = '';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        function parseJsonAttribute(element, attribute) {
+            try {
+                return JSON.parse(element.getAttribute(attribute) || '[]');
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function formatRupiahAxis(value) {
+            if (value >= 1000000) {
+                return `${(value / 1000000).toLocaleString('id-ID', { maximumFractionDigits: 1 })}JT`;
+            }
+
+            if (value >= 1000) {
+                return `${(value / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 })}K`;
+            }
+
+            return Number(value || 0).toLocaleString('id-ID');
+        }
+
+        function renderDashboardSalesChart() {
+            const element = document.getElementById(chartId);
+            if (!element || !window.ApexCharts) return;
+
+            if (element._dashboardSalesChart) {
+                element._dashboardSalesChart.destroy();
+                element.innerHTML = '';
+            }
+
+            const data = parseJsonAttribute(element, 'data-series').map((value) => Number(value || 0));
+            const categories = parseJsonAttribute(element, 'data-categories');
+
+            const chart = new ApexCharts(element, {
+                series: [{
+                    name: 'Total Omset',
+                    data,
+                }],
+                chart: {
+                    height: 364,
+                    type: 'line',
+                    toolbar: { show: true },
+                    zoom: { enabled: true },
+                },
+                colors: ['#487FFF'],
+                dataLabels: { enabled: false },
+                stroke: {
+                    curve: 'smooth',
+                    width: 3,
+                },
+                markers: {
+                    size: 4,
+                    strokeWidth: 2,
+                    hover: { size: 7 },
+                },
+                tooltip: {
+                    y: {
+                        formatter: (value) => `Rp${Number(value || 0).toLocaleString('id-ID')}`,
+                    },
+                },
+                grid: {
+                    borderColor: '#D1D5DB',
+                    strokeDashArray: 3,
+                },
+                yaxis: {
+                    labels: {
+                        formatter: formatRupiahAxis,
+                        style: { fontSize: '11px' },
+                    },
+                },
+                xaxis: {
+                    categories,
+                    tooltip: { enabled: false },
+                    labels: {
+                        style: { fontSize: '11px' },
+                    },
+                    axisBorder: { show: false },
+                    crosshairs: {
+                        show: true,
+                        width: 20,
+                        stroke: { width: 0 },
+                        fill: { type: 'solid', color: '#487FFF40' },
+                    },
+                },
+                noData: {
+                    text: 'Belum ada data penjualan',
+                },
+            });
+
+            element._dashboardSalesChart = chart;
+            chart.render();
+        }
+
+        loadApexCharts().then(renderDashboardSalesChart);
+    })();
+</script>
+@endscript

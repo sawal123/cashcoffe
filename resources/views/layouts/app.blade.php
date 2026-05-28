@@ -43,13 +43,6 @@
     <x-script :script="$script ?? ''" />
 
     <script>
-        window.chartData = {
-            data: @json($data ?? []),
-            categories: @json($categories ?? []),
-        };
-    </script>
-
-    <script>
         function initTomSelect(id, eventName) {
             const el = document.getElementById(id);
             if (!el) return; // kalau elemen belum ada, jangan init

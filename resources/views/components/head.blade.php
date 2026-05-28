@@ -24,8 +24,6 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <!-- remix icon font css  -->
     <link rel="stylesheet" href="{{ asset('assets/css/remixicon.css') }}">
-    <!-- Apex Chart css -->
-    <link rel="stylesheet" href="{{ asset('assets/css/lib/apexcharts.css') }}">
     <!-- Data Table css -->
     <link rel="stylesheet" href="{{ asset('assets/css/lib/dataTables.min.css') }}">
     <!-- Text Editor css -->
