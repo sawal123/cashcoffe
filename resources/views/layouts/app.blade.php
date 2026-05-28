@@ -8,7 +8,9 @@
 <body class="dark:bg-neutral-800 bg-neutral-100 dark:text-white">
 
     <!-- ..::  header area start ::.. -->
+    @persist('sidebar')
     <x-sidebar />
+    @endpersist
     <!-- ..::  header area end ::.. -->
 
     <main class="dashboard-main">
@@ -31,7 +33,9 @@
 
         </div>
         <!-- ..::  footer  start ::.. -->
+        @persist('footer')
         <x-footer />
+        @endpersist
         <!-- ..::  footer area end ::.. -->
 
     </main>
@@ -78,8 +82,8 @@
     </script>
 
 
-    <script src="{{ asset('assets/js/chartDashboard.js') }}" data-navigate-once></script>
-    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js"></script>
+    {{-- Chart dashboard dimatikan agar ApexCharts tidak render di halaman tanpa elemen #chart --}}
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-element-bundle.min.js" data-navigate-once></script>
     @livewireScripts
 
     <script>

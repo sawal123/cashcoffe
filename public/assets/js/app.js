@@ -38,7 +38,6 @@ function initThemeToggle() {
 //  SIDEBAR ACTIVE HIGHLIGHT
 // ===================================
 function highlightActiveMenu() {
-    console.log("highlightActiveMenu active. currentUrl:", window.location.pathname, "search:", window.location.search);
     const currentUrl = window.location.pathname.replace(/\/$/, "") || "/";
     const sidebarMenu = document.getElementById("sidebar-menu");
     if (!sidebarMenu) return;
@@ -83,16 +82,12 @@ function highlightActiveMenu() {
                     }
                 }
 
-                console.log("Checking match for link:", link.getAttribute("href"), "queryMatches:", queryMatches, "matchScore:", matchScore);
-
                 if (queryMatches && matchScore > maxMatchScore) {
                     maxMatchScore = matchScore;
                     activeLink = link;
                 }
             }
     });
-
-    console.log("Selected activeLink:", activeLink ? activeLink.getAttribute("href") : "none");
 
     if (activeLink) {
         activeLink.classList.add(activeClass);
@@ -199,22 +194,6 @@ function initSidebarScroll() {
         sidebarMenuArea.setAttribute("data-scroll-listener", "true");
     }
 }
-
-// ===================================
-//  EVENT: SEBELUM NAVIGASI
-//  Bersihkan active state SEBELUM DOM dipindahkan (kritis untuk @persist)
-// ===================================
-document.addEventListener("livewire:navigating", function () {
-    const sidebarMenu = document.getElementById("sidebar-menu");
-    if (!sidebarMenu) return;
-
-    sidebarMenu.querySelectorAll(".active-page").forEach(el => {
-        el.classList.remove("active-page");
-    });
-    sidebarMenu.querySelectorAll(".show, .open").forEach(el => {
-        el.classList.remove("show", "open");
-    });
-});
 
 // ===================================
 //  EVENT: SETELAH NAVIGASI

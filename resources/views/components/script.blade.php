@@ -1,7 +1,6 @@
     <!-- jQuery library js -->
     <script src="{{ asset('assets/js/lib/jquery-3.7.1.min.js') }}" data-navigate-once></script>
-    <!-- Apex Chart js -->
-    <script src="{{ asset('assets/js/lib/apexcharts.min.js') }}" data-navigate-once></script>
+    {{-- ApexCharts dimatikan agar tidak render global saat wire:navigate --}}
 
 
     <script src="{{ asset('assets/js/lib/iconify-icon.min.js') }}" data-navigate-once></script>
@@ -17,7 +16,7 @@
     <!-- prism js -->
     <script src="{{ asset('assets/js/lib/prism.js') }}" data-navigate-once></script>
     <!-- file upload js -->
-    <script src="{{ asset('assets/js/lib/file-upload.js') }}" data-navigate-once></script>
+    <script src="{{ asset('assets/js/lib/file-upload.js') }}?v=1.0.1" data-navigate-once></script>
     <!-- audio player -->
     <script src="{{ asset('assets/js/lib/audioplayer.js') }}" data-navigate-once></script>
 
@@ -31,7 +30,7 @@
         });
     </script>
     <!-- main js -->
-    <script src="{{ asset('assets/js/app.js') }}?v=1.0.2" data-navigate-once></script>
+    <script src="{{ asset('assets/js/app.js') }}?v=1.0.3" data-navigate-once></script>
 
 
 

@@ -1,13 +1,12 @@
 <div>
-    <div class="relative inline-block" wire:poll.3s x-data="{ open: false }">
+    <div class="relative inline-block" wire:poll.visible.10s x-data="{ open: false }">
 
         {{-- Tombol Ikon Lonceng --}}
         <button @click="open = !open" @click.outside="open = false"
-            class="relative flex justify-center items-center p-2 rounded-full  bg-neutral-200 dark:bg-neutral-700 dark:text-white transition"
+            class="relative flex h-10 w-10 justify-center items-center rounded-full bg-neutral-200 text-slate-700 dark:bg-neutral-700 dark:text-slate-200 transition-colors"
             type="button">
 
-            <iconify-icon icon="mingcute:notification-line"
-                class="text-2xl text-slate-700 dark:text-slate-200"></iconify-icon>
+            <i class="ri-notification-3-line text-xl leading-none"></i>
 
             @if (count($pendingApprovals) > 0)
                 <span class="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -62,18 +61,17 @@
                             <div class="flex gap-2 mt-3">
                                 <button wire:click="approveDiscount({{ $req->id }})"
                                     class="flex-1 py-1.5 px-3 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-md transition flex justify-center items-center gap-1">
-                                    <iconify-icon icon="mingcute:check-line"></iconify-icon> Setujui
+                                    <i class="ri-check-line"></i> Setujui
                                 </button>
                                 <button wire:click="rejectDiscount({{ $req->id }})"
                                     class="flex-1 py-1.5 px-3 bg-danger-100 hover:bg-danger-200 text-danger-700 dark:bg-danger-900/30 dark:hover:bg-danger-900/50 dark:text-danger-400 text-xs font-medium rounded-md transition flex justify-center items-center gap-1">
-                                    <iconify-icon icon="mingcute:close-line"></iconify-icon> Tolak
+                                    <i class="ri-close-line"></i> Tolak
                                 </button>
                             </div>
                         </div>
                     @empty
                         <div class="py-4 flex flex-col items-center justify-center text-center">
-                            <iconify-icon icon="mingcute:check-circle-line"
-                                class="text-3xl text-neutral-300 dark:text-neutral-600 mb-1"></iconify-icon>
+                            <i class="ri-checkbox-circle-line text-3xl text-neutral-300 dark:text-neutral-600 mb-1"></i>
                             <p class="text-xs text-neutral-500 dark:text-neutral-400">Tidak ada permintaan baru.</p>
                         </div>
                     @endforelse
@@ -106,12 +104,12 @@
                                     @if ($hist->status === 'approved')
                                         <span
                                             class="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-1 rounded-md">
-                                            <iconify-icon icon="mingcute:check-circle-fill"></iconify-icon> Disetujui
+                                            <i class="ri-checkbox-circle-fill"></i> Disetujui
                                         </span>
                                     @else
                                         <span
                                             class="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-2 py-1 rounded-md">
-                                            <iconify-icon icon="mingcute:close-circle-fill"></iconify-icon> Ditolak
+                                            <i class="ri-close-circle-fill"></i> Ditolak
                                         </span>
                                     @endif
                                     <p class="text-[10px] text-slate-400 mt-1">{{ $hist->updated_at->diffForHumans() }}

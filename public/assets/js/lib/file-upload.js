@@ -1,6 +1,4 @@
 document.addEventListener("livewire:navigated", () => {
-    console.log("Livewire navigated - inisialisasi ulang file upload");
-
     const fileInput = document.getElementById("upload-file");
     const previewWrapper = document.querySelector(".uploaded-img");
     const previewImg = document.getElementById("uploaded-img__preview");
@@ -15,7 +13,6 @@ document.addEventListener("livewire:navigated", () => {
     // Saat file dipilih
     fileInput.addEventListener("change", function (e) {
         const file = e.target.files[0];
-        console.log(file);
         if (file) {
             const reader = new FileReader();
             reader.onload = function (event) {

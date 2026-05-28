@@ -3,7 +3,7 @@
         <iconify-icon icon="radix-icons:cross-2"></iconify-icon>
     </button>
     <div>
-        <a href="{{ route('dashboard.index') }}" class="sidebar-logo">
+        <a href="{{ route('dashboard.index') }}" wire:navigate class="sidebar-logo">
             <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="light-logo">
             <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" style="width: 50ppx" alt="site logo"
                 class="dark-logo">
