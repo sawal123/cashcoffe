@@ -238,4 +238,103 @@ class AutoClockOutAndPayrollTest extends TestCase
             'gaji_bersih' => 2480000.00,
         ]);
     }
+
+    public function test_running_cutoff_counts_previous_dates_as_alpha()
+    {
+        Carbon::setTestNow(Carbon::create(2026, 5, 28, 12));
+
+        try {
+            $shift = Shift::create([
+                'nama_shift' => 'Pagi Test Alpha',
+                'jam_masuk' => '08:00:00',
+                'jam_keluar' => '17:00:00',
+                'denda_telat' => 10000.00,
+                'maksimal_telat_menit' => 30,
+                'batas_awal_absen_menit' => 60,
+                'denda_missing_clockout' => 20000.00,
+            ]);
+
+            $jabatan = Jabatan::create([
+                'nama_jabatan' => 'Staff Test Alpha',
+                'gapok' => 2500000.00,
+                'tunjangan_jabatan' => 100000.00,
+            ]);
+
+            $user = User::factory()->create([
+                'jabatan_id' => $jabatan->id,
+                'name' => 'Karyawan Test Alpha',
+                'gaji_pokok' => 2500000.00,
+            ]);
+
+            foreach (['2026-05-26', '2026-05-27', '2026-05-28'] as $date) {
+                UserShift::create([
+                    'user_id' => $user->id,
+                    'shift_id' => $shift->id,
+                    'tanggal' => $date,
+                ]);
+            }
+
+            $payrollService = new PayrollService();
+            $payrollData = $payrollService->calculate(
+                $user->id,
+                Carbon::createFromDate(2026, 6, 25)
+            );
+
+            $this->assertEquals(2, $payrollData['komponen']['count_alpha']);
+            $this->assertEquals(200000.00, $payrollData['kalkulasi']['potongan_alpha']);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_running_cutoff_counts_explicit_alpha_attendance_records()
+    {
+        Carbon::setTestNow(Carbon::create(2026, 5, 28, 12));
+
+        try {
+            $shift = Shift::create([
+                'nama_shift' => 'Pagi Test Explicit Alpha',
+                'jam_masuk' => '08:00:00',
+                'jam_keluar' => '17:00:00',
+                'denda_telat' => 10000.00,
+                'maksimal_telat_menit' => 30,
+                'batas_awal_absen_menit' => 60,
+                'denda_missing_clockout' => 20000.00,
+            ]);
+
+            $jabatan = Jabatan::create([
+                'nama_jabatan' => 'Staff Test Explicit Alpha',
+                'gapok' => 2600000.00,
+                'tunjangan_jabatan' => 100000.00,
+            ]);
+
+            $user = User::factory()->create([
+                'jabatan_id' => $jabatan->id,
+                'name' => 'Karyawan Test Explicit Alpha',
+                'gaji_pokok' => 2600000.00,
+            ]);
+
+            foreach (['2026-05-26', '2026-05-27'] as $date) {
+                Absensi::create([
+                    'user_id' => $user->id,
+                    'shift_id' => $shift->id,
+                    'tanggal' => $date,
+                    'jam_masuk' => '00:00:00',
+                    'jam_keluar' => null,
+                    'status' => 'alpha',
+                ]);
+            }
+
+            $payrollService = new PayrollService();
+            $payrollData = $payrollService->calculate(
+                $user->id,
+                Carbon::createFromDate(2026, 6, 25)
+            );
+
+            $this->assertEquals(2, $payrollData['komponen']['count_alpha']);
+            $this->assertEquals(208000.00, $payrollData['kalkulasi']['potongan_alpha']);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 }

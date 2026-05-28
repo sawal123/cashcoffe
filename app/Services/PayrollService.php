@@ -61,14 +61,30 @@ class PayrollService
             return $absensi->tanggal . '-' . ($absensi->shift_id ?? 'none');
         });
 
-        // Alpha hanya dihitung dari jadwal shift yang sudah lewat.
-        // Hari tanpa jadwal tidak boleh dianggap alpha.
-        $countAlpha = $scheduledShifts->filter(function ($userShift) use ($absensisBySchedule) {
+        // Alpha dihitung dari jadwal shift lampau yang kosong/status alpha,
+        // plus record absensi yang memang disimpan sebagai alpha.
+        $alphaScheduleKeys = $scheduledShifts->filter(function ($userShift) use ($absensisBySchedule) {
             $key = $userShift->tanggal->toDateString() . '-' . $userShift->shift_id;
             $absensi = $absensisBySchedule->get($key);
 
             return !$absensi || $absensi->status === 'alpha';
-        })->count();
+        })->map(function ($userShift) {
+            return $userShift->tanggal->toDateString() . '-' . $userShift->shift_id;
+        });
+
+        $explicitAlphaKeys = $absensis
+            ->where('status', 'alpha')
+            ->filter(function ($absensi) {
+                return Carbon::parse($absensi->tanggal)->lt(now()->startOfDay());
+            })
+            ->map(function ($absensi) {
+                return $absensi->tanggal . '-' . ($absensi->shift_id ?? 'none');
+            });
+
+        $countAlpha = collect($alphaScheduleKeys->all())
+            ->concat($explicitAlphaKeys->all())
+            ->unique()
+            ->count();
 
         $countTerlambat = $absensis->where('status', 'terlambat')->count();
 
