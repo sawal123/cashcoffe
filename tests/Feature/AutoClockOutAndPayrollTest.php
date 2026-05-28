@@ -337,4 +337,53 @@ class AutoClockOutAndPayrollTest extends TestCase
             Carbon::setTestNow();
         }
     }
+
+    public function test_payroll_ignores_stale_double_shift_flags_on_normal_shifts()
+    {
+        Carbon::setTestNow(Carbon::create(2026, 5, 28, 12));
+
+        try {
+            $shift = Shift::create([
+                'nama_shift' => 'Siang',
+                'jam_masuk' => '15:00:00',
+                'jam_keluar' => '22:00:00',
+                'denda_telat' => 20000.00,
+                'maksimal_telat_menit' => 60,
+                'batas_awal_absen_menit' => 60,
+                'denda_missing_clockout' => 20000.00,
+            ]);
+
+            $jabatan = Jabatan::create([
+                'nama_jabatan' => 'Barista',
+                'gapok' => 1800000.00,
+                'tunjangan_jabatan' => 0,
+            ]);
+
+            $user = User::factory()->create([
+                'jabatan_id' => $jabatan->id,
+                'name' => 'Mona Test',
+                'gaji_pokok' => 1800000.00,
+            ]);
+
+            foreach (['2026-05-26', '2026-05-28', '2026-05-29', '2026-05-30', '2026-05-31'] as $date) {
+                UserShift::create([
+                    'user_id' => $user->id,
+                    'shift_id' => $shift->id,
+                    'tanggal' => $date,
+                    'is_double_shift' => true,
+                ]);
+            }
+
+            $payrollService = new PayrollService();
+            $payrollData = $payrollService->calculate(
+                $user->id,
+                Carbon::createFromDate(2026, 6, 25)
+            );
+
+            $this->assertEquals(0, $payrollData['komponen']['count_double_shift']);
+            $this->assertEquals(0, $payrollData['kalkulasi']['bonus_double_shift']);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
 }

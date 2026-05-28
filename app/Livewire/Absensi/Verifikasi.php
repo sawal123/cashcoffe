@@ -153,8 +153,8 @@ class Verifikasi extends Component
             return redirect()->to('/absen/clock-in');
         }
         
-        // Cek jika ini Double Shift (baik via ID 3 atau flag is_double_shift)
-        $isDouble = ($shift->id == 3 || $availableShift->is_double_shift);
+        // Cek double shift dari flag jadwal atau nama shift, bukan dari ID shift.
+        $isDouble = $availableShift->is_double_shift || str_contains(strtolower($shift->nama_shift), 'double');
 
         $scheduledTime = \Carbon\Carbon::createFromFormat('H:i:s', $jamMasukJadwal);
 

@@ -67,7 +67,11 @@ class GenerasiGaji extends Component
                 $payroll->periode_mulai->toDateString(),
                 $payroll->periode_selesai->toDateString(),
             ])
+            ->whereDate('tanggal', '<=', now()->toDateString())
             ->where('is_double_shift', true)
+            ->whereHas('shift', function ($query) {
+                $query->where('nama_shift', 'like', '%double%');
+            })
             ->orderBy('tanggal')
             ->get()
             ->map(function ($userShift) use ($nilaiHarian) {

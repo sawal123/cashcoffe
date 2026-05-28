@@ -70,6 +70,8 @@ class ShiftSchedule extends Component
 
         $addedCount = 0;
         $skippedCount = 0;
+        $targetShift = Shift::findOrFail($this->targetShiftId);
+        $isDoubleShift = str_contains(strtolower($targetShift->nama_shift), 'double');
 
         foreach ($this->selectedDates as $date) {
             // Check if user already has ANY shift on this date
@@ -82,7 +84,7 @@ class ShiftSchedule extends Component
                     'user_id' => $this->selectedUserId,
                     'shift_id' => $this->targetShiftId,
                     'tanggal' => $date,
-                    'is_double_shift' => ($this->targetShiftId == 3), // Auto flag if ID 3 is selected
+                    'is_double_shift' => $isDoubleShift,
                 ]);
                 $addedCount++;
             } else {

@@ -88,11 +88,15 @@ class PayrollService
 
         $countTerlambat = $absensis->where('status', 'terlambat')->count();
 
-        // 3. Ambil data Double Shift dari UserShift
-        // Sesuai request: jumlah record user_shifts dengan is_double_shift = true
+        // 3. Ambil data Double Shift dari UserShift.
+        // Batasi sampai hari ini dan abaikan flag lama yang menempel pada shift non-double.
         $countDoubleShift = UserShift::where('user_id', $userId)
             ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+            ->whereDate('tanggal', '<=', now()->toDateString())
             ->where('is_double_shift', true)
+            ->whereHas('shift', function ($query) {
+                $query->where('nama_shift', 'like', '%double%');
+            })
             ->count();
 
         $countTidakClockOut = $absensis->where('status', 'tidak clock out')->count();
