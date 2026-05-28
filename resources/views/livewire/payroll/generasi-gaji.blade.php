@@ -5,7 +5,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 border-b border-neutral-200 dark:border-neutral-700 pb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-neutral-900 dark:text-neutral-100">Generasi Gaji Bulanan</h1>
-            <p class="text-neutral-500 dark:text-neutral-400 mt-1">Kalkulasi dan simpan rekapan payroll bulanan karyawan berdasarkan siklus cut-off tanggal 25.</p>
+            <p class="text-neutral-500 dark:text-neutral-400 mt-1">Kalkulasi dan simpan rekapan payroll karyawan berdasarkan siklus cut-off tanggal 26 s/d 25 bulan berikutnya.</p>
         </div>
     </div>
 
@@ -94,10 +94,12 @@
                             <td class="py-4 px-6 text-right font-medium">Rp {{ number_format($pr->gaji_pokok, 0, ',', '.') }}</td>
                             <td class="py-4 px-6 text-right text-neutral-500">Rp {{ number_format($pr->insentif_double_shift, 0, ',', '.') }}</td>
                             <td class="py-4 px-6 text-right text-red-600 dark:text-red-400 font-medium">
-                                Rp {{ number_format($pr->potongan_alpha + $pr->potongan_telat + $pr->potongan_tidak_clock_out, 0, ',', '.') }}
+                                <div>Rp {{ number_format($pr->potongan_alpha + $pr->potongan_telat + $pr->potongan_tidak_clock_out, 0, ',', '.') }}</div>
+                                <div class="mt-1 text-[11px] leading-tight text-neutral-500 dark:text-neutral-400 font-normal">Alpha + Telat + Lupa Clock Out</div>
                             </td>
                             <td class="py-4 px-6 text-right font-bold text-emerald-600 dark:text-emerald-400">
-                                Rp {{ number_format($pr->gaji_bersih, 0, ',', '.') }}
+                                <div>Rp {{ number_format($pr->gaji_bersih, 0, ',', '.') }}</div>
+                                <div class="mt-1 text-[11px] leading-tight text-neutral-500 dark:text-neutral-400 font-normal">Pokok + Double Shift - Potongan</div>
                             </td>
                             <td class="py-4 px-6">
                                 <div class="text-xs text-neutral-500 flex flex-col items-center gap-0.5">

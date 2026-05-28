@@ -5,7 +5,6 @@ namespace App\Livewire\Payroll;
 use App\Models\User;
 use App\Models\Payroll;
 use App\Services\PayrollService;
-use Carbon\Carbon;
 use Livewire\Component;
 use Illuminate\Support\Facades\Log;
 
@@ -52,8 +51,10 @@ class GenerasiGaji extends Component
 
     public function render()
     {
-        $endDate = Carbon::createFromDate((int)$this->year, (int)$this->month, 25)->toDateString();
-        $startDate = Carbon::createFromDate((int)$this->year, (int)$this->month, 25)->subMonth()->day(26)->toDateString();
+        $payrollService = new PayrollService();
+        [$startDateCarbon, $endDateCarbon] = $payrollService->getCutoffPeriod((int)$this->year, (int)$this->month);
+        $startDate = $startDateCarbon->toDateString();
+        $endDate = $endDateCarbon->toDateString();
 
         $payrolls = Payroll::with(['user.jabatan'])
             ->where('periode_mulai', $startDate)
@@ -62,8 +63,8 @@ class GenerasiGaji extends Component
 
         return view('livewire.payroll.generasi-gaji', [
             'payrolls' => $payrolls,
-            'startDateFormatted' => Carbon::parse($startDate)->format('d M Y'),
-            'endDateFormatted' => Carbon::parse($endDate)->format('d M Y'),
+            'startDateFormatted' => $startDateCarbon->format('d M Y'),
+            'endDateFormatted' => $endDateCarbon->format('d M Y'),
         ])->layout('layouts.app', ['title' => 'Generasi Gaji Bulanan']);
     }
 }

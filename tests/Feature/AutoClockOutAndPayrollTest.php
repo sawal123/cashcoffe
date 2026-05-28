@@ -180,18 +180,18 @@ class AutoClockOutAndPayrollTest extends TestCase
         ]);
         $user->assignRole('karyawan');
 
-        // Let's test for May 2026. The range is 26 April 2026 to 25 May 2026.
-        // Let's create an attendance on 5 May 2026.
+        // Let's test for May 2026. The range is 26 May 2026 to 25 June 2026.
+        // Let's create an attendance on 5 June 2026.
         UserShift::create([
             'user_id' => $user->id,
             'shift_id' => $shift->id,
-            'tanggal' => '2026-05-05',
+            'tanggal' => '2026-06-05',
         ]);
 
-        // Populate other days in May 2026 range as present to avoid alpha deduction
-        $startDateVal2 = Carbon::createFromDate(2026, 5, 25)->subMonth()->day(26)->startOfDay();
-        $endDateVal2 = Carbon::createFromDate(2026, 5, 25)->endOfDay();
-        $targetDate2 = '2026-05-05';
+        // Populate other days in the selected cut-off range as present to avoid alpha deduction
+        $startDateVal2 = Carbon::createFromDate(2026, 5, 26)->startOfDay();
+        $endDateVal2 = Carbon::createFromDate(2026, 6, 25)->endOfDay();
+        $targetDate2 = '2026-06-05';
 
         $tempDate2 = $startDateVal2->copy()->startOfDay();
         while ($tempDate2->lte($endDateVal2)) {
@@ -211,7 +211,7 @@ class AutoClockOutAndPayrollTest extends TestCase
         Absensi::create([
             'user_id' => $user->id,
             'shift_id' => $shift->id,
-            'tanggal' => '2026-05-05',
+            'tanggal' => '2026-06-05',
             'jam_masuk' => '08:00:00',
             'jam_keluar' => null,
             'status' => 'tidak clock out',
@@ -224,8 +224,8 @@ class AutoClockOutAndPayrollTest extends TestCase
         // Assert record is returned and populated
         $this->assertNotNull($payroll);
         $this->assertEquals($user->id, $payroll->user_id);
-        $this->assertEquals('2026-04-26', $payroll->periode_mulai->toDateString());
-        $this->assertEquals('2026-05-25', $payroll->periode_selesai->toDateString());
+        $this->assertEquals('2026-05-26', $payroll->periode_mulai->toDateString());
+        $this->assertEquals('2026-06-25', $payroll->periode_selesai->toDateString());
         $this->assertEquals(2500000.00, $payroll->gaji_pokok);
         $this->assertEquals(20000.00, $payroll->potongan_tidak_clock_out);
         $this->assertEquals(2500000.00 - 20000.00, $payroll->gaji_bersih);
@@ -233,8 +233,8 @@ class AutoClockOutAndPayrollTest extends TestCase
         // Assert database record exists
         $this->assertDatabaseHas('payrolls', [
             'user_id' => $user->id,
-            'periode_mulai' => '2026-04-26 00:00:00',
-            'periode_selesai' => '2026-05-25 00:00:00',
+            'periode_mulai' => '2026-05-26 00:00:00',
+            'periode_selesai' => '2026-06-25 00:00:00',
             'gaji_bersih' => 2480000.00,
         ]);
     }

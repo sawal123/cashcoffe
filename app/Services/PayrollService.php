@@ -15,23 +15,30 @@ class PayrollService
     const DIVIDER_HARI_KERJA = 25;
     const DENDA_TERLAMBAT = 20000;
 
+    public function getCutoffPeriod(int $year, int $month): array
+    {
+        $startDate = Carbon::createFromDate($year, $month, 1)->day(26)->startOfDay();
+        $endDate = $startDate->copy()->addMonthNoOverflow()->day(25)->endOfDay();
+
+        return [$startDate, $endDate];
+    }
+
     /**
      * Menghitung kalkulasi payroll bulanan per user_id.
-     * Periode: Tanggal 26 bulan sebelumnya s/d Tanggal 25 bulan berjalan.
+     * Periode: Tanggal 26 bulan terpilih s/d Tanggal 25 bulan berikutnya.
      *
      * @param int $userId
-     * @param Carbon|null $endDate (Default: Tanggal 25 bulan berjalan)
+     * @param Carbon|null $endDate Akhir periode cut-off
      * @return array
      */
     public function calculate($userId, ?Carbon $endDate = null)
     {
         if (!$endDate) {
-            $endDate = Carbon::now()->day(25)->endOfDay();
+            [$startDate, $endDate] = $this->getCutoffPeriod((int) now()->year, (int) now()->month);
         } else {
-            $endDate = $endDate->copy()->day(25)->endOfDay();
+            $endDate = $endDate->copy()->endOfDay();
+            $startDate = $endDate->copy()->subMonthNoOverflow()->day(26)->startOfDay();
         }
-
-        $startDate = $endDate->copy()->subMonth()->day(26)->startOfDay();
 
         $user = User::findOrFail($userId);
         $gajiPokok = $user->gaji_pokok ?? 0;
@@ -42,27 +49,26 @@ class PayrollService
         // 2. Ambil data Absensi dalam periode
         $absensis = Absensi::where('user_id', $userId)
             ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+            ->with('shift')
             ->get();
 
-        $absensisMap = $absensis->keyBy('tanggal');
+        $scheduledShifts = UserShift::where('user_id', $userId)
+            ->whereBetween('tanggal', [$startDate->toDateString(), $endDate->toDateString()])
+            ->whereDate('tanggal', '<', now()->toDateString())
+            ->get();
 
-        // Hitung Alpha berdasarkan hari lampau yang tidak ada data absensinya, atau yang statusnya 'alpha'
-        $countAlpha = 0;
-        $tempDate = $startDate->copy()->startOfDay();
-        while ($tempDate->lte($endDate)) {
-            if ($tempDate->isPast()) {
-                $dateStr = $tempDate->toDateString();
-                $item = $absensisMap->get($dateStr);
-                if ($item) {
-                    if ($item->status === 'alpha') {
-                        $countAlpha++;
-                    }
-                } else {
-                    $countAlpha++;
-                }
-            }
-            $tempDate->addDay();
-        }
+        $absensisBySchedule = $absensis->keyBy(function ($absensi) {
+            return $absensi->tanggal . '-' . ($absensi->shift_id ?? 'none');
+        });
+
+        // Alpha hanya dihitung dari jadwal shift yang sudah lewat.
+        // Hari tanpa jadwal tidak boleh dianggap alpha.
+        $countAlpha = $scheduledShifts->filter(function ($userShift) use ($absensisBySchedule) {
+            $key = $userShift->tanggal->toDateString() . '-' . $userShift->shift_id;
+            $absensi = $absensisBySchedule->get($key);
+
+            return !$absensi || $absensi->status === 'alpha';
+        })->count();
 
         $countTerlambat = $absensis->where('status', 'terlambat')->count();
 
@@ -78,7 +84,9 @@ class PayrollService
         // 4. Kalkulasi Komponen
         $totalDoubleShiftBonus = $countDoubleShift * $nilaiHarian;
         $totalPotonganAlpha = $countAlpha * $nilaiHarian;
-        $totalDendaTerlambat = $countTerlambat * self::DENDA_TERLAMBAT;
+        $totalDendaTerlambat = $absensis->where('status', 'terlambat')->sum(function ($abs) {
+            return $abs->shift->denda_telat ?? self::DENDA_TERLAMBAT;
+        });
 
         $totalPotonganTidakClockOut = 0;
         foreach ($absensis->where('status', 'tidak clock out') as $abs) {
@@ -130,7 +138,7 @@ class PayrollService
     public function hitungGajiBulanan($userId, $year, $month)
     {
         try {
-            $endDate = Carbon::createFromDate($year, $month, 25)->endOfDay();
+            [, $endDate] = $this->getCutoffPeriod((int) $year, (int) $month);
             
             $calc = $this->calculate($userId, $endDate);
             
