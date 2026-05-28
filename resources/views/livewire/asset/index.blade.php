@@ -169,7 +169,7 @@
                 <div>
                     <label
                         class="block text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Kategori</label>
-                    <select wire:model="kategori" :disabled="auth()->user()->hasRole('manager') && $isEdit"
+                    <select wire:model="kategori" @disabled(auth()->user()->hasRole('manager') && $isEdit)
                         class="w-full rounded-2xl border-neutral-200 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 focus:border-blue-500 focus:ring-blue-500 transition-all">
                         <option value="">Pilih Kategori</option>
                         <option value="Elektronik">Elektronik</option>

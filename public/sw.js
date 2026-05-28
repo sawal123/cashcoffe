@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cash-coffee-cache-v1';
+const CACHE_NAME = 'cash-coffee-cache-v2';
 const ASSETS_TO_CACHE = [
     '/',
     '/favicon.ico',
@@ -10,9 +10,8 @@ const ASSETS_TO_CACHE = [
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
-            console.log('[Service Worker] Caching app shell and static assets');
             // Gagal loading salah satu cache opsional tidak menggagalkan worker
-            cache.addAll(ASSETS_TO_CACHE).catch(err => console.log('Asset cache error: ', err));
+            cache.addAll(ASSETS_TO_CACHE).catch(() => {});
         }).then(() => self.skipWaiting())
     );
 });
@@ -24,7 +23,6 @@ self.addEventListener('activate', event => {
             return Promise.all(
                 keys.map(key => {
                     if (key !== CACHE_NAME) {
-                        console.log('[Service Worker] Removing old cache', key);
                         return caches.delete(key);
                     }
                 })

@@ -6,6 +6,7 @@
     <title>{{ $title ?? 'WorkSync - Absensi' }}</title>
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#18181b">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="{{ asset('logo/logo.png') }}">
@@ -198,7 +199,6 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered successfully:', reg.scope))
                     .catch(err => console.error('Service Worker registration failed:', err));
             });
         }

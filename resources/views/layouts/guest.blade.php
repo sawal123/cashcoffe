@@ -10,6 +10,7 @@
     <link rel="icon" type="image/png" href="{{ asset($webSetting->icon ?? 'logo/logow.png') }}" sizes="16x16">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#18181b">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link class="apple-touch-icon" rel="apple-touch-icon" href="{{ asset('logo/logo.png') }}">
@@ -39,7 +40,6 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
-                    .then(reg => console.log('Service Worker registered successfully:', reg.scope))
                     .catch(err => console.error('Service Worker registration failed:', err));
             });
         }
