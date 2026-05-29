@@ -1,6 +1,7 @@
 <?php
 
 use App\Exports\OrdersExport;
+use App\Http\Controllers\MenuCompositionPdfController;
 use App\Http\Controllers\StruckController;
 use App\Livewire\Absensi\ClockIn as AbsensiClockIn;
 use App\Livewire\Absensi\History;
@@ -97,6 +98,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
         Route::get('/category/create', App\Livewire\Category\CategoryCreate::class)->name('category.create');
         Route::get('/category/{categoryId}/edit', App\Livewire\Category\CategoryCreate::class)->name('category.edit');
         Route::get('/menu-ingredient', App\Livewire\Menu\MenuIngredient::class)->name('menu-ingredient.index');
+        Route::get('/menu-ingredient/export/pdf', MenuCompositionPdfController::class)->name('menu-ingredient.export-pdf');
         Route::get('/variant-group', App\Livewire\Variant\TableVariantGroup::class)->name('variant-group.index');
         Route::get('/variant-option/{id}/ingredients', App\Livewire\Variant\ManageVariantIngredient::class)->name('variant-option.ingredients');
         Route::get('/setting', App\Livewire\Setting\Index::class)->name('setting.index');

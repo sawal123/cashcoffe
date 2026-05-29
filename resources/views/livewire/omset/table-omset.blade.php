@@ -6,85 +6,96 @@
     <x-toast />
     <div class="space-y-6">
         {{-- CARD TOTAL BULANAN --}}
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {{-- Omset Card --}}
-            <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                        <i class="ri-wallet-3-line text-xl leading-none"></i>
+            <div
+                class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-2xl shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <i class="ri-wallet-3-line text-lg leading-none"></i>
                     </div>
-                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                    <h4 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                         Omset Bulan Ini
                     </h4>
                 </div>
-                <p class="text-2xl font-bold text-neutral-900 dark:text-white">
+                <p class="text-lg font-bold text-neutral-900 dark:text-white leading-tight">
                     Rp {{ number_format($totalOmset, 0, ',', '.') }}
                 </p>
             </div>
 
             {{-- Profit Estimasi Card --}}
-            <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
-                        <i class="ri-line-chart-line text-xl leading-none"></i>
+            <div
+                class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-2xl shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center text-green-600 dark:text-green-400">
+                        <i class="ri-line-chart-line text-lg leading-none"></i>
                     </div>
-                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                    <h4 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                         Profit Estimasi
                     </h4>
                 </div>
-                <p class="text-2xl font-bold text-green-600 dark:text-green-400">
+                <p class="text-lg font-bold text-green-600 dark:text-green-400 leading-tight">
                     Rp {{ number_format($totalProfit, 0, ',', '.') }}
                 </p>
             </div>
 
             {{-- Komplemen Card --}}
-            <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                        <i class="ri-gift-line text-xl leading-none"></i>
+            <div
+                class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-2xl shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                        <i class="ri-gift-line text-lg leading-none"></i>
                     </div>
-                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                    <h4 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                         Komplemen
                     </h4>
                 </div>
-                <p class="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                <p class="text-lg font-bold text-amber-600 dark:text-amber-400 leading-tight">
                     Rp {{ number_format($totalKomplemen, 0, ',', '.') }}
                 </p>
             </div>
 
             {{-- Pengeluaran Card --}}
-            <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
-                        <i class="ri-bank-card-line text-xl leading-none"></i>
+            <div
+                class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-2xl shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400">
+                        <i class="ri-bank-card-line text-lg leading-none"></i>
                     </div>
-                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                    <h4 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                         Pengeluaran
                     </h4>
                 </div>
-                <p class="text-2xl font-bold text-red-600 dark:text-red-400">
+                <p class="text-lg font-bold text-red-600 dark:text-red-400 leading-tight">
                     Rp {{ number_format($totalPengeluaran, 0, ',', '.') }}
                 </p>
             </div>
 
             {{-- Profit Bersih Card --}}
-            <div class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-6 rounded-[2rem] shadow-sm">
-                <div class="flex items-center gap-4 mb-3">
-                    <div class="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                        <i class="ri-money-dollar-circle-line text-xl leading-none"></i>
+            <div
+                class="bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-4 rounded-2xl shadow-sm">
+                <div class="flex items-center gap-3 mb-2">
+                    <div
+                        class="w-8 h-8 rounded-lg bg-purple-50 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                        <i class="ri-money-dollar-circle-line text-lg leading-none"></i>
                     </div>
-                    <h4 class="text-xs font-black text-neutral-400 uppercase tracking-widest">
+                    <h4 class="text-[10px] font-black text-neutral-400 uppercase tracking-widest">
                         Profit Bersih
                     </h4>
                 </div>
-                <p class="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <p class="text-lg font-bold text-purple-600 dark:text-purple-400 leading-tight">
                     Rp {{ number_format($netProfit, 0, ',', '.') }}
                 </p>
             </div>
         </div>
 
         {{-- FILTER BULAN & TAHUN --}}
-        <div class="flex flex-wrap gap-4 items-center bg-white dark:bg-neutral-800/50 p-6 rounded-[2rem] border border-neutral-200 dark:border-neutral-700">
+        <div
+            class="flex flex-wrap gap-4 items-center bg-white dark:bg-neutral-800/50 p-6 rounded-[2rem] border border-neutral-200 dark:border-neutral-700">
             <div class="w-full md:w-[200px]">
                 <x-ui.select wire:model.live="bulan" label="Pilih Bulan">
                     @foreach (range(1, 12) as $m)
@@ -113,24 +124,28 @@
             'Pengeluaran',
             'Omset Total',
             'Estimated Profit',
-            'Nett Profit'
+            'Nett Profit',
         ]">
             @forelse ($dataOmset as $index => $item)
-                <tr wire:key="omset-row-{{ $item->tanggal }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
+                <tr wire:key="omset-row-{{ $item->tanggal }}"
+                    class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
                     <td data-label="#" class="px-6 py-4 text-center text-sm text-neutral-500">{{ $index + 1 }}</td>
                     <td data-label="Tanggal" class="px-6 py-4">
                         <span class="font-semibold text-neutral-800 dark:text-neutral-200">
                             {{ \Carbon\Carbon::parse($item->tanggal)->translatedFormat('d F Y') }}
                         </span>
                     </td>
-                    <td data-label="Pesanan" class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                    <td data-label="Pesanan"
+                        class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
                         {{ number_format($item->jumlah_pesanan, 0, ',', '.') }}
                     </td>
-                    <td data-label="Menu" class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
+                    <td data-label="Menu"
+                        class="px-6 py-4 text-center text-sm font-medium text-neutral-600 dark:text-neutral-400">
                         {{ number_format($item->jumlah_menu, 0, ',', '.') }}
                     </td>
                     <td data-label="Komplemen" class="px-6 py-4 text-center">
-                        <span class="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold border border-amber-100 dark:border-amber-700">
+                        <span
+                            class="px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold border border-amber-100 dark:border-amber-700">
                             {{ number_format($item->total_komplemen, 0, ',', '.') }}
                         </span>
                     </td>
@@ -150,7 +165,8 @@
                         </span>
                     </td>
                     <td data-label="Nett Profit" class="px-6 py-4">
-                        <span class="font-bold {{ $item->net_profit >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400' }}">
+                        <span
+                            class="font-bold {{ $item->net_profit >= 0 ? 'text-purple-600 dark:text-purple-400' : 'text-red-600 dark:text-red-400' }}">
                             Rp {{ number_format($item->net_profit, 0, ',', '.') }}
                         </span>
                     </td>

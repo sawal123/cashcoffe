@@ -1,6 +1,30 @@
 /* === navbar css start === */
 .navbar-header {
-  @apply h-[4.5rem] bg-white sticky top-0 py-4 px-6 z-20 dark:bg-dark-2 border-0;
+  @apply h-[4.5rem] bg-white fixed top-0 start-0 end-0 py-4 px-6 z-20 dark:bg-dark-2 border-0;
+}
+
+@media (min-width: 1200px) {
+  .navbar-header {
+    inset-inline-start: 13.75rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .navbar-header {
+    inset-inline-start: 17.1875rem;
+  }
+}
+
+@media (min-width: 1650px) {
+  .navbar-header {
+    inset-inline-start: 19.5rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .dashboard-main.active .navbar-header {
+    inset-inline-start: 5.375rem;
+  }
 }
 
 .sidebar-toggle,

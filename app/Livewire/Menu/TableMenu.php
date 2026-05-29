@@ -18,7 +18,9 @@ class TableMenu extends Component
 
     public $search = '';
     public $perPage = 20; // default
+    public $selectedMenuIds = [];
     protected $paginationTheme = 'tailwind';
+
     public function updatingCategory()
     {
         $this->resetPage();
@@ -29,6 +31,37 @@ class TableMenu extends Component
         $this->resetPage();
     }
 
+    public function clearSelectedMenus()
+    {
+        $this->selectedMenuIds = [];
+    }
+
+    public function toggleCurrentPageSelection(array $menuIds)
+    {
+        $menuIds = collect($menuIds)->map(fn ($id) => (string) $id)->all();
+        $selected = collect($this->selectedMenuIds)->map(fn ($id) => (string) $id)->all();
+
+        $allSelected = empty(array_diff($menuIds, $selected));
+
+        $this->selectedMenuIds = $allSelected
+            ? array_values(array_diff($selected, $menuIds))
+            : array_values(array_unique(array_merge($selected, $menuIds)));
+    }
+
+    public function getSelectedMenuExportUrlProperty()
+    {
+        $menuIds = collect($this->selectedMenuIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values()
+            ->implode(',');
+
+        return $menuIds
+            ? route('menu-ingredient.export-pdf', ['menus' => $menuIds])
+            : '#';
+    }
+
     public function deletemenu($id)
     {
         $menu = Menu::where('id', base64_decode($id))->first();
@@ -37,6 +70,7 @@ class TableMenu extends Component
                 Storage::disk('public')->delete($menu->gambar);
             }
             $menu->delete();
+            $this->selectedMenuIds = array_values(array_diff($this->selectedMenuIds, [(string) $menu->id, $menu->id]));
             $this->dispatch('showToast', message: 'Menu Berhasil Dihapus.', type: 'success', title: 'Success');
         } else {
             $this->dispatch('showToast', message: 'Menu tidak ditemukan.', type: 'error', title: 'Error');

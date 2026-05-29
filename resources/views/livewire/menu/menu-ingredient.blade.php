@@ -20,6 +20,14 @@
         </div>
     </div>
 
+    <div class="mb-6 flex flex-wrap justify-end gap-2">
+        <a href="{{ route('menu-ingredient.export-pdf', $menu_id ? ['menu' => $menu_id] : []) }}" target="_blank"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 active:scale-95">
+            <i class="ri-file-pdf-2-line text-lg leading-none"></i>
+            Export PDF {{ $menu_id ? 'Menu Ini' : 'Semua Menu' }}
+        </a>
+    </div>
+
     @if($selectedMenu)
         <div class="mb-6 rounded-2xl border border-amber-200 dark:border-amber-900/40  px-5 py-4">
             <div class="text-[10px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-400">Menu yang sedang diperbaiki</div>

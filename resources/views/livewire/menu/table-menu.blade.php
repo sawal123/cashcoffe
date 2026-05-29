@@ -24,6 +24,17 @@
 
         @hasrole('superadmin')
             <div class="flex justify-end gap-2">
+                @if(count($selectedMenuIds) > 0)
+                    <a href="{{ $this->selectedMenuExportUrl }}" target="_blank"
+                        class="inline-flex items-center justify-center px-5 py-2.5 bg-red-600 hover:bg-red-700 shadow-red-500/30 text-white text-sm font-bold rounded-2xl shadow-lg transition-all active:scale-95">
+                        <i class="ri-file-pdf-2-line mr-2 text-lg leading-none"></i>
+                        Export PDF Terpilih ({{ count($selectedMenuIds) }})
+                    </a>
+                    <button type="button" wire:click="clearSelectedMenus"
+                        class="inline-flex items-center justify-center px-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm font-bold rounded-2xl transition-all hover:bg-neutral-50 dark:hover:bg-neutral-800 active:scale-95">
+                        Batal Pilih
+                    </button>
+                @endif
                 <a href="/menu/create" wire:navigate
                     class="inline-flex items-center justify-center px-5 py-2.5 bg-blue-600 hover:bg-blue-700 shadow-blue-500/30 text-white text-sm font-bold rounded-2xl shadow-lg transition-all active:scale-95">
                     <i class="ri-add-circle-line mr-2 text-lg leading-none"></i>
@@ -33,7 +44,14 @@
         @endhasrole
     </div>
 
+    @php
+        $currentPageMenuIds = $menu->pluck('id')->map(fn ($id) => (string) $id)->values()->all();
+        $selectedIds = collect($selectedMenuIds)->map(fn ($id) => (string) $id)->all();
+        $allCurrentPageSelected = count($currentPageMenuIds) > 0 && empty(array_diff($currentPageMenuIds, $selectedIds));
+    @endphp
+
     <x-ui.table :headers="[
+        ['name' => '', 'align' => 'center'],
         ['name' => '#', 'align' => 'center'],
         'Menu Item',
         'Kategori',
@@ -44,6 +62,10 @@
     ]">
         @forelse ($menu as $item)
             <tr wire:key="menu-row-{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
+                <td data-label="Pilih" class="px-4 sm:px-6 py-4 text-center">
+                    <input type="checkbox" wire:model.live="selectedMenuIds" value="{{ $item->id }}"
+                        class="h-4 w-4 rounded border-neutral-300 text-red-600 focus:ring-red-500">
+                </td>
                 <td data-label="#" class="px-4 sm:px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($menu->currentPage() - 1) * $menu->perPage() + $loop->iteration }}
                 </td>
@@ -96,6 +118,12 @@
                                 class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
                                 <i class="ri-restaurant-2-line text-sm leading-none"></i>
                             </a>
+                            <a wire:key="pdf-{{ $item->id }}"
+                                href="{{ route('menu-ingredient.export-pdf', ['menu' => $item->id]) }}"
+                                target="_blank" title="Export Komposisi PDF"
+                                class="w-8 h-8 rounded-xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center hover:bg-red-600 hover:text-white transition-all">
+                                <i class="ri-file-pdf-2-line text-sm leading-none"></i>
+                            </a>
                             <a wire:key="var-{{ $item->id }}" href="{{ route('menu.variants', $item->id) }}"
                                 wire:navigate title="Kelola Varian"
                                 class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center hover:bg-purple-600 hover:text-white transition-all">
@@ -114,7 +142,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="text-center py-12 text-neutral-500">
+                <td colspan="8" class="text-center py-12 text-neutral-500">
                     <div class="flex flex-col items-center justify-center gap-3">
                         <i class="ri-inbox-line text-4xl leading-none"></i>
                         <span class="text-sm">Tidak ada menu ditemukan.</span>
@@ -123,6 +151,21 @@
             </tr>
         @endforelse
     </x-ui.table>
+
+    @hasrole('superadmin')
+        @if($menu->count() > 0)
+            <div class="mt-3 flex flex-wrap items-center gap-3 text-sm text-neutral-500 dark:text-neutral-400">
+                <button type="button" wire:click="toggleCurrentPageSelection(@js($currentPageMenuIds))"
+                    class="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 font-bold text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800">
+                    <i class="{{ $allCurrentPageSelected ? 'ri-checkbox-multiple-fill' : 'ri-checkbox-multiple-line' }} text-base leading-none"></i>
+                    {{ $allCurrentPageSelected ? 'Batalkan Pilihan Halaman Ini' : 'Pilih Semua di Halaman Ini' }}
+                </button>
+                @if(count($selectedMenuIds) > 0)
+                    <span>{{ count($selectedMenuIds) }} menu dipilih untuk export PDF.</span>
+                @endif
+            </div>
+        @endif
+    @endhasrole
 
     <div class="mt-4">
         {{ $menu->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}

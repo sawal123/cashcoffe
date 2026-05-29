@@ -35,6 +35,40 @@ function initThemeToggle() {
 }
 
 // ===================================
+//  FIXED NAVBAR LAYOUT SYNC
+// ===================================
+function syncFixedNavbarLayout() {
+    const navbar = document.querySelector(".navbar-header");
+    const dashboardMain = document.querySelector(".dashboard-main");
+
+    if (!navbar || !dashboardMain) return;
+
+    const desktop = window.matchMedia("(min-width: 1200px)").matches;
+    const computedMain = window.getComputedStyle(dashboardMain);
+    const startOffset = desktop
+        ? (computedMain.marginInlineStart || computedMain.marginLeft || "0px")
+        : "0px";
+
+    navbar.style.position = "fixed";
+    navbar.style.top = "0";
+    navbar.style.insetInlineStart = startOffset;
+    navbar.style.insetInlineEnd = "0";
+    navbar.style.zIndex = "20";
+
+    // Reserve space for fixed navbar so page content doesn't jump under it.
+    dashboardMain.style.paddingTop = "4.5rem";
+}
+
+function initFixedNavbarLayout() {
+    syncFixedNavbarLayout();
+
+    if (!window.__fixedNavbarResizeBound) {
+        window.addEventListener("resize", syncFixedNavbarLayout);
+        window.__fixedNavbarResizeBound = true;
+    }
+}
+
+// ===================================
 //  SIDEBAR ACTIVE HIGHLIGHT
 // ===================================
 function highlightActiveMenu() {
@@ -142,6 +176,8 @@ function initSidebarToggle() {
             this.classList.toggle("active");
             document.querySelector(".sidebar").classList.toggle("active");
             document.querySelector(".dashboard-main").classList.toggle("active");
+            syncFixedNavbarLayout();
+            setTimeout(syncFixedNavbarLayout, 250);
         });
         toggle.setAttribute("data-listener", "true");
     }
@@ -205,4 +241,15 @@ document.addEventListener("livewire:navigated", function () {
     initThemeToggle();
     initSidebarScroll();
     highlightActiveMenu();
+    initFixedNavbarLayout();
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    initSidebarDropdown();
+    initSidebarToggle();
+    initMobileSidebar();
+    initThemeToggle();
+    initSidebarScroll();
+    highlightActiveMenu();
+    initFixedNavbarLayout();
 });
