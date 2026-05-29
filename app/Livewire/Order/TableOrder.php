@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Order;
 
-use DB;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use App\Models\Pesanan;
 use Livewire\Component;
@@ -66,13 +66,13 @@ class TableOrder extends Component
 
         // 🔥 Jika status baru saja berubah jadi selesai
         if ($pesanan->status === 'selesai') {
-            
+
             // LOGIKA POINTS: Tambah poin ke member
             if ($pesanan->member_id) {
                 // total_after_discount calculation:
                 $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
                 $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
-                
+
                 $member = \App\Models\Member::find($pesanan->member_id);
                 if ($member) {
                     $member->increment('points', $earnedPoints);
@@ -186,7 +186,7 @@ class TableOrder extends Component
             ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
             ->where(function ($q) {
                 $q->where('payment_methods.kode_metode', '!=', 'komplemen')
-                  ->orWhereNull('pesanans.payment_method_id');
+                    ->orWhereNull('pesanans.payment_method_id');
             })
             ->whereDate('pesanans.created_at', Carbon::today())
             ->sum(DB::raw('total - discount_value'));
