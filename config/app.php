@@ -105,6 +105,15 @@ return [
         ),
     ],
 
+    'providers' => [
+        Barryvdh\DomPDF\ServiceProvider::class,
+    ],
+
+    'aliases' => [
+        'PDF' => Barryvdh\DomPDF\Facade\Pdf::class,
+        'Pdf' => Barryvdh\DomPDF\Facade\Pdf::class,
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Maintenance Mode Driver
