@@ -105,7 +105,7 @@ return [
         ),
     ],
 
-    'providers' => [
+    'providers' => array_filter([
         /*
         |--------------------------------------------------------------------------
         | Laravel Framework Service Providers
@@ -161,7 +161,7 @@ return [
         */
         App\Providers\AppServiceProvider::class,
         App\Providers\VoltServiceProvider::class,
-    ],
+    ]),
 
     'aliases' => [
         'PDF' => 'Barryvdh\DomPDF\Facade\Pdf',
