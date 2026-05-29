@@ -106,12 +106,66 @@ return [
     ],
 
     'providers' => [
-        Barryvdh\DomPDF\ServiceProvider::class,
+        /*
+        |--------------------------------------------------------------------------
+        | Laravel Framework Service Providers
+        |--------------------------------------------------------------------------
+        |
+        | The service providers listed here will be automatically loaded on the
+        | request to your application. Feel free to add your own services to
+        | this array to grant expanded functionality to your applications.
+        |
+        */
+        Illuminate\Auth\AuthServiceProvider::class,
+        Illuminate\Broadcasting\BroadcastServiceProvider::class,
+        Illuminate\Bus\BusServiceProvider::class,
+        Illuminate\Cache\CacheServiceProvider::class,
+        Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
+        Illuminate\Concurrency\ConcurrencyServiceProvider::class,
+        Illuminate\Cookie\CookieServiceProvider::class,
+        Illuminate\Database\DatabaseServiceProvider::class,
+        Illuminate\Encryption\EncryptionServiceProvider::class,
+        Illuminate\Filesystem\FilesystemServiceProvider::class,
+        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
+        Illuminate\Hashing\HashServiceProvider::class,
+        Illuminate\Mail\MailServiceProvider::class,
+        Illuminate\Notifications\NotificationServiceProvider::class,
+        Illuminate\Pagination\PaginationServiceProvider::class,
+        Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
+        Illuminate\Pipeline\PipelineServiceProvider::class,
+        Illuminate\Queue\QueueServiceProvider::class,
+        Illuminate\Redis\RedisServiceProvider::class,
+        Illuminate\Session\SessionServiceProvider::class,
+        Illuminate\Translation\TranslationServiceProvider::class,
+        Illuminate\Validation\ValidationServiceProvider::class,
+        Illuminate\View\ViewServiceProvider::class,
+
+        /*
+        |--------------------------------------------------------------------------
+        | Package Service Providers
+        |--------------------------------------------------------------------------
+        |
+        | Here you may list package service providers that you want to register
+        | manually. These are registered in addition to package discovery.
+        |
+        */
+        'Barryvdh\DomPDF\ServiceProvider',
+
+        /*
+        |--------------------------------------------------------------------------
+        | Application Service Providers
+        |--------------------------------------------------------------------------
+        |
+        | Here you can register your own application service providers.
+        |
+        */
+        App\Providers\AppServiceProvider::class,
+        App\Providers\VoltServiceProvider::class,
     ],
 
     'aliases' => [
-        'PDF' => Barryvdh\DomPDF\Facade\Pdf::class,
-        'Pdf' => Barryvdh\DomPDF\Facade\Pdf::class,
+        'PDF' => 'Barryvdh\DomPDF\Facade\Pdf',
+        'Pdf' => 'Barryvdh\DomPDF\Facade\Pdf',
     ],
 
     /*
