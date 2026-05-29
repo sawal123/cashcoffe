@@ -149,7 +149,7 @@ return [
         | manually. These are registered in addition to package discovery.
         |
         */
-        'Barryvdh\DomPDF\ServiceProvider',
+        class_exists('Barryvdh\DomPDF\ServiceProvider') ? 'Barryvdh\DomPDF\ServiceProvider' : null,
 
         /*
         |--------------------------------------------------------------------------
