@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Menu;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Str;
 
 class MenuCompositionPdfController extends Controller
@@ -16,27 +16,28 @@ class MenuCompositionPdfController extends Controller
         $menus = Menu::query()
             ->with([
                 'category',
-                'ingredients' => fn ($query) => $query
+                'ingredients' => fn($query) => $query
                     ->with('satuan')
                     ->orderBy('nama_bahan'),
             ])
-            ->when($menuIds, fn ($query) => $query->whereIn('id', $menuIds))
+            ->when($menuIds, fn($query) => $query->whereIn('id', $menuIds))
             ->orderBy('nama_menu')
             ->get();
 
         abort_if($menuIds && $menus->isEmpty(), 404, 'Menu tidak ditemukan.');
 
         $title = count($menuIds) === 1
-            ? 'Komposisi Menu - '.$menus->first()->nama_menu
+            ? 'Komposisi Menu - ' . $menus->first()->nama_menu
             : ($menuIds ? 'Komposisi Menu Terpilih' : 'Daftar Komposisi Menu');
 
-        $fileName = Str::slug($title).'.pdf';
+        $fileName = Str::slug($title) . '.pdf';
 
-        return Pdf::loadView('pdf.menu-compositions', [
-            'menus' => $menus,
-            'title' => $title,
-            'printedAt' => now()->format('d M Y H:i'),
-        ])
+        return App::make('dompdf.wrapper')
+            ->loadView('pdf.menu-compositions', [
+                'menus' => $menus,
+                'title' => $title,
+                'printedAt' => now()->format('d M Y H:i'),
+            ])
             ->setPaper('a4')
             ->download($fileName);
     }
@@ -54,8 +55,8 @@ class MenuCompositionPdfController extends Controller
         }
 
         return collect($ids)
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn ($id) => $id > 0)
+            ->map(fn($id) => (int) $id)
+            ->filter(fn($id) => $id > 0)
             ->unique()
             ->values()
             ->all();
