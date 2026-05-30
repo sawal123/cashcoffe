@@ -36,18 +36,31 @@
             font-size: 11px;
         }
 
-        .menu-block {
+        .menu-grid {
+            border-collapse: separate;
+            border-spacing: 4px 8px;
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .menu-cell {
+            vertical-align: top;
+            width: 33.333%;
+        }
+
+        .menu-card {
             border: 1px solid #e5e7eb;
             border-radius: 8px;
-            margin-bottom: 8px;
             padding: 8px 10px;
-            page-break-inside: avoid;
+            min-height: 96px;
         }
 
         .menu-title {
             font-size: 13px;
             font-weight: 700;
             margin-bottom: 2px;
+            word-break: break-word;
+            word-wrap: break-word;
         }
 
         .category {
@@ -63,6 +76,8 @@
 
         li {
             margin-bottom: 2px;
+            word-break: break-word;
+            word-wrap: break-word;
         }
 
         .empty {
@@ -90,27 +105,41 @@
         <div class="meta">Dicetak: {{ $printedAt }}</div>
     </div>
 
-    @forelse ($menus as $menu)
-        <div class="menu-block">
-            <div class="menu-title">{{ $menu->nama_menu }}</div>
-            <div class="category">Kategori: {{ $menu->category->nama ?? '-' }}</div>
+    @if ($menus->isNotEmpty())
+        <table class="menu-grid">
+            @foreach ($menus->chunk(3) as $row)
+                <tr>
+                    @foreach ($row as $menu)
+                        <td class="menu-cell">
+                            <div class="menu-card">
+                                <div class="menu-title">{{ $menu->nama_menu }}</div>
+                                <div class="category">Kategori: {{ $menu->category->nama ?? '-' }}</div>
 
-            @if ($menu->ingredients->isNotEmpty())
-                <ol>
-                    @foreach ($menu->ingredients as $ingredient)
-                        <li>
-                            {{ $ingredient->nama_bahan }}
-                            {{ $formatQty($ingredient->pivot->qty) }} {{ $ingredient->satuan->nama_satuan ?? '' }}
-                        </li>
+                                @if ($menu->ingredients->isNotEmpty())
+                                    <ol>
+                                        @foreach ($menu->ingredients as $ingredient)
+                                            <li>
+                                                {{ $ingredient->nama_bahan }}
+                                                {{ $formatQty($ingredient->pivot->qty) }} {{ $ingredient->satuan->nama_satuan ?? '' }}
+                                            </li>
+                                        @endforeach
+                                    </ol>
+                                @else
+                                    <div class="empty">Belum ada komposisi.</div>
+                                @endif
+                            </div>
+                        </td>
                     @endforeach
-                </ol>
-            @else
-                <div class="empty">Belum ada komposisi.</div>
-            @endif
-        </div>
-    @empty
+
+                    @for ($i = $row->count(); $i < 3; $i++)
+                        <td class="menu-cell"></td>
+                    @endfor
+                </tr>
+            @endforeach
+        </table>
+    @else
         <div class="empty">Belum ada data menu.</div>
-    @endforelse
+    @endif
 
     <div class="footer">Cash Coffee - Menu & Komposisi</div>
 </body>
