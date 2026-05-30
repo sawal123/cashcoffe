@@ -25,11 +25,49 @@
         @hasrole('superadmin')
             <div class="flex justify-end gap-2">
                 @if(count($selectedMenuIds) > 0)
-                    <a href="{{ $this->selectedMenuExportUrl }}" target="_blank"
-                        class="inline-flex items-center justify-center px-5 py-2.5 bg-red-600 hover:bg-red-700 shadow-red-500/30 text-white text-sm font-bold rounded-2xl shadow-lg transition-all active:scale-95">
-                        <i class="ri-file-pdf-2-line mr-2 text-lg leading-none"></i>
-                        Export PDF Terpilih ({{ count($selectedMenuIds) }})
-                    </a>
+                    <button type="button"
+                        x-data="{ exporting: false }"
+                        data-export-url="{{ $this->selectedMenuExportUrl }}"
+                        @click.prevent="
+                            if (exporting) return;
+
+                            exporting = true;
+
+                            fetch($el.dataset.exportUrl, {
+                                credentials: 'same-origin',
+                                headers: { Accept: 'application/pdf' },
+                            })
+                                .then(async (response) => {
+                                    if (! response.ok) {
+                                        throw new Error(await response.text() || 'Export PDF gagal.');
+                                    }
+
+                                    const blob = await response.blob();
+                                    const url = URL.createObjectURL(blob);
+                                    const link = document.createElement('a');
+                                    const disposition = response.headers.get('content-disposition') || '';
+                                    const filename = disposition.match(/filename=&quot;?([^&quot;;]+)&quot;?/i)?.[1] || 'komposisi-menu-terpilih.pdf';
+
+                                    link.href = url;
+                                    link.download = filename;
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                    URL.revokeObjectURL(url);
+                                })
+                                .catch(() => {
+                                    window.open($el.dataset.exportUrl, '_blank');
+                                })
+                                .finally(() => {
+                                    exporting = false;
+                                });
+                        "
+                        :disabled="exporting"
+                        class="inline-flex min-w-[210px] items-center justify-center px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:cursor-wait disabled:bg-red-500 shadow-red-500/30 text-white text-sm font-bold rounded-2xl shadow-lg transition-all active:scale-95">
+                        <i x-show="!exporting" class="ri-file-pdf-2-line mr-2 text-lg leading-none"></i>
+                        <i x-show="exporting" x-cloak class="ri-loader-4-line mr-2 text-lg leading-none animate-spin"></i>
+                        <span x-text="exporting ? 'Menyiapkan PDF...' : 'Export PDF Terpilih ({{ count($selectedMenuIds) }})'"></span>
+                    </button>
                     <button type="button" wire:click="clearSelectedMenus"
                         class="inline-flex items-center justify-center px-4 py-2.5 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-200 text-sm font-bold rounded-2xl transition-all hover:bg-neutral-50 dark:hover:bg-neutral-800 active:scale-95">
                         Batal Pilih
