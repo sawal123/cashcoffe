@@ -398,9 +398,12 @@ trait HandlesOrderSubmit
             $this->mejas_id = null;
             $this->nama_costumer = '';
 
-            $this->lastPesananId = $pesanan->id;
-            $this->lastKodePesanan = $pesanan->kode;
-            $this->lastTotalPesanan = $pesanan->total;
+            $this->setLastOrderSnapshot($pesanan->fresh([
+                'items.menu',
+                'items.variants',
+                'paymentMethod',
+                'salesChannel',
+            ]));
 
             $this->dispatch('showToast', message: 'Pesanan berhasil disimpan.', type: 'success', title: 'Success');
             if ($this->metode_pembayaran) {
@@ -410,6 +413,112 @@ trait HandlesOrderSubmit
                 DB::rollBack();
                 $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
         }
+    }
+
+    public function completeLastOrder()
+    {
+        $this->finishLastOrder();
+    }
+
+    public function completeLastOrderAndPrint()
+    {
+        $pesanan = $this->finishLastOrder();
+
+        if (! $pesanan) {
+            return null;
+        }
+
+        return route('struk.print', base64_encode($pesanan->id));
+    }
+
+    private function finishLastOrder()
+    {
+        if (! $this->lastPesananId) {
+            $this->dispatch('showToast', message: 'Pesanan belum tersedia.', type: 'error', title: 'Error');
+            return null;
+        }
+
+        DB::beginTransaction();
+        try {
+            $pesanan = Pesanan::with([
+                'items.variants',
+                'items.menu',
+                'discount',
+                'paymentMethod',
+                'salesChannel',
+            ])->findOrFail($this->lastPesananId);
+
+            if (! $pesanan->payment_method_id) {
+                $this->dispatch('showToast', message: 'Metode pembayaran harus dipilih!', type: 'info', title: 'Info');
+                DB::rollBack();
+                return null;
+            }
+
+            if ($pesanan->status === 'selesai') {
+                $this->setLastOrderSnapshot($pesanan);
+                $this->dispatch('showToast', message: 'Pesanan sudah selesai sebelumnya.', type: 'info', title: 'Info');
+                DB::rollBack();
+                return $pesanan;
+            }
+
+            $pesanan->update(['status' => 'selesai']);
+
+            if ($pesanan->member_id) {
+                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
+                $earnedPoints = floor($totalAfterDiscount / 10000);
+                $member = \App\Models\Member::find($pesanan->member_id);
+
+                if ($member) {
+                    $member->increment('points', $earnedPoints);
+                    $member->increment('total_pengeluaran', $totalAfterDiscount);
+                }
+            }
+
+            $this->reduceStock($pesanan);
+
+            DB::commit();
+
+            $pesanan = $pesanan->fresh([
+                'items.menu',
+                'items.variants',
+                'paymentMethod',
+                'salesChannel',
+            ]);
+
+            $this->setLastOrderSnapshot($pesanan);
+
+            $this->dispatch('showToast', message: 'Pesanan selesai.', type: 'success', title: 'Success');
+
+            return $pesanan;
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('showToast', type: 'error', message: 'Gagal menyelesaikan pesanan: ' . $e->getMessage());
+
+            return null;
+        }
+    }
+
+    private function setLastOrderSnapshot(Pesanan $pesanan)
+    {
+        $this->lastPesananId = $pesanan->id;
+        $this->lastKodePesanan = $pesanan->kode;
+        $this->lastNamaCostumer = $pesanan->nama;
+        $this->lastTotalPesanan = $pesanan->total;
+        $this->lastDiscountPesanan = $pesanan->discount_value ?? 0;
+        $this->lastFinalTotalPesanan = max(0, $pesanan->total - ($pesanan->discount_value ?? 0));
+        $this->lastPaymentMethodName = $pesanan->paymentMethod->nama_metode ?? '-';
+        $this->lastSalesChannelName = $pesanan->salesChannel->nama_channel ?? 'Dine In';
+        $this->lastCreatedAt = optional($pesanan->created_at)->format('d M Y H:i');
+        $this->lastStatusPesanan = $pesanan->status;
+        $this->lastOrderItems = $pesanan->items->map(function ($item) {
+            return [
+                'name' => $item->menu->nama_menu ?? 'Menu Dihapus',
+                'qty' => $item->qty,
+                'price' => $item->harga_satuan,
+                'subtotal' => $item->subtotal ?? ($item->harga_satuan * $item->qty),
+                'variants' => $item->variants->pluck('nama_opsi')->filter()->values()->all(),
+            ];
+        })->values()->all();
     }
     
 

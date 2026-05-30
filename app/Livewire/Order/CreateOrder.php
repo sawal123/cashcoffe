@@ -79,6 +79,22 @@ class CreateOrder extends Component
 
     public $lastTotalPesanan;
 
+    public $lastNamaCostumer;
+
+    public $lastDiscountPesanan = 0;
+
+    public $lastFinalTotalPesanan = 0;
+
+    public $lastPaymentMethodName;
+
+    public $lastSalesChannelName;
+
+    public $lastCreatedAt;
+
+    public $lastStatusPesanan;
+
+    public $lastOrderItems = [];
+
     public $selectedCategoryId = null;
 
     public $total1;

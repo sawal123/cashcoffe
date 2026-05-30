@@ -135,6 +135,10 @@
                 <td>Cust</td>
                 <td>: {{ $pesanan->nama ?? '-' }}</td>
             </tr>
+            <tr>
+                <td>Ket</td>
+                <td>: Pesanan {{ $pesanan->status === 'selesai' ? 'Selesai' : ucwords($pesanan->status) }}</td>
+            </tr>
         </table>
 
         <div class="separator"></div>
