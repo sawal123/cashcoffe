@@ -32,14 +32,20 @@ class MenuCompositionPdfController extends Controller
 
         $fileName = Str::slug($title) . '.pdf';
 
-        return App::make('dompdf.wrapper')
+        $pdf = App::make('dompdf.wrapper')
             ->loadView('pdf.menu-compositions', [
                 'menus' => $menus,
                 'title' => $title,
                 'printedAt' => now()->format('d M Y H:i'),
             ])
-            ->setPaper('a4')
-            ->download($fileName);
+            ->setPaper('a4');
+
+        return response($pdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'private, max-age=0, must-revalidate',
+            'Pragma' => 'public',
+        ]);
     }
 
     private function resolveMenuIds(Request $request): array
