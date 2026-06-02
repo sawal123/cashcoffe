@@ -252,7 +252,7 @@
                         @if ($selected->foto)
                             <div
                                 class="relative rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden h-36">
-                                <img src="{{ Storage::url($selected->foto) }}" class="w-full h-full object-cover">
+                                <img src="{{ \Illuminate\Support\Facades\Storage::url($selected->foto) }}" class="w-full h-full object-cover">
                             </div>
                         @endif
                     </div>
@@ -296,7 +296,7 @@
                         @if ($selected->foto_keluar)
                             <div
                                 class="relative rounded-xl border border-neutral-200 dark:border-neutral-700 overflow-hidden h-36">
-                                <img src="{{ Storage::url($selected->foto_keluar) }}"
+                                <img src="{{ \Illuminate\Support\Facades\Storage::url($selected->foto_keluar) }}"
                                     class="w-full h-full object-cover">
                             </div>
                         @endif

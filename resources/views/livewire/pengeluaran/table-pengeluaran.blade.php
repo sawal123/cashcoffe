@@ -203,7 +203,7 @@
                 </td>
                 <td data-label="Bukti" class="px-6 py-6 text-center">
                     @if ($item->bukti)
-                        <a href="{{ Storage::url($item->bukti) }}" target="_blank"
+                        <a href="{{ \Illuminate\Support\Facades\Storage::url($item->bukti) }}" target="_blank"
                             class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-600 hover:text-white transition-all">
                             <iconify-icon icon="lucide:image" class="text-sm"></iconify-icon>
                         </a>
