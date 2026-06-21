@@ -19,6 +19,10 @@ Route::view('/', 'welcome');
 
 Route::get('/absen/login', Login::class)->name('absensi.login');
 
+Route::middleware(['auth', 'role:kasir|admin|superadmin'])->group(function () {
+    Route::get('/printer/pairing', App\Livewire\Printer\Pairing::class)->name('printer.pairing');
+});
+
 Route::prefix('absen')
     ->name('absensi.')
     ->middleware(['auth', 'role:karyawan'])
