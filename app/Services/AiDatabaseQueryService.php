@@ -18,6 +18,7 @@ class AiDatabaseQueryService
         return match (strtolower($reportType)) {
             'menu_sales' => $this->menuSales($payload),
             'top_selling_menus' => $this->topSellingMenus($payload),
+            'least_selling_menus' => $this->leastSellingMenus($payload),
             'sales_summary' => $this->salesSummary($payload),
             'inventory_stock' => $this->inventoryStock($payload),
             'employee_attendance' => $this->employeeAttendance($payload),
@@ -91,6 +92,56 @@ class AiDatabaseQueryService
         })->implode("\n");
 
         return "Menu terlaris ({$periodLabel}):\n{$rows}";
+    }
+
+    private function leastSellingMenus(array $payload): string
+    {
+        [$startDate, $endDate, $periodLabel] = $this->period($payload);
+        $limit = max(1, min((int) ($payload['limit'] ?? 5), 10));
+
+        $branchId = null;
+        if ($branchName = trim((string) ($payload['branch_name'] ?? ''))) {
+            $branchId = \App\Models\Branch::where('nama_cabang', 'like', '%'.$branchName.'%')->value('id');
+        }
+
+        $items = Menu::query()
+            ->select('menus.id', 'menus.nama_menu')
+            ->selectRaw('COALESCE(SUM(pesanan_items.qty), 0) as total_qty')
+            ->selectRaw('COALESCE(SUM(pesanan_items.subtotal), 0) as total_sales')
+            ->leftJoin('pesanan_items', function ($join) {
+                $join->on('menus.id', '=', 'pesanan_items.menus_id')
+                    ->whereNull('pesanan_items.deleted_at');
+            })
+            ->leftJoin('pesanans', function ($join) use ($startDate, $endDate, $branchId) {
+                $join->on('pesanan_items.pesanans_id', '=', 'pesanans.id')
+                    ->where('pesanans.status', '=', 'selesai')
+                    ->whereNull('pesanans.deleted_at');
+                if ($startDate) {
+                    $join->whereDate('pesanans.created_at', '>=', $startDate);
+                }
+                if ($endDate) {
+                    $join->whereDate('pesanans.created_at', '<=', $endDate);
+                }
+                if ($branchId) {
+                    $join->where('pesanans.branch_id', '=', $branchId);
+                }
+            })
+            ->groupBy('menus.id', 'menus.nama_menu')
+            ->orderBy('total_qty', 'asc')
+            ->limit($limit)
+            ->get();
+
+        if ($items->isEmpty()) {
+            return 'Belum ada data menu di database.';
+        }
+
+        $rows = $items->values()->map(function ($item, $index) {
+            return ($index + 1).'. '.$item->nama_menu
+                .' — '.number_format((int) $item->total_qty, 0, ',', '.').' item'
+                .' (Rp'.number_format((float) $item->total_sales, 0, ',', '.').')';
+        })->implode("\n");
+
+        return "Menu paling sedikit dipesan ({$periodLabel}):\n{$rows}";
     }
 
     private function salesSummary(array $payload): string

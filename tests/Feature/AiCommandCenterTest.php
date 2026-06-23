@@ -886,4 +886,52 @@ class AiCommandCenterTest extends TestCase
             'harga' => 5000,
         ]);
     }
+
+    public function test_superadmin_can_query_least_selling_menu_successfully()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [
+                    [
+                        'message' => [
+                            'content' => json_encode([
+                                'is_action' => false,
+                                'target_module' => 'GENERAL_CHAT',
+                                'action_type' => 'READ',
+                                'ai_response' => 'Berikut infonya:',
+                                'payload' => [
+                                    'menu_name' => '',
+                                    'variant_name' => '',
+                                    'price_tier' => '',
+                                    'sales_channel' => '',
+                                    'price_value' => 0,
+                                    'employee_name' => '',
+                                    'shift_name' => '',
+                                    'item_name' => '',
+                                    'branch_name' => '',
+                                    'qty' => 0,
+                                    'unit_name' => '',
+                                    'fine_amount' => 0,
+                                    'date' => '',
+                                    'report_type' => 'least_selling_menus',
+                                    'date_from' => '',
+                                    'date_to' => '',
+                                    'limit' => 5,
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'menu mana yang paling sedikit dipesan?')
+            ->call('executeCommand')
+            ->assertSee('Menu paling sedikit dipesan')
+            ->assertSee('Kopi Susu');
+    }
 }

@@ -104,13 +104,19 @@ class AiCommandCenter extends Component
             $model = config('services.openai.model', 'gpt-4o-mini');
 
             // Dynamically fetch database context
+            $dbMenus = Menu::pluck('nama_menu')->toArray();
             $dbTiers = PriceTier::pluck('nama_tier')->toArray();
             $dbChannels = SalesChannel::pluck('nama_channel')->toArray();
             $dbBranches = Branch::pluck('nama_cabang')->toArray();
+            $dbIngredients = Ingredients::pluck('nama_bahan')->toArray();
+            $dbEmployees = User::pluck('name')->toArray();
 
+            $menusString = implode(', ', $dbMenus);
             $tiersString = implode(', ', $dbTiers);
             $channelsString = implode(', ', $dbChannels);
             $branchesString = implode(', ', $dbBranches);
+            $ingredientsString = implode(', ', $dbIngredients);
+            $employeesString = implode(', ', $dbEmployees);
 
             // Map chat history for OpenAI API (send last 10 turns as context)
             $messages = [];
@@ -351,14 +357,15 @@ Tentukan properti berikut:
 4. 'redirect_url': URL tujuan/direct link (misal '/menu/create', '/member/15/edit', dll).
 5. 'ai_response': Kalimat jawaban interaktif dalam Bahasa Indonesia. Jika selesai action/redirect, sertakan link url tersebut di dalam respons.
 6. 'payload': Objek parameter terdeteksi:
-   - report_type: 'menu_sales' | 'top_selling_menus' | 'sales_summary' | 'inventory_stock' | 'employee_attendance' | 'none'.
-   - menu_name, variant_name, price_tier, sales_channel, price_value, employee_name, shift_name, item_name, branch_name, qty, unit_name, fine_amount, date.
-   - date_from dan date_to dalam format YYYY-MM-DD. Hari ini adalah ".now()->toDateString().".
-   - limit untuk jumlah hasil peringkat, maksimum 10.
+    - report_type: 'menu_sales' | 'top_selling_menus' | 'least_selling_menus' | 'sales_summary' | 'inventory_stock' | 'employee_attendance' | 'none'.
+    - menu_name, variant_name, price_tier, sales_channel, price_value, employee_name, shift_name, item_name, branch_name, qty, unit_name, fine_amount, date.
+    - date_from dan date_to dalam format YYYY-MM-DD. Hari ini adalah ".now()->toDateString().".
+    - limit untuk jumlah hasil peringkat, maksimum 10.
 
 CONTOH LAPORAN:
 - 'berapa penjualan Sanger' => action_type=READ, target_module='SALES_REPORT', report_type='menu_sales', menu_name='Sanger'.
 - 'menu paling laris bulan ini' => report_type='top_selling_menus', date_from dan date_to isi rentang bulan berjalan.
+- 'menu paling sepi/sedikit dipesan' => report_type='least_selling_menus', date_from dan date_to isi rentang bulan berjalan atau kosongkan.
 - 'berapa omzet hari ini' => report_type='sales_summary', date_from=date_to=hari ini.
 - 'stok biji kopi di Medan' => report_type='inventory_stock', item_name='biji kopi', branch_name='Medan'.
 - 'absensi Budi bulan ini' => report_type='employee_attendance', employee_name='Budi', isi periode bulan berjalan.
@@ -367,13 +374,16 @@ ATURAN PENTING:
 - jika user berniat mengubah harga menu di semua tier atau di semua channel, isi price_tier atau sales_channel dengan nilai 'all'.
 - jangan mengarang id
 - jika data tidak ditemukan → bilang tidak ditemukan
-- selalu cek role user. Jika user meminta fitur yang tidak sesuai role, respon: \"Maaf, Anda tidak memiliki akses ke fitur tersebut.\"
+- selalu cek role user. Jika user meminta fitur yang tidak sesuai role, respon: 'Maaf, Anda tidak memiliki akses ke fitur tersebut.'
 - selalu kasih direct link.
 
 Database Context saat ini:
+- Menu yang terdaftar: {$menusString}
 - Price Tiers yang terdaftar: {$tiersString}
 - Sales Channels yang terdaftar: {$channelsString}
-- Cabang (Branches) yang terdaftar: {$branchesString}";
+- Cabang (Branches) yang terdaftar: {$branchesString}
+- Bahan Baku / Stok (Ingredients) yang terdaftar: {$ingredientsString}
+- Karyawan (Employees) yang terdaftar: {$employeesString}";
 
             $messages[] = [
                 'role' => 'system',
@@ -472,10 +482,10 @@ Database Context saat ini:
                                         'date' => [
                                             'type' => 'string',
                                         ],
-                                        'report_type' => [
-                                            'type' => 'string',
-                                            'enum' => ['menu_sales', 'top_selling_menus', 'sales_summary', 'inventory_stock', 'employee_attendance', 'none'],
-                                        ],
+                                         'report_type' => [
+                                             'type' => 'string',
+                                             'enum' => ['menu_sales', 'top_selling_menus', 'least_selling_menus', 'sales_summary', 'inventory_stock', 'employee_attendance', 'none'],
+                                         ],
                                         'date_from' => [
                                             'type' => 'string',
                                         ],
@@ -1002,6 +1012,10 @@ Database Context saat ini:
 
         if (str_contains($query, 'laris') || str_contains($query, 'terlaris') || str_contains($query, 'paling laku')) {
             return 'top_selling_menus';
+        }
+
+        if (str_contains($query, 'sedikit') || str_contains($query, 'kurang laris') || str_contains($query, 'tidak laris') || str_contains($query, 'tersepi') || str_contains($query, 'paling sepi')) {
+            return 'least_selling_menus';
         }
 
         if (str_contains($query, 'omzet') || str_contains($query, 'total penjualan') || str_contains($query, 'ringkasan penjualan')) {
