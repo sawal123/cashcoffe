@@ -86,7 +86,7 @@
 
             @hasanyrole('kasir|admin|superadmin')
             <li>
-                <a href="{{ route('printer.pairing') }}" wire:navigate class="{{ request()->is('printer/pairing*') ? 'active-page' : '' }}">
+                <a href="/printer/pairing" wire:navigate class="{{ request()->is('printer/pairing*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:printer-2-bold" class="menu-icon"></iconify-icon>
                     <span>Pairing Printer</span>
                 </a>
