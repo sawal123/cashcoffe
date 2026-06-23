@@ -1,13 +1,23 @@
 <main class="max-w-[1280px] mx-auto px-4 md:px-8 py-6">
+    <x-toast />
+
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <!-- Profile Header Section (Asymmetric Bento Style) -->
         <section class="lg:col-span-12">
             <div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-8 flex flex-col md:flex-row items-center gap-8 shadow-sm">
                 <div class="relative shrink-0">
                     <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-primary-container p-1 shadow-lg bg-surface-container">
-                        <img alt="Employee Profile Photo" class="w-full h-full object-cover rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcta22ITfw_S8puRg0Fsgei8ieNOEZX_pYHU2H_w0lXOjqul-M7OVaNr8-2CCgOZbFIAPg7ukL9qjHekuu9G8SXAGnSQugYl6X9CFhSfNofZCr7NuUyrg__HkiilQfKpw_NeXLiegT__PRzFUCgXlkwNgYgwsYR2AZravpeZpFKUrfo0zaD7l76PxWpB0NQ-Iv0IZ1k6yzuAdGyDtGb-ucCfwXoBkpVJAujjUZrVNBxtRJ38WOiJtOUPjX3VQsQuUtzd_iogeujAw"/>
+                        @if ($avatar)
+                            <img alt="Pratinjau foto profil" class="w-full h-full object-cover rounded-full" src="{{ $avatar->temporaryUrl() }}">
+                        @elseif ($user->avatar)
+                            <img alt="Foto profil {{ $user->name }}" class="w-full h-full object-cover rounded-full" src="{{ asset('storage/'.$user->avatar) }}">
+                        @else
+                            <div class="w-full h-full rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-4xl font-black">
+                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                            </div>
+                        @endif
                     </div>
-                    <button onclick="alert('Fitur ganti foto profil sedang dikembangkan.')" class="absolute bottom-1 right-1 bg-primary text-on-primary p-2 rounded-full border-2 border-surface shadow-md hover:scale-105 transition-transform">
+                    <button type="button" wire:click="openEditProfile" class="absolute bottom-1 right-1 bg-primary text-on-primary p-2 rounded-full border-2 border-surface shadow-md hover:scale-105 transition-transform" title="Edit profil">
                         <span class="material-symbols-outlined text-[20px]">edit</span>
                     </button>
                 </div>
@@ -19,6 +29,11 @@
                         <span>ID: EMP-{{ str_pad($user->id, 4, '0', STR_PAD_LEFT) }}</span>
                     </div>
                     <div class="mt-2 text-xs text-secondary font-medium">Email: {{ $user->email }}</div>
+                    <button type="button" wire:click="openEditProfile"
+                        class="mt-4 inline-flex items-center gap-2 rounded-xl bg-primary-container px-4 py-2 text-sm font-bold text-on-primary-container transition-colors hover:bg-primary hover:text-on-primary">
+                        <span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+                        Edit Profil
+                    </button>
                 </div>
                 
                 <div class="grid grid-cols-3 gap-3 w-full md:w-auto mt-4 md:mt-0">
@@ -125,5 +140,84 @@
                 </div>
             </div>
         </section>
+    </div>
+
+    <div
+        x-data="{ open: $wire.entangle('showEditProfileModal') }"
+        x-show="open"
+        x-transition.opacity.duration.200ms
+        x-trap.inert.noscroll="open"
+        x-on:keydown.esc.window="open = false"
+        x-on:click.self="open = false"
+        class="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-black/50 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        style="display: none;"
+    >
+        <div class="w-full max-w-md rounded-2xl border border-outline-variant bg-surface-container-lowest shadow-2xl">
+            <div class="flex items-center justify-between border-b border-outline-variant/60 px-6 py-4">
+                <div>
+                    <h3 class="font-title-lg font-bold text-on-surface">Edit Profil</h3>
+                    <p class="text-xs text-on-surface-variant">Anda dapat mengganti nama dan foto profil.</p>
+                </div>
+                <button type="button" x-on:click="open = false" class="rounded-full p-1 text-secondary hover:bg-surface-container">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <form wire:submit.prevent="updateProfile" class="space-y-5 p-6">
+                <div class="flex justify-center">
+                    <div class="h-28 w-28 overflow-hidden rounded-full border-4 border-primary-container bg-surface-container">
+                        @if ($avatar)
+                            <img src="{{ $avatar->temporaryUrl() }}" alt="Pratinjau foto profil" class="h-full w-full object-cover">
+                        @elseif ($user->avatar)
+                            <img src="{{ asset('storage/'.$user->avatar) }}" alt="Foto profil" class="h-full w-full object-cover">
+                        @else
+                            <div class="flex h-full w-full items-center justify-center bg-primary-container text-3xl font-black text-on-primary-container">
+                                {{ strtoupper(substr($user->name, 0, 1)) }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Foto Profil</label>
+                    <input type="file" wire:model="avatar" accept="image/*"
+                        class="w-full rounded-xl border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface file:mr-3 file:rounded-lg file:border-0 file:bg-primary-container file:px-3 file:py-2 file:font-bold file:text-on-primary-container">
+                    <p class="mt-1 text-[11px] text-secondary">Format gambar, maksimal 2 MB.</p>
+                    @error('avatar') <span class="mt-1 block text-xs text-error">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Nama</label>
+                    <input type="text" wire:model="name"
+                        class="w-full rounded-xl border border-outline-variant bg-surface px-4 py-3 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary">
+                    @error('name') <span class="mt-1 block text-xs text-error">{{ $message }}</span> @enderror
+                </div>
+
+                <div>
+                    <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-on-surface-variant">Email</label>
+                    <div class="flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container px-4 py-3">
+                        <span class="text-sm font-medium text-on-surface-variant">{{ $user->email }}</span>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-secondary">
+                            <span class="material-symbols-outlined text-sm">lock</span>
+                            Tidak dapat diubah
+                        </span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 border-t border-outline-variant/40 pt-5">
+                    <button type="button" x-on:click="open = false"
+                        class="flex-1 rounded-xl border border-outline-variant px-4 py-3 text-sm font-bold text-on-surface transition-colors hover:bg-surface-container">
+                        Batal
+                    </button>
+                    <button type="submit" wire:loading.attr="disabled"
+                        class="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container disabled:opacity-50">
+                        <span wire:loading.remove wire:target="updateProfile">Simpan Profil</span>
+                        <span wire:loading wire:target="updateProfile">Menyimpan...</span>
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </main>

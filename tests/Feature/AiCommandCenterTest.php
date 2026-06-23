@@ -2,38 +2,42 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
+use App\Livewire\Admin\AiCommandCenter;
+use App\Models\AiChatHistory;
+use App\Models\Branch;
 use App\Models\Category;
+use App\Models\Ingredients;
 use App\Models\Menu;
 use App\Models\PriceTier;
 use App\Models\SalesChannel;
-use App\Models\MenuPrice;
-use App\Models\Ingredients;
-use App\Models\RiwayatStock;
-use App\Models\VariantGroup;
-use App\Models\VariantOption;
-use App\Models\Branch;
 use App\Models\SatuanBahan;
-use App\Models\Absensi;
-use App\Livewire\Admin\AiCommandCenter;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
-use Tests\TestCase;
 use Spatie\Permission\Models\Role;
+use Tests\TestCase;
 
 class AiCommandCenterTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $superadmin;
+
     protected $kasir;
+
     protected $category;
+
     protected $menu;
+
     protected $tier;
+
     protected $channel;
+
     protected $branchMedan;
+
     protected $satuanKg;
+
     protected $ingredient;
 
     protected function setUp(): void
@@ -112,6 +116,30 @@ class AiCommandCenterTest extends TestCase
             ->assertSeeLivewire(AiCommandCenter::class);
     }
 
+    public function test_chat_history_is_restored_after_component_is_reloaded()
+    {
+        AiChatHistory::create([
+            'user_id' => $this->superadmin->id,
+            'messages' => [
+                [
+                    'sender' => 'user',
+                    'text' => 'Berapa penjualan Sanger?',
+                    'time' => '10:00',
+                ],
+                [
+                    'sender' => 'ai',
+                    'text' => 'Sanger terjual 10 item.',
+                    'time' => '10:01',
+                ],
+            ],
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->assertSee('Berapa penjualan Sanger?')
+            ->assertSee('Sanger terjual 10 item.');
+    }
+
     public function test_superadmin_can_execute_price_update_command_successfully()
     {
         config(['services.openai.key' => 'mocked-key']);
@@ -140,13 +168,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -193,13 +221,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -236,13 +264,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -279,13 +307,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -322,13 +350,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 50,
                                     'unit_name' => 'Kg',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -376,13 +404,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -423,13 +451,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 15000,
-                                    'date' => '2026-05-21'
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '2026-05-21',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -490,13 +518,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)
@@ -505,6 +533,151 @@ class AiCommandCenterTest extends TestCase
             ->call('executeCommand')
             ->assertSee('menu paling laris')
             ->assertSee('Kopi Susu');
+    }
+
+    public function test_ai_can_answer_specific_menu_sales_from_completed_orders()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $sanger = Menu::create([
+            'nama_menu' => 'Sanger',
+            'categories_id' => $this->category->id,
+            'h_pokok' => 10000,
+            'harga' => 20000,
+            'h_promo' => 0,
+            'is_active' => true,
+        ]);
+
+        $completedOrder = \App\Models\Pesanan::create([
+            'kode' => 'SANGER-SELESAI',
+            'status' => 'selesai',
+            'total' => 60000,
+        ]);
+
+        \App\Models\PesananItem::create([
+            'pesanans_id' => $completedOrder->id,
+            'menus_id' => $sanger->id,
+            'qty' => 3,
+            'harga_satuan' => 20000,
+            'subtotal' => 60000,
+        ]);
+
+        $cancelledOrder = \App\Models\Pesanan::create([
+            'kode' => 'SANGER-BATAL',
+            'status' => 'dibatalkan',
+            'total' => 100000,
+        ]);
+
+        \App\Models\PesananItem::create([
+            'pesanans_id' => $cancelledOrder->id,
+            'menus_id' => $sanger->id,
+            'qty' => 5,
+            'harga_satuan' => 20000,
+            'subtotal' => 100000,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'is_in_scope' => true,
+                            'target_module' => 'SALES_REPORT',
+                            'action_type' => 'READ',
+                            'redirect_url' => '',
+                            'ai_response' => 'Saya cek data penjualan.',
+                            'payload' => [
+                                'menu_name' => 'Sanger',
+                                'variant_name' => '',
+                                'price_tier' => '',
+                                'sales_channel' => '',
+                                'price_value' => 0,
+                                'employee_name' => '',
+                                'shift_name' => '',
+                                'item_name' => '',
+                                'branch_name' => '',
+                                'qty' => 0,
+                                'unit_name' => '',
+                                'fine_amount' => 0,
+                                'date' => '',
+                                'report_type' => 'menu_sales',
+                                'date_from' => '',
+                                'date_to' => '',
+                                'limit' => 5,
+                            ],
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'Carikan berapa penjualan menu Sanger')
+            ->call('executeCommand')
+            ->assertSee('Penjualan menu Sanger')
+            ->assertSee('Terjual: 3 item')
+            ->assertSee('Jumlah transaksi: 1')
+            ->assertSee('Omzet item: Rp60.000');
+
+        $savedMessages = AiChatHistory::where('user_id', $this->superadmin->id)
+            ->firstOrFail()
+            ->messages;
+
+        $this->assertTrue(
+            collect($savedMessages)->contains(
+                fn ($message) => str_contains($message['text'], 'Penjualan menu Sanger')
+            )
+        );
+    }
+
+    public function test_ai_refuses_questions_outside_cash_coffee_application_scope()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'is_in_scope' => false,
+                            'target_module' => 'OUT_OF_SCOPE',
+                            'action_type' => 'none',
+                            'redirect_url' => '',
+                            'ai_response' => 'Jawaban yang tidak boleh ditampilkan.',
+                            'payload' => [
+                                'menu_name' => '',
+                                'variant_name' => '',
+                                'price_tier' => '',
+                                'sales_channel' => '',
+                                'price_value' => 0,
+                                'employee_name' => '',
+                                'shift_name' => '',
+                                'item_name' => '',
+                                'branch_name' => '',
+                                'qty' => 0,
+                                'unit_name' => '',
+                                'fine_amount' => 0,
+                                'date' => '',
+                                'report_type' => 'none',
+                                'date_from' => '',
+                                'date_to' => '',
+                                'limit' => 5,
+                            ],
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'Siapa presiden negara lain?')
+            ->call('executeCommand')
+            ->assertSee('hanya dapat membantu pertanyaan dan pekerjaan yang berkaitan dengan aplikasi Cash Coffee')
+            ->assertDontSee('Jawaban yang tidak boleh ditampilkan');
     }
 
     public function test_kasir_role_denied_access_to_superadmin_actions()
@@ -535,13 +708,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->kasir)
@@ -579,13 +752,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         $component = Livewire::actingAs($this->superadmin)
@@ -624,13 +797,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->kasir)
@@ -672,13 +845,13 @@ class AiCommandCenterTest extends TestCase
                                     'qty' => 0,
                                     'unit_name' => '',
                                     'fine_amount' => 0,
-                                    'date' => ''
-                                ]
-                            ])
-                        ]
-                    ]
-                ]
-            ], 200)
+                                    'date' => '',
+                                ],
+                            ]),
+                        ],
+                    ],
+                ],
+            ], 200),
         ]);
 
         Livewire::actingAs($this->superadmin)

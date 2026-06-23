@@ -2,15 +2,15 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
-use App\Models\Shift;
 use App\Models\Absensi;
-use App\Models\UserShift;
 use App\Models\Jabatan;
+use App\Models\Shift;
+use App\Models\User;
+use App\Models\UserShift;
 use App\Services\PayrollService;
-use Spatie\Permission\Models\Role;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AutoClockOutAndPayrollTest extends TestCase
@@ -142,12 +142,12 @@ class AutoClockOutAndPayrollTest extends TestCase
         ]);
 
         // 4. Calculate payroll via service
-        $payrollService = new PayrollService();
+        $payrollService = new PayrollService;
         $payrollData = $payrollService->calculate($user->id, Carbon::now()->day(25));
 
         // 5. Assert the deductions and final salary
         $this->assertEquals(35000.00, $payrollData['kalkulasi']['potongan_tidak_clock_out']);
-        
+
         // Total salary = gross - total deductions
         $this->assertEquals(3000000 - 35000, $payrollData['kalkulasi']['gaji_diterima']);
     }
@@ -218,7 +218,7 @@ class AutoClockOutAndPayrollTest extends TestCase
             'denda_missing_clockout' => 20000.00,
         ]);
 
-        $payrollService = new PayrollService();
+        $payrollService = new PayrollService;
         $payroll = $payrollService->hitungGajiBulanan($user->id, 2026, 5);
 
         // Assert record is returned and populated
@@ -274,7 +274,7 @@ class AutoClockOutAndPayrollTest extends TestCase
                 ]);
             }
 
-            $payrollService = new PayrollService();
+            $payrollService = new PayrollService;
             $payrollData = $payrollService->calculate(
                 $user->id,
                 Carbon::createFromDate(2026, 6, 25)
@@ -325,7 +325,7 @@ class AutoClockOutAndPayrollTest extends TestCase
                 ]);
             }
 
-            $payrollService = new PayrollService();
+            $payrollService = new PayrollService;
             $payrollData = $payrollService->calculate(
                 $user->id,
                 Carbon::createFromDate(2026, 6, 25)
@@ -333,6 +333,71 @@ class AutoClockOutAndPayrollTest extends TestCase
 
             $this->assertEquals(2, $payrollData['komponen']['count_alpha']);
             $this->assertEquals(208000.00, $payrollData['kalkulasi']['potongan_alpha']);
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_running_cutoff_counts_dates_without_june_schedule_as_alpha()
+    {
+        Carbon::setTestNow(Carbon::create(2026, 6, 23, 12));
+
+        try {
+            $shift = Shift::create([
+                'nama_shift' => 'Siang Cutoff',
+                'jam_masuk' => '15:00:00',
+                'jam_keluar' => '22:00:00',
+                'denda_telat' => 20000.00,
+                'maksimal_telat_menit' => 60,
+                'batas_awal_absen_menit' => 60,
+                'denda_missing_clockout' => 20000.00,
+            ]);
+
+            $jabatan = Jabatan::create([
+                'nama_jabatan' => 'Barista Cutoff',
+                'gapok' => 2000000.00,
+                'tunjangan_jabatan' => 0,
+            ]);
+
+            $user = User::factory()->create([
+                'jabatan_id' => $jabatan->id,
+                'name' => 'Karyawan Cutoff',
+                'gaji_pokok' => 2000000.00,
+            ]);
+
+            foreach (range(26, 31) as $day) {
+                UserShift::create([
+                    'user_id' => $user->id,
+                    'shift_id' => $shift->id,
+                    'tanggal' => Carbon::create(2026, 5, $day)->toDateString(),
+                ]);
+            }
+
+            $payrollService = new PayrollService;
+            $payrollData = $payrollService->calculate(
+                $user->id,
+                Carbon::create(2026, 6, 25)
+            );
+
+            // 26-31 Mei (6 hari) + 1-22 Juni (22 hari). Hari ini belum Alpha.
+            $this->assertEquals(28, $payrollData['komponen']['count_alpha']);
+            $this->assertEquals(2240000.00, $payrollData['kalkulasi']['potongan_alpha']);
+            $this->assertEquals(0, $payrollData['kalkulasi']['gaji_diterima']);
+            $this->assertSame(
+                ['2026-06-01', '2026-06-22'],
+                [
+                    $payrollService->unscheduledAlphaDates(
+                        $user->id,
+                        Carbon::create(2026, 5, 26),
+                        Carbon::create(2026, 6, 25)
+                    )->first(),
+                    $payrollService->unscheduledAlphaDates(
+                        $user->id,
+                        Carbon::create(2026, 5, 26),
+                        Carbon::create(2026, 6, 25)
+                    )->last(),
+                ]
+            );
         } finally {
             Carbon::setTestNow();
         }
@@ -374,7 +439,7 @@ class AutoClockOutAndPayrollTest extends TestCase
                 ]);
             }
 
-            $payrollService = new PayrollService();
+            $payrollService = new PayrollService;
             $payrollData = $payrollService->calculate(
                 $user->id,
                 Carbon::createFromDate(2026, 6, 25)

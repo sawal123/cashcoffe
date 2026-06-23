@@ -53,6 +53,8 @@
             @php
                 $tgl = \Carbon\Carbon::parse($r->tanggal);
                 $status = strtolower($r->status ?? 'hadir');
+                $isPastDate = $tgl->copy()->startOfDay()->lt(now()->startOfDay());
+                $canRequestCorrection = $isPastDate && !in_array($status, ['izin', 'sakit', 'cuti'], true);
                 
                 $jamKerjaItem = '--h --m';
                 if ($r->jam_masuk && $r->jam_keluar) {
@@ -161,7 +163,20 @@
                                         <span>Lihat Detail</span>
                                     </button>
                                 @else
-                                    <span class="text-xs text-secondary italic">Belum absen masuk</span>
+                                    @if ($canRequestCorrection)
+                                        <a href="{{ route('absensi.correction', [
+                                            'tanggal' => $tgl->toDateString(),
+                                            'field' => 'clock_in',
+                                        ]) }}"
+                                            wire:navigate
+                                            @click.stop
+                                            class="inline-flex items-center gap-1.5 rounded-lg bg-error-container px-3.5 py-1.5 text-xs font-bold text-on-error-container transition-colors hover:bg-error hover:text-white">
+                                            <span class="material-symbols-outlined text-sm">edit_calendar</span>
+                                            <span>Perbaiki Clock In</span>
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-secondary italic">Belum absen masuk</span>
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -187,7 +202,20 @@
                                         <span>Lihat Detail</span>
                                     </button>
                                 @else
-                                    <span class="text-xs text-secondary italic">Belum absen pulang</span>
+                                    @if ($canRequestCorrection)
+                                        <a href="{{ route('absensi.correction', [
+                                            'tanggal' => $tgl->toDateString(),
+                                            'field' => 'clock_out',
+                                        ]) }}"
+                                            wire:navigate
+                                            @click.stop
+                                            class="inline-flex items-center gap-1.5 rounded-lg bg-error-container px-3.5 py-1.5 text-xs font-bold text-on-error-container transition-colors hover:bg-error hover:text-white">
+                                            <span class="material-symbols-outlined text-sm">edit_calendar</span>
+                                            <span>Perbaiki Clock Out</span>
+                                        </a>
+                                    @else
+                                        <span class="text-xs text-secondary italic">Belum absen pulang</span>
+                                    @endif
                                 @endif
                             </div>
                         </div>

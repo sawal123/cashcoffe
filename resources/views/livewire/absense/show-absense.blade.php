@@ -66,13 +66,18 @@
                 @endforeach
             </x-ui.select>
         </div>
+        <div class="flex min-w-64 flex-1 items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
+            <iconify-icon icon="lucide:badge-check" class="text-base text-emerald-500"></iconify-icon>
+            <span>Label hijau/biru menandakan absensi yang berasal dari persetujuan koreksi, izin, sakit, atau cuti.</span>
+        </div>
     </div>
 
     {{-- TABLE --}}
-    <x-ui.table :headers="['#', 'Tanggal', 'Masuk', 'Keluar', 'Status', ['name' => 'Aksi', 'align' => 'center']]">
+    <x-ui.table :headers="['#', 'Tanggal', 'Masuk', 'Keluar', 'Status', 'Keterangan', ['name' => 'Aksi', 'align' => 'center']]">
         @forelse ($calendar as $i => $row)
             @php
                 $item = $row['absen'];
+                $approvals = $row['approvals'];
                 $tanggal = \Carbon\Carbon::parse($row['tanggal']);
 
                 $terlambat = false;
@@ -82,12 +87,20 @@
             @endphp
 
             <tr
-                class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/30 transition-colors group {{ $item ? '' : 'opacity-70' }}">
+                class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/30 transition-colors group {{ $item ? '' : 'opacity-70' }} {{ $highlightDate === $row['tanggal'] ? 'bg-blue-50/70 dark:bg-blue-950/20 ring-1 ring-inset ring-blue-200 dark:ring-blue-800' : '' }}">
                 <td data-label="#" class="px-6 py-5 text-xs font-bold text-neutral-300">
                     {{ $i + 1 }}
                 </td>
                 <td data-label="Tanggal" class="px-6 py-5 font-bold text-neutral-800 dark:text-neutral-100">
                     {{ $tanggal->translatedFormat('d M Y') }}
+                    @foreach ($approvals as $approval)
+                        <div class="mt-1">
+                            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider {{ $approval['type'] === 'correction' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' }}">
+                                <iconify-icon icon="{{ $approval['type'] === 'correction' ? 'lucide:badge-check' : 'lucide:calendar-check' }}"></iconify-icon>
+                                {{ $approval['label'] }}
+                            </span>
+                        </div>
+                    @endforeach
                 </td>
                 <td data-label="Masuk" class="px-6 py-5">
                     @if ($item?->jam_masuk)
@@ -160,6 +173,28 @@
                         @endif
                     @endif
                 </td>
+                <td data-label="Keterangan" class="px-6 py-5">
+                    @if ($item?->keterangan)
+                        <p class="max-w-64 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                            {{ $item->keterangan }}
+                        </p>
+                    @elseif (!empty($approvals))
+                        <p class="max-w-64 text-xs font-medium text-neutral-600 dark:text-neutral-300">
+                            {{ $approvals[0]['description'] ?: $approvals[0]['label'] }}
+                        </p>
+                    @else
+                        <span class="text-neutral-300">—</span>
+                    @endif
+
+                    @foreach ($approvals as $approval)
+                        <p class="mt-1 text-[10px] text-neutral-400">
+                            Disetujui{{ $approval['approver'] ? ' oleh '.$approval['approver'] : '' }}
+                            @if($approval['approved_at'])
+                                · {{ \Carbon\Carbon::parse($approval['approved_at'])->translatedFormat('d M Y H:i') }}
+                            @endif
+                        </p>
+                    @endforeach
+                </td>
                 <td data-label="Aksi" class="px-6 py-5 text-center">
                     <div class="flex justify-center gap-1.5">
                         @if ($item)
@@ -184,7 +219,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="6" class="text-center py-20">
+                <td colspan="7" class="text-center py-20">
                     <div class="flex flex-col items-center">
                         <iconify-icon icon="lucide:calendar-x" class="text-5xl text-neutral-200 mb-2"></iconify-icon>
                         <p class="text-sm font-bold text-neutral-400 tracking-wide">Tidak ada data absensi</p>
@@ -213,6 +248,44 @@
 
             <div wire:loading.remove class="space-y-4">
                 @if ($selected)
+                    @if (!empty($selectedApprovals))
+                        <div class="space-y-2 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/50 dark:bg-emerald-950/20">
+                            <div class="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                                <iconify-icon icon="lucide:badge-check" class="text-base"></iconify-icon>
+                                Riwayat Persetujuan
+                            </div>
+
+                            @foreach ($selectedApprovals as $approval)
+                                <div class="rounded-xl bg-white/80 p-3 dark:bg-neutral-900/50">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <span class="text-sm font-bold text-neutral-800 dark:text-neutral-100">
+                                            {{ $approval['label'] }}
+                                        </span>
+                                        <span class="text-[10px] text-neutral-400">
+                                            {{ $approval['approved_at'] ? \Carbon\Carbon::parse($approval['approved_at'])->translatedFormat('d M Y H:i') : '' }}
+                                        </span>
+                                    </div>
+
+                                    @if ($approval['type'] === 'correction')
+                                        <p class="mt-1 text-xs font-semibold text-neutral-600 dark:text-neutral-300">
+                                            Jam diperbaiki:
+                                            {{ $approval['jam_masuk'] ?? '--:--' }}
+                                            →
+                                            {{ $approval['jam_keluar'] ?? '--:--' }}
+                                        </p>
+                                    @endif
+
+                                    <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+                                        {{ $approval['description'] ?: '-' }}
+                                    </p>
+                                    <p class="mt-1 text-[10px] text-neutral-400">
+                                        Disetujui{{ $approval['approver'] ? ' oleh '.$approval['approver'] : '' }}
+                                    </p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
                     {{-- Clock In --}}
                     <div
                         class="p-4 bg-neutral-50 dark:bg-neutral-900/50 rounded-2xl border border-neutral-100 dark:border-neutral-800/50 space-y-3">

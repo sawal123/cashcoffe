@@ -1,5 +1,4 @@
 <div class="">
-
     {{-- SELECT MENU --}}
     <div class="mb-6" wire:ignore x-cloak>
         <label
@@ -19,7 +18,6 @@
             </select>
         </div>
     </div>
-
     <div class="mb-6 flex flex-wrap justify-end gap-2">
         <a href="{{ route('menu-ingredient.export-pdf', $menu_id ? ['menu' => $menu_id] : []) }}" target="_blank"
             class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-bold text-white shadow-lg shadow-red-600/20 transition hover:bg-red-700 active:scale-95">
@@ -34,7 +32,6 @@
             <div class="mt-1 text-base font-black text-slate-900 dark:text-slate-100">{{ $selectedMenu->nama_menu }}</div>
         </div>
     @endif
-
     {{-- TAMBAH KOMPOSISI --}}
     <div
         class="bg-white dark:bg-[#161b27] border border-slate-200 dark:border-[#1e2a3a] rounded-2xl p-6 mb-4 shadow-sm dark:shadow-none">

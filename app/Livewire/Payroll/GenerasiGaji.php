@@ -2,37 +2,51 @@
 
 namespace App\Livewire\Payroll;
 
-use App\Models\User;
 use App\Models\Absensi;
 use App\Models\Payroll;
+use App\Models\User;
 use App\Models\UserShift;
 use App\Services\PayrollService;
 use Carbon\Carbon;
-use Livewire\Component;
 use Illuminate\Support\Facades\Log;
+use Livewire\Component;
 
 class GenerasiGaji extends Component
 {
     public $month;
+
     public $year;
+
     public $detailTitle = '';
+
     public $detailType = '';
+
     public $detailRows = [];
+
     public $showDetailModal = false;
 
     public function mount()
     {
-        $this->month = now()->month;
-        $this->year = now()->year;
+        $periodStart = Carbon::now();
+
+        // Siklus payroll dimulai tanggal 26. Pada tanggal 1-25, periode aktif
+        // masih dimulai dari bulan sebelumnya (contoh: 23 Juni = Mei-Juni).
+        if ($periodStart->day <= 25) {
+            $periodStart->subMonthNoOverflow();
+        }
+
+        $this->month = $periodStart->month;
+        $this->year = $periodStart->year;
     }
 
     public function hitungGajiMassal()
     {
-        $payrollService = new PayrollService();
+        $payrollService = new PayrollService;
         $employees = User::role('karyawan')->get();
 
         if ($employees->isEmpty()) {
             $this->dispatch('showToast', message: 'Tidak ada karyawan aktif dengan role karyawan.', type: 'warning', title: 'Peringatan');
+
             return;
         }
 
@@ -41,10 +55,10 @@ class GenerasiGaji extends Component
 
         foreach ($employees as $employee) {
             try {
-                $payrollService->hitungGajiBulanan($employee->id, (int)$this->year, (int)$this->month);
+                $payrollService->hitungGajiBulanan($employee->id, (int) $this->year, (int) $this->month);
                 $successCount++;
             } catch (\Exception $e) {
-                Log::error("Error generating payroll for User ID {$employee->id} in {$this->month}/{$this->year}: " . $e->getMessage());
+                Log::error("Error generating payroll for User ID {$employee->id} in {$this->month}/{$this->year}: ".$e->getMessage());
                 $failCount++;
             }
         }
@@ -60,8 +74,9 @@ class GenerasiGaji extends Component
     {
         $payroll = Payroll::with('user')->findOrFail($payrollId);
 
-        if (!$payroll->user) {
+        if (! $payroll->user) {
             $this->openDetailModal('Rincian Double Shift', 'double_shift', []);
+
             return;
         }
 
@@ -92,15 +107,16 @@ class GenerasiGaji extends Component
             ->values()
             ->toArray();
 
-        $this->openDetailModal('Rincian Double Shift - ' . $payroll->user->name, 'double_shift', $rows);
+        $this->openDetailModal('Rincian Double Shift - '.$payroll->user->name, 'double_shift', $rows);
     }
 
     public function showDeductionDetails($payrollId)
     {
         $payroll = Payroll::with('user')->findOrFail($payrollId);
 
-        if (!$payroll->user) {
+        if (! $payroll->user) {
             $this->openDetailModal('Rincian Potongan', 'deduction', []);
+
             return;
         }
 
@@ -115,8 +131,14 @@ class GenerasiGaji extends Component
             ->get();
 
         $absensisBySchedule = $absensis->keyBy(function ($absensi) {
-            return $absensi->tanggal . '-' . ($absensi->shift_id ?? 'none');
+            return $absensi->tanggal.'-'.($absensi->shift_id ?? 'none');
         });
+
+        $approvedAttendanceDates = (new PayrollService)->approvedAttendanceDates(
+            $payroll->user_id,
+            $payroll->periode_mulai,
+            $payroll->periode_selesai
+        );
 
         $scheduledAlphaRows = UserShift::with('shift')
             ->where('user_id', $payroll->user_id)
@@ -127,16 +149,20 @@ class GenerasiGaji extends Component
             ->whereDate('tanggal', '<', now()->toDateString())
             ->orderBy('tanggal')
             ->get()
-            ->filter(function ($userShift) use ($absensisBySchedule) {
-                $key = $userShift->tanggal->toDateString() . '-' . $userShift->shift_id;
+            ->filter(function ($userShift) use ($absensisBySchedule, $approvedAttendanceDates) {
+                if ($approvedAttendanceDates->contains($userShift->tanggal->toDateString())) {
+                    return false;
+                }
+
+                $key = $userShift->tanggal->toDateString().'-'.$userShift->shift_id;
                 $absensi = $absensisBySchedule->get($key);
 
-                return !$absensi || $absensi->status === 'alpha';
+                return ! $absensi || $absensi->status === 'alpha';
             })
             ->map(function ($userShift) use ($nilaiHarian) {
                 return [
                     'sort_date' => $userShift->tanggal->toDateString(),
-                    'key' => $userShift->tanggal->toDateString() . '-' . $userShift->shift_id,
+                    'key' => $userShift->tanggal->toDateString().'-'.$userShift->shift_id,
                     'tanggal' => $userShift->tanggal->format('d M Y'),
                     'status' => 'Alpha',
                     'shift' => $userShift->shift->nama_shift ?? '-',
@@ -149,23 +175,45 @@ class GenerasiGaji extends Component
 
         $explicitAlphaRows = $absensis
             ->where('status', 'alpha')
-            ->filter(function ($absensi) {
-                return Carbon::parse($absensi->tanggal)->lt(now()->startOfDay());
+            ->filter(function ($absensi) use ($approvedAttendanceDates) {
+                return Carbon::parse($absensi->tanggal)->lt(now()->startOfDay())
+                    && ! $approvedAttendanceDates->contains(Carbon::parse($absensi->tanggal)->toDateString());
             })
             ->reject(function ($absensi) use ($scheduledAlphaKeys) {
-                $key = $absensi->tanggal . '-' . ($absensi->shift_id ?? 'none');
+                $key = $absensi->tanggal.'-'.($absensi->shift_id ?? 'none');
 
                 return $scheduledAlphaKeys->contains($key);
             })
             ->map(function ($absensi) use ($nilaiHarian) {
                 return [
                     'sort_date' => $absensi->tanggal,
-                    'key' => $absensi->tanggal . '-' . ($absensi->shift_id ?? 'none'),
+                    'key' => $absensi->tanggal.'-'.($absensi->shift_id ?? 'none'),
                     'tanggal' => Carbon::parse($absensi->tanggal)->format('d M Y'),
                     'status' => 'Alpha',
                     'shift' => $absensi->shift->nama_shift ?? '-',
                     'nominal' => $nilaiHarian,
                     'keterangan' => $absensi->keterangan ?: 'Potongan 1x nilai harian',
+                ];
+            });
+
+        $unscheduledAlphaRows = (new PayrollService)
+            ->unscheduledAlphaDates(
+                $payroll->user_id,
+                $payroll->periode_mulai,
+                $payroll->periode_selesai,
+                $absensis,
+                null,
+                $approvedAttendanceDates
+            )
+            ->map(function ($date) use ($nilaiHarian) {
+                return [
+                    'sort_date' => $date,
+                    'key' => $date.'-unscheduled',
+                    'tanggal' => Carbon::parse($date)->format('d M Y'),
+                    'status' => 'Alpha',
+                    'shift' => 'Jadwal belum diatur',
+                    'nominal' => $nilaiHarian,
+                    'keterangan' => 'Tidak ada absensi pada periode cut-off',
                 ];
             });
 
@@ -202,6 +250,7 @@ class GenerasiGaji extends Component
 
         $rows = collect($scheduledAlphaRows->all())
             ->concat($explicitAlphaRows->all())
+            ->concat($unscheduledAlphaRows->all())
             ->concat($lateRows->all())
             ->concat($missingClockOutRows->all())
             ->sortBy('sort_date')
@@ -214,7 +263,7 @@ class GenerasiGaji extends Component
             ->values()
             ->toArray();
 
-        $this->openDetailModal('Rincian Potongan - ' . $payroll->user->name, 'deduction', $rows);
+        $this->openDetailModal('Rincian Potongan - '.$payroll->user->name, 'deduction', $rows);
     }
 
     public function closeDetailModal()
@@ -233,8 +282,8 @@ class GenerasiGaji extends Component
 
     public function render()
     {
-        $payrollService = new PayrollService();
-        [$startDateCarbon, $endDateCarbon] = $payrollService->getCutoffPeriod((int)$this->year, (int)$this->month);
+        $payrollService = new PayrollService;
+        [$startDateCarbon, $endDateCarbon] = $payrollService->getCutoffPeriod((int) $this->year, (int) $this->month);
         $startDate = $startDateCarbon->toDateString();
         $endDate = $endDateCarbon->toDateString();
 
@@ -259,7 +308,7 @@ class GenerasiGaji extends Component
 
             return [
                 'value' => $month,
-                'label' => $start->translatedFormat('F') . '-' . $end->translatedFormat('F'),
+                'label' => $start->translatedFormat('F').'-'.$end->translatedFormat('F'),
             ];
         });
     }

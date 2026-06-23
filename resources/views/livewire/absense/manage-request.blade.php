@@ -91,12 +91,25 @@
                                     </button>
                                 </div>
                             @elseif($req->status == 'approved')
-                                <button type="button" 
-                                    @click="$dispatch('open-modal', { name: 'confirm-cancel-leave', id: {{ $req->id }} })"
-                                    class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-600 hover:text-white transition-all text-[10px] font-bold shadow-sm border border-amber-100 flex items-center gap-1 mx-auto">
-                                    <iconify-icon icon="lucide:undo-2"></iconify-icon>
-                                    Cancel
-                                </button>
+                                <div class="flex flex-wrap items-center justify-center gap-2">
+                                    <a href="{{ route('absense.show', [
+                                        'userId' => $req->user_id,
+                                        'month' => \Carbon\Carbon::parse($req->tanggal_mulai)->month,
+                                        'year' => \Carbon\Carbon::parse($req->tanggal_mulai)->year,
+                                        'date' => \Carbon\Carbon::parse($req->tanggal_mulai)->toDateString(),
+                                    ]) }}"
+                                        wire:navigate
+                                        class="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white">
+                                        <iconify-icon icon="lucide:calendar-search"></iconify-icon>
+                                        Lihat Absensi
+                                    </a>
+                                    <button type="button"
+                                        @click="$dispatch('open-modal', { name: 'confirm-cancel-leave', id: {{ $req->id }} })"
+                                        class="inline-flex items-center gap-1 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-600 shadow-sm transition-all hover:bg-amber-600 hover:text-white">
+                                        <iconify-icon icon="lucide:undo-2"></iconify-icon>
+                                        Batalkan
+                                    </button>
+                                </div>
                             @else
                                 <span class="text-[10px] text-neutral-400 italic">Diproses</span>
                             @endif
@@ -164,7 +177,21 @@
                                     </button>
                                 </div>
                             @else
-                                <span class="text-[10px] text-neutral-400 italic">Diproses</span>
+                                @if($cor->status == 'approved')
+                                    <a href="{{ route('absense.show', [
+                                        'userId' => $cor->user_id,
+                                        'month' => \Carbon\Carbon::parse($cor->tanggal)->month,
+                                        'year' => \Carbon\Carbon::parse($cor->tanggal)->year,
+                                        'date' => \Carbon\Carbon::parse($cor->tanggal)->toDateString(),
+                                    ]) }}"
+                                        wire:navigate
+                                        class="mx-auto inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white">
+                                        <iconify-icon icon="lucide:calendar-search"></iconify-icon>
+                                        Lihat Absensi
+                                    </a>
+                                @else
+                                    <span class="text-[10px] text-neutral-400 italic">Diproses</span>
+                                @endif
                             @endif
                         </td>
                     </tr>

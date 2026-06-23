@@ -2,16 +2,65 @@
 
 namespace App\Livewire\Absensi;
 
-use Carbon\Carbon;
 use App\Models\Absensi;
-use Livewire\Component;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class Profile extends Component
 {
+    use WithFileUploads;
+
+    public $name;
+
+    public $avatar;
+
+    public $showEditProfileModal = false;
+
+    public function mount()
+    {
+        $this->name = Auth::user()->name;
+    }
+
+    public function openEditProfile()
+    {
+        $this->name = Auth::user()->name;
+        $this->avatar = null;
+        $this->resetErrorBag();
+        $this->showEditProfileModal = true;
+    }
+
+    public function updateProfile()
+    {
+        $this->validate([
+            'name' => 'required|string|min:2|max:100',
+            'avatar' => 'nullable|image|max:2048',
+        ]);
+
+        $user = Auth::user();
+        $updates = ['name' => trim($this->name)];
+
+        if ($this->avatar) {
+            if ($user->avatar) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $updates['avatar'] = $this->avatar->store('profile-photos', 'public');
+        }
+
+        $user->update($updates);
+        $this->avatar = null;
+        $this->showEditProfileModal = false;
+
+        $this->dispatch('showToast', type: 'success', message: 'Profil berhasil diperbarui.');
+    }
+
     public function logout()
     {
         Auth::logout();
+
         return redirect()->to('/absen/login');
     }
 

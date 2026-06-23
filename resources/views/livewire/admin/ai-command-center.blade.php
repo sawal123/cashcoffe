@@ -29,7 +29,7 @@
             });
         }
     }" x-init="scrollToBottom()" x-on:chat-message-added.window="scrollToBottom()"
-        class="bg-white dark:bg-neutral-800 border-2 border-neutral-100 dark:border-neutral-700 shadow-sm rounded-[2rem] p-6 md:p-8 relative overflow-hidden mb-8 text-neutral-800 dark:text-white animate-fade-in">
+        class="bg-white dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 shadow-sm rounded-3xl p-4 sm:p-6 md:p-8 relative overflow-hidden mb-8 text-neutral-800 dark:text-white animate-fade-in">
         <!-- Abstract glowing background circles -->
         <div
             class="absolute -top-24 -right-24 w-72 h-72 bg-violet-600/5 dark:bg-violet-600/10 rounded-full blur-3xl pointer-events-none">
@@ -40,15 +40,15 @@
 
         <div class="relative z-10 space-y-6">
             <!-- Autopilot Header Status -->
-            <div class="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-700/80 pb-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 dark:border-neutral-700/80 pb-4">
                 <div class="flex items-center gap-3">
-                    <div class="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></div>
+                    <div class="h-2 w-2 shrink-0 rounded-full bg-emerald-500"></div>
                     <span
-                        class="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Asisten
+                        class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Asisten
                         Chat Autopilot Aktif</span>
                 </div>
-                <div class="text-[10px] text-neutral-400 dark:text-neutral-500">
-                    Model: <span class="font-mono text-neutral-500 dark:text-neutral-400">gpt-4o-mini</span>
+                <div class="text-[9px] sm:text-[10px] text-neutral-400 dark:text-neutral-500">
+                    Model: <span class="font-mono text-neutral-500 dark:text-neutral-400">{{ config('services.openai.model') }}</span>
                 </div>
             </div>
 
@@ -58,10 +58,10 @@
                 @foreach ($chatHistory as $chat)
                     @if ($chat['sender'] === 'user')
                         <!-- User Message (Aligned Right) -->
-                        <div class="flex items-start justify-end p-2 gap-3 self-end w-full max-w-[85%] sm:max-w-[70%]">
+                        <div class="flex items-start justify-end py-2 gap-2 sm:gap-3 self-end w-full max-w-[92%] sm:max-w-[70%]">
                             <div class="flex  flex-col items-end w-full">
                                 <div
-                                    class="bg-gradient-to-tr from-violet-600 to-indigo-600 text-white rounded-2xl rounded-tr-none p-2 shadow-md">
+                                    class="bg-gradient-to-tr from-violet-600 to-indigo-600 text-white rounded-2xl rounded-tr-none px-4 py-3 shadow-md">
                                     <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ $chat['text'] }}</p>
                                 </div>
                                 <span
@@ -74,7 +74,7 @@
                         </div>
                     @else
                         <!-- AI Message (Aligned Left) -->
-                        <div class="flex items-start gap-3 w-full max-w-[85%] sm:max-w-[70%]">
+                        <div class="flex items-start gap-2 sm:gap-3 w-full max-w-[92%] sm:max-w-[70%]">
                             <div
                                 class="w-8 h-8 rounded-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 flex items-center justify-center shrink-0 shadow-sm text-indigo-600 dark:text-indigo-400">
                                 <iconify-icon icon="solar:chatbot-bold-duotone" class="text-lg"></iconify-icon>
@@ -127,17 +127,17 @@
             <!-- Chat Input Form & Actions -->
             <form wire:submit.prevent="executeCommand"
                 class="pt-4 border-t border-neutral-100 dark:border-neutral-700/80">
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-2 sm:gap-3">
                     <div class="flex-1">
                         <x-ui.input type="text" wire:model="commandText"
-                            placeholder="Tulis pesan atau instruksi harga di sini... (misal: 'ubah kopi susu tier Medan jadi 25k' atau 'halo')"
+                            placeholder="Tanyakan data atau beri instruksi... contoh: 'berapa penjualan Sanger bulan ini?'"
                             required class="!py-3.5"
                             prefix="<iconify-icon icon='solar:keyboard-linear' class='text-xl text-neutral-400 dark:text-neutral-500'></iconify-icon>" />
                     </div>
                     <x-ui.button type="submit" color="purple" wire:loading.attr="disabled"
-                        class="!px-6 !py-3.5 flex items-center gap-2 shrink-0">
-                        <iconify-icon icon="solar:plain-bold" class="text-base"></iconify-icon>
-                        <span>Kirim</span>
+                        aria-label="Kirim pesan" title="Kirim pesan"
+                        class="!w-12 !h-12 !p-0 !rounded-2xl flex items-center justify-center shrink-0">
+                        <iconify-icon icon="solar:plain-bold" class="text-lg"></iconify-icon>
                     </x-ui.button>
                 </div>
             </form>
@@ -148,6 +148,18 @@
                     class="block text-[10px] font-bold text-neutral-400 dark:text-neutral-500 uppercase tracking-widest">Templat
                     Obrolan Cepat:</span>
                 <div class="flex flex-wrap gap-2.5">
+                    <button type="button" wire:click="$set('commandText', 'Berapa total penjualan menu Sanger?')"
+                        class="bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/40 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition duration-200 flex items-center gap-1.5">
+                        <iconify-icon icon="solar:chart-2-bold-duotone"
+                            class="text-emerald-600 dark:text-emerald-400"></iconify-icon>
+                        <span>Cek Penjualan Sanger</span>
+                    </button>
+                    <button type="button" wire:click="$set('commandText', 'Tampilkan 5 menu paling laris bulan ini')"
+                        class="bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/40 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition duration-200 flex items-center gap-1.5">
+                        <iconify-icon icon="solar:ranking-bold-duotone"
+                            class="text-amber-600 dark:text-amber-400"></iconify-icon>
+                        <span>Menu Terlaris Bulan Ini</span>
+                    </button>
                     <button type="button" wire:click="$set('commandText', 'Ganti harga kopi susu tier Medan jadi 25k')"
                         class="bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-900/40 dark:hover:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 px-3 py-1.5 rounded-xl text-xs font-semibold transition duration-200 flex items-center gap-1.5">
                         <iconify-icon icon="solar:bolt-circle-line"

@@ -5,6 +5,7 @@ namespace App\Livewire\Absense;
 use App\Models\AttendanceCorrection;
 use App\Models\Absensi;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -13,7 +14,12 @@ class RequestCorrection extends Component
 {
     use WithPagination, WithFileUploads;
 
+    #[Url]
     public $tanggal;
+
+    #[Url(as: 'field')]
+    public $correctionField;
+
     public $jam_masuk_baru;
     public $jam_keluar_baru;
     public $alasan;
@@ -37,7 +43,11 @@ class RequestCorrection extends Component
 
     public function mount()
     {
-        $this->tanggal = now()->format('Y-m-d');
+        $this->tanggal = $this->tanggal ?: now()->format('Y-m-d');
+
+        if (in_array($this->correctionField, ['clock_in', 'clock_out'], true)) {
+            $this->prepareCorrectionFromHistory();
+        }
     }
 
     public function viewCorrection($id)
@@ -57,6 +67,27 @@ class RequestCorrection extends Component
         $this->alasan = '';
         $this->bukti = null;
         $this->resetErrorBag();
+        $this->showFormModal = true;
+    }
+
+    private function prepareCorrectionFromHistory(): void
+    {
+        $attendance = Absensi::where('user_id', Auth::id())
+            ->whereDate('tanggal', $this->tanggal)
+            ->first();
+
+        $this->isEditMode = false;
+        $this->editingId = null;
+        $this->jam_masuk_baru = $attendance?->jam_masuk
+            ? \Carbon\Carbon::parse($attendance->jam_masuk)->format('H:i')
+            : null;
+        $this->jam_keluar_baru = $attendance?->jam_keluar
+            ? \Carbon\Carbon::parse($attendance->jam_keluar)->format('H:i')
+            : null;
+        $this->alasan = $this->correctionField === 'clock_in'
+            ? 'Perbaikan clock in yang belum tercatat.'
+            : 'Perbaikan clock out yang belum tercatat.';
+        $this->bukti = null;
         $this->showFormModal = true;
     }
 

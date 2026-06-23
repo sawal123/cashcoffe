@@ -2,8 +2,12 @@
 
 namespace App\Livewire\Absense;
 
-use App\Models\User;
 use App\Models\Absensi;
+use App\Models\AttendanceCorrection;
+use App\Models\IzinAbsensi;
+use App\Models\User;
+use Carbon\Carbon;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Http;
@@ -15,10 +19,18 @@ class ShowAbsense extends Component
     protected $paginationTheme = 'tailwind';
 
     public $userId;
+
+    #[Url]
     public $month;
+
+    #[Url]
     public $year;
 
+    #[Url(as: 'date')]
+    public $highlightDate;
+
     public $selected, $alamatMasuk, $alamatKeluar;
+    public $selectedApprovals = [];
 
     public $selectedId;
     public $status;
@@ -61,6 +73,10 @@ class ShowAbsense extends Component
     public function loadAbsenseDetail($id)
     {
         $this->selected = Absensi::findOrFail($id);
+        $this->selectedApprovals = $this->approvalEventsForDate($this->selected->tanggal);
+        $this->alamatMasuk = null;
+        $this->alamatKeluar = null;
+
         if ($this->selected?->lokasi) {
             $this->alamatMasuk = $this->getAlamat($this->selected->lokasi);
         }
@@ -92,8 +108,8 @@ class ShowAbsense extends Component
     public function mount($userId)
     {
         $this->userId = $userId;
-        $this->month = now()->month;
-        $this->year = now()->year;
+        $this->month = $this->month ?: now()->month;
+        $this->year = $this->year ?: now()->year;
     }
 
 
@@ -103,10 +119,12 @@ class ShowAbsense extends Component
         $user  = User::findOrFail($this->userId);
         $shift = \App\Models\Shift::first();
 
-        $month = $this->month;
-        $year  = $this->year;
+        $month = (int) $this->month;
+        $year  = (int) $this->year;
 
         $today = now();
+        $monthStart = Carbon::create($year, $month, 1)->startOfDay();
+        $monthEnd = $monthStart->copy()->endOfMonth();
 
         $endDay = ($today->month == $month && $today->year == $year)
             ? $today->day
@@ -118,6 +136,8 @@ class ShowAbsense extends Component
             ->whereYear('tanggal', $year)
             ->get()
             ->keyBy(fn($item) => $item->tanggal);
+
+        $approvalEventsByDate = $this->approvalEventsForPeriod($monthStart, $monthEnd);
 
         // ================================
         // SUMMARY INIT
@@ -184,7 +204,8 @@ class ShowAbsense extends Component
 
             $calendar->push([
                 'tanggal' => $tanggal,
-                'absen'   => $item
+                'absen'   => $item,
+                'approvals' => $approvalEventsByDate->get($tanggal, []),
             ]);
         }
 
@@ -203,5 +224,62 @@ class ShowAbsense extends Component
             'totalTidakClockOut',
             'totalHari'
         ))->layout('layouts.app', ['title' => 'Detail Absensi']);
+    }
+
+    private function approvalEventsForDate($date): array
+    {
+        $day = Carbon::parse($date);
+
+        return $this->approvalEventsForPeriod($day->copy()->startOfDay(), $day->copy()->endOfDay())
+            ->get($day->toDateString(), []);
+    }
+
+    private function approvalEventsForPeriod(Carbon $start, Carbon $end)
+    {
+        $events = collect();
+
+        AttendanceCorrection::with('approver')
+            ->where('user_id', $this->userId)
+            ->where('status', 'approved')
+            ->whereBetween('tanggal', [$start->toDateString(), $end->toDateString()])
+            ->get()
+            ->each(function ($correction) use ($events) {
+                $date = Carbon::parse($correction->tanggal)->toDateString();
+                $events->push([
+                    'date' => $date,
+                    'type' => 'correction',
+                    'label' => 'Absensi diperbaiki',
+                    'description' => $correction->alasan,
+                    'approver' => $correction->approver?->name,
+                    'approved_at' => $correction->updated_at,
+                    'jam_masuk' => $correction->jam_masuk_baru,
+                    'jam_keluar' => $correction->jam_keluar_baru,
+                ]);
+            });
+
+        IzinAbsensi::with('approver')
+            ->where('user_id', $this->userId)
+            ->where('status', 'approved')
+            ->whereDate('tanggal_mulai', '<=', $end->toDateString())
+            ->whereDate('tanggal_selesai', '>=', $start->toDateString())
+            ->get()
+            ->each(function ($leave) use ($events, $start, $end) {
+                $rangeStart = Carbon::parse($leave->tanggal_mulai)->max($start);
+                $rangeEnd = Carbon::parse($leave->tanggal_selesai)->min($end);
+
+                for ($date = $rangeStart->copy(); $date->lte($rangeEnd); $date->addDay()) {
+                    $events->push([
+                        'date' => $date->toDateString(),
+                        'type' => 'leave',
+                        'leave_type' => $leave->jenis,
+                        'label' => ucfirst($leave->jenis).' disetujui',
+                        'description' => $leave->alasan,
+                        'approver' => $leave->approver?->name,
+                        'approved_at' => $leave->updated_at,
+                    ]);
+                }
+            });
+
+        return $events->groupBy('date');
     }
 }

@@ -5,7 +5,11 @@ namespace App\Livewire\Absense;
 use App\Models\IzinAbsensi;
 use App\Models\AttendanceCorrection;
 use App\Models\Absensi;
+use App\Models\UserShift;
+use App\Services\PayrollService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Url;
@@ -41,7 +45,7 @@ class ManageRequest extends Component
     public function approveLeave($id)
     {
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($id) {
+            DB::transaction(function () use ($id) {
                 $req = IzinAbsensi::lockForUpdate()->findOrFail($id);
                 
                 if ($req->status !== 'pending') {
@@ -70,7 +74,10 @@ class ManageRequest extends Component
                 for ($date = $start->copy(); $date->lte($end); $date->addDay()) {
                     Absensi::updateOrCreate(
                         ['user_id' => $req->user_id, 'tanggal' => $date->format('Y-m-d')],
-                        ['status' => $req->jenis, 'keterangan' => $req->alasan]
+                        [
+                            'status' => $req->jenis,
+                            'keterangan' => ucfirst($req->jenis).' disetujui: '.$req->alasan,
+                        ]
                     );
                 }
 
@@ -80,7 +87,10 @@ class ManageRequest extends Component
                 ]);
             });
 
-            $this->dispatch('showToast', type: 'success', message: 'Pengajuan berhasil disetujui.');
+            $req = IzinAbsensi::findOrFail($id);
+            (new PayrollService())->recalculateForDate($req->user_id, $req->tanggal_mulai);
+
+            $this->dispatch('showToast', type: 'success', message: 'Pengajuan berhasil disetujui dan sudah ditampilkan pada detail absensi karyawan.');
 
         } catch (\Exception $e) {
             $this->dispatch('showToast', type: 'error', message: $e->getMessage());
@@ -90,7 +100,7 @@ class ManageRequest extends Component
     public function cancelLeave($id)
     {
         try {
-            \Illuminate\Support\Facades\DB::transaction(function () use ($id) {
+            DB::transaction(function () use ($id) {
                 $req = IzinAbsensi::lockForUpdate()->findOrFail($id);
                 
                 if ($req->status !== 'approved') {
@@ -123,6 +133,9 @@ class ManageRequest extends Component
                 ]);
             });
 
+            $req = IzinAbsensi::findOrFail($id);
+            (new PayrollService())->recalculateForDate($req->user_id, $req->tanggal_mulai);
+
             $this->dispatch('showToast', type: 'info', message: 'Persetujuan dibatalkan. Status kembali ke pending.');
 
         } catch (\Exception $e) {
@@ -139,24 +152,51 @@ class ManageRequest extends Component
 
     public function approveCorrection($id)
     {
-        $cor = AttendanceCorrection::findOrFail($id);
-        
-        // Update or Create Absensi record
-        Absensi::updateOrCreate(
-            ['user_id' => $cor->user_id, 'tanggal' => $cor->tanggal],
-            [
-                'jam_masuk' => $cor->jam_masuk_baru,
-                'jam_keluar' => $cor->jam_keluar_baru,
-                'status' => 'hadir' // Or calculate status based on shift if needed
-            ]
-        );
+        try {
+            DB::transaction(function () use ($id) {
+                $cor = AttendanceCorrection::lockForUpdate()->findOrFail($id);
 
-        $cor->update([
-            'status' => 'approved',
-            'approved_by' => Auth::id()
-        ]);
+                if ($cor->status !== 'pending') {
+                    throw new \Exception('Pengajuan ini sudah pernah diproses.');
+                }
 
-        $this->dispatch('showToast', type: 'success', message: 'Perbaikan kehadiran disetujui dan data diperbarui.');
+                $absensi = Absensi::where('user_id', $cor->user_id)
+                    ->whereDate('tanggal', $cor->tanggal)
+                    ->first();
+
+                $shiftId = $absensi?->shift_id ?? UserShift::where('user_id', $cor->user_id)
+                    ->whereDate('tanggal', $cor->tanggal)
+                    ->value('shift_id');
+
+                $jamMasuk = $cor->jam_masuk_baru ?? $absensi?->jam_masuk;
+                $jamKeluar = $cor->jam_keluar_baru ?? $absensi?->jam_keluar;
+                $status = $this->correctionStatus($shiftId, $jamMasuk, $absensi?->status);
+
+                $absensi = Absensi::updateOrCreate(
+                    ['user_id' => $cor->user_id, 'tanggal' => $cor->tanggal],
+                    [
+                        'shift_id' => $shiftId,
+                        'jam_masuk' => $jamMasuk,
+                        'jam_keluar' => $jamKeluar,
+                        'status' => $status,
+                        'keterangan' => 'Diperbaiki melalui persetujuan: '.$cor->alasan,
+                    ]
+                );
+
+                $cor->update([
+                    'absensi_id' => $absensi->id,
+                    'status' => 'approved',
+                    'approved_by' => Auth::id(),
+                ]);
+            });
+
+            $cor = AttendanceCorrection::findOrFail($id);
+            (new PayrollService())->recalculateForDate($cor->user_id, $cor->tanggal);
+
+            $this->dispatch('showToast', type: 'success', message: 'Perbaikan disetujui dan jejaknya sudah tampil pada detail absensi karyawan.');
+        } catch (\Exception $e) {
+            $this->dispatch('showToast', type: 'error', message: $e->getMessage());
+        }
     }
 
     public function rejectCorrection($id)
@@ -193,5 +233,24 @@ class ManageRequest extends Component
             'leaves' => $leaves,
             'corrections' => $corrections
         ])->layout('layouts.app', ['title' => $title]);
+    }
+
+    private function correctionStatus($shiftId, $jamMasuk, $currentStatus): string
+    {
+        if (!$jamMasuk) {
+            return $currentStatus ?: 'hadir';
+        }
+
+        $shift = $shiftId ? \App\Models\Shift::find($shiftId) : null;
+
+        if (!$shift?->jam_masuk) {
+            return in_array($currentStatus, ['hadir', 'terlambat', 'complete'], true)
+                ? $currentStatus
+                : 'hadir';
+        }
+
+        return Carbon::parse($jamMasuk)->gt(Carbon::parse($shift->jam_masuk))
+            ? 'terlambat'
+            : 'hadir';
     }
 }
