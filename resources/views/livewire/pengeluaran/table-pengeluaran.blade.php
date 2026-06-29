@@ -1,4 +1,38 @@
 <div>
+    <style>
+        .ui-date-range-field .flatpickr-input[readonly],
+        .ui-date-range-field .flatpickr-input[readonly="readonly"],
+        .ui-date-range-field .ui-date-range-alt {
+            width: 100%;
+            background: rgb(250 250 250);
+            color: rgb(64 64 64);
+            border: 1px solid rgb(229 229 229);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem 0.75rem 3.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            line-height: 1.25rem;
+            box-shadow: none;
+            cursor: pointer;
+        }
+
+        .dark .ui-date-range-field .flatpickr-input[readonly],
+        .dark .ui-date-range-field .flatpickr-input[readonly="readonly"],
+        .dark .ui-date-range-field .ui-date-range-alt {
+            background: rgb(23 23 23);
+            color: rgb(212 212 212);
+            border-color: rgb(64 64 64);
+        }
+
+        .ui-date-range-field .ui-date-range-alt:focus,
+        .ui-date-range-field .flatpickr-input[readonly]:focus,
+        .ui-date-range-field .flatpickr-input[readonly="readonly"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgb(59 130 246 / 0.25);
+            border-color: rgb(59 130 246);
+        }
+    </style>
+
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Pengeluaran' }}</h6>
         <x-breadcrumb :title="$title ?? 'Pengeluaran'" />
@@ -7,21 +41,6 @@
     <x-toast />
 
     @php
-        $months = [
-            1 => 'Januari',
-            2 => 'Februari',
-            3 => 'Maret',
-            4 => 'April',
-            5 => 'Mei',
-            6 => 'Juni',
-            7 => 'Juli',
-            8 => 'Agustus',
-            9 => 'September',
-            10 => 'Oktober',
-            11 => 'November',
-            12 => 'Desember',
-        ];
-
         $catColors = [
             'Bahan Baku' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
             'Gaji Karyawan' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
@@ -33,6 +52,15 @@
             'Transport' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
             'Lainnya' => 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-400',
         ];
+
+        $periodLabel = 'Semua tanggal';
+        if ($dateFrom && $dateTo) {
+            $periodLabel = \Carbon\Carbon::parse($dateFrom)->translatedFormat('d M Y') . ' - ' . \Carbon\Carbon::parse($dateTo)->translatedFormat('d M Y');
+        } elseif ($dateFrom) {
+            $periodLabel = 'Mulai ' . \Carbon\Carbon::parse($dateFrom)->translatedFormat('d M Y');
+        } elseif ($dateTo) {
+            $periodLabel = 'Sampai ' . \Carbon\Carbon::parse($dateTo)->translatedFormat('d M Y');
+        }
     @endphp
 
     {{-- Summary Cards --}}
@@ -41,14 +69,14 @@
         <div
             class="md:col-span-4 bg-white dark:bg-neutral-800 rounded-3xl p-8 shadow-sm border border-neutral-100 dark:border-neutral-700 relative overflow-hidden">
             <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                {{ $filterMonth ? 'Total Bulan ' . $months[$filterMonth] : 'Total Filtered' }}
+                Total Periode Terpilih
             </h4>
             <p class="text-3xl font-black text-blue-600 dark:text-blue-500 mb-4">
                 Rp {{ number_format($this->totalFiltered, 0, ',', '.') }}
             </p>
             <div class="flex items-center gap-2 text-[11px] text-neutral-400">
-                <iconify-icon icon="lucide:sparkles" class="text-blue-400"></iconify-icon>
-                <span>Update terakhir: Hari ini</span>
+                <iconify-icon icon="lucide:calendar-range" class="text-blue-400"></iconify-icon>
+                <span>{{ $periodLabel }}</span>
             </div>
             <div class="absolute -right-4 -top-4 w-24 h-24 bg-blue-50 dark:bg-blue-900/10 rounded-full opacity-50">
             </div>
@@ -59,7 +87,7 @@
             class="md:col-span-8 bg-neutral-900 rounded-3xl p-8 shadow-xl shadow-neutral-900/20 flex flex-col md:flex-row justify-between items-center gap-6">
             <div>
                 <h4 class="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-1">
-                    {{ $filterYear ? 'Total Tahun ' . $filterYear : 'Total Seluruhnya' }}
+                    Total Seluruhnya
                 </h4>
                 <p class="text-4xl font-black text-white">
                     Rp {{ number_format($this->totalAllTime, 0, ',', '.') }}
@@ -81,62 +109,25 @@
 
     {{-- Filters Bar --}}
     <div class="bg-indigo-50/50 dark:bg-neutral-800/50 rounded-3xl p-4 mb-8 flex flex-wrap items-center gap-4">
-        <div class="flex-1 min-w-[300px]">
+        <div class="flex-1 min-w-[260px]">
             <x-ui.input prefix="" placeholder="Cari pengeluaran (kategori, deskripsi, dll)..."
                 wire:model.live="search" />
         </div>
 
-        <x-dropdown align="right" width="w-48">
-            <x-slot name="trigger">
-                <button type="button"
-                    class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-neutral-900 border-0 rounded-2xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm hover:bg-neutral-50 transition-all min-w-[140px] justify-between">
-                    <span>{{ $filterMonth ? $months[$filterMonth] : 'Bulan' }}</span>
-                    <iconify-icon icon="lucide:chevron-down" class="text-neutral-400"></iconify-icon>
-                </button>
-            </x-slot>
-            <x-slot name="content">
-                <div class="p-2 max-h-64 overflow-y-auto custom-scrollbar">
-                    <button wire:click="$set('filterMonth', '')"
-                        class="w-full text-left px-4 py-2 text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 {{ $filterMonth == '' ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
-                        Semua Bulan
-                    </button>
-                    @foreach($months as $num => $name)
-                        <button wire:click="$set('filterMonth', {{ $num }})"
-                            class="w-full text-left px-4 py-2 text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 {{ $filterMonth == $num ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
-                            {{ $name }}
-                        </button>
-                    @endforeach
-                </div>
-            </x-slot>
-        </x-dropdown>
+        <div class="min-w-[280px] sm:min-w-[340px] flex-1 sm:flex-none">
+            <div class="relative ui-date-range-field" wire:ignore>
+                <input id="pengeluaranDateRange" type="text" readonly value="{{ $dateRange }}"
+                    placeholder="Pilih rentang tanggal"
+                    class="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl py-3 pl-[60px] pr-4 text-sm font-semibold text-neutral-700 dark:text-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                <iconify-icon icon="lucide:calendar-range"
+                    class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-blue-500 z-10 pointer-events-none"></iconify-icon>
+            </div>
+        </div>
 
-        <x-dropdown align="right" width="48">
-            <x-slot name="trigger">
-                <button type="button"
-                    class="flex items-center gap-2 px-6 py-3 bg-white dark:bg-neutral-900 border-0 rounded-2xl text-sm font-semibold text-neutral-700 dark:text-neutral-300 shadow-sm hover:bg-neutral-50 transition-all min-w-[100px] justify-between">
-                    <span>{{ $filterYear ?: 'Tahun' }}</span>
-                    <iconify-icon icon="lucide:chevron-down" class="text-neutral-400"></iconify-icon>
-                </button>
-            </x-slot>
-            <x-slot name="content">
-                <div class="p-2 space-y-1">
-                    <button wire:click="$set('filterYear', '')"
-                        class="w-full text-left px-4 py-2 text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 {{ $filterYear == '' ? 'bg-blue-50 text-blue-600 font-bold' : '' }}">
-                        Semua Tahun
-                    </button>
-                    @foreach(range(date('Y'), date('Y') - 5) as $y)
-                        <button wire:click="$set('filterYear', {{ $y }})"
-                            class="w-full text-left px-4 py-2 text-sm rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 {{ $filterYear == $y ? 'bg-blue-50 text-blue-600' : '' }}">
-                            {{ $y }}
-                        </button>
-                    @endforeach
-                </div>
-            </x-slot>
-        </x-dropdown>
-
-        <button type="button"
-            class="w-12 h-12 flex items-center justify-center bg-white dark:bg-neutral-900 rounded-2xl shadow-sm text-neutral-500 hover:text-blue-600 transition-all">
-            <iconify-icon icon="lucide:sliders-horizontal" class="text-xl"></iconify-icon>
+        <button type="button" wire:click="resetDateRange"
+            class="h-12 px-4 flex items-center gap-2 bg-white dark:bg-neutral-900 rounded-2xl shadow-sm text-xs font-bold text-neutral-500 hover:text-blue-600 transition-all">
+            <iconify-icon icon="lucide:rotate-ccw" class="text-base"></iconify-icon>
+            Reset Tanggal
         </button>
 
         <x-ui.button-link href="/pengeluaran/create" icon="mingcute:add-circle-line">
@@ -256,4 +247,51 @@
             </button>
         </div>
     </x-mdl>
+
+    <script src="{{ asset('assets/js/flatpickr.js') }}" data-navigate-once></script>
+    <script>
+        function initPengeluaranDateRangePicker() {
+            const input = document.getElementById('pengeluaranDateRange');
+
+            if (!input || typeof flatpickr === 'undefined') {
+                return;
+            }
+
+            if (input._flatpickr) {
+                input._flatpickr.destroy();
+            }
+
+            const dateFrom = @js($dateFrom);
+            const dateTo = @js($dateTo);
+            const defaultDates = [dateFrom, dateTo].filter(Boolean);
+
+            flatpickr(input, {
+                mode: 'range',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altInputClass: 'ui-date-range-alt',
+                altFormat: 'd M Y',
+                defaultDate: defaultDates,
+                allowInput: false,
+                disableMobile: true,
+                onChange(selectedDates, dateStr, instance) {
+                    const formatDate = (date) => instance.formatDate(date, 'Y-m-d');
+                    const from = selectedDates[0] ? formatDate(selectedDates[0]) : '';
+                    const to = selectedDates[1] ? formatDate(selectedDates[1]) : from;
+
+                    @this.call('setDateRange', from, to, dateStr);
+                },
+            });
+        }
+
+        document.addEventListener('livewire:navigated', initPengeluaranDateRangePicker);
+        document.addEventListener('livewire:initialized', initPengeluaranDateRangePicker);
+        document.addEventListener('pengeluaran-date-range-reset', () => {
+            const input = document.getElementById('pengeluaranDateRange');
+            if (input && input._flatpickr) {
+                input._flatpickr.clear();
+            }
+        });
+        setTimeout(initPengeluaranDateRangePicker, 80);
+    </script>
 </div>

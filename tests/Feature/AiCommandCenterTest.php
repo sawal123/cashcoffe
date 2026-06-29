@@ -8,6 +8,7 @@ use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Ingredients;
 use App\Models\Menu;
+use App\Models\MenuPrice;
 use App\Models\PriceTier;
 use App\Models\SalesChannel;
 use App\Models\SatuanBahan;
@@ -120,6 +121,7 @@ class AiCommandCenterTest extends TestCase
     {
         AiChatHistory::create([
             'user_id' => $this->superadmin->id,
+            'title' => 'Cek penjualan',
             'messages' => [
                 [
                     'sender' => 'user',
@@ -138,6 +140,36 @@ class AiCommandCenterTest extends TestCase
             ->test(AiCommandCenter::class)
             ->assertSee('Berapa penjualan Sanger?')
             ->assertSee('Sanger terjual 10 item.');
+    }
+
+    public function test_user_can_create_new_chat_and_continue_previous_chat()
+    {
+        $previousChat = AiChatHistory::create([
+            'user_id' => $this->superadmin->id,
+            'title' => 'Harga Sanger',
+            'messages' => [
+                [
+                    'sender' => 'user',
+                    'text' => 'Ubah harga Sanger',
+                    'time' => '10:00',
+                ],
+                [
+                    'sender' => 'ai',
+                    'text' => 'Saya perlu tier dan channel.',
+                    'time' => '10:01',
+                ],
+            ],
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->call('startNewChat')
+            ->assertSee('Halo! Saya POS AI Assistant')
+            ->call('loadChat', $previousChat->id)
+            ->assertSee('Ubah harga Sanger')
+            ->assertSee('Saya perlu tier dan channel.');
+
+        $this->assertDatabaseCount('ai_chat_histories', 2);
     }
 
     public function test_superadmin_can_execute_price_update_command_successfully()
@@ -182,7 +214,8 @@ class AiCommandCenterTest extends TestCase
             ->set('commandText', 'Ubah harga Kopi Susu tier Mall channel GrabFood jadi 25000')
             ->call('executeCommand')
             ->assertHasNoErrors()
-            ->assertSee('Sip! Harga Kopi Susu')
+            ->assertSee('Status: Berhasil')
+            ->assertSee('Harga menu Kopi Susu berhasil diperbarui')
             ->assertSee('Rp25.000')
             ->assertDispatched('showToast');
 
@@ -191,6 +224,138 @@ class AiCommandCenterTest extends TestCase
             'price_tier_id' => $this->tier->id,
             'sales_channel_id' => $this->channel->id,
             'harga' => 25000,
+        ]);
+    }
+
+    public function test_price_update_corrects_dine_in_when_ai_puts_it_in_tier_field()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $reguler = PriceTier::firstOrCreate(['nama_tier' => 'Reguler'], ['is_active' => true]);
+        $dineIn = SalesChannel::firstOrCreate(['nama_channel' => 'Dine In'], ['is_active' => true]);
+
+        MenuPrice::create([
+            'menu_id' => $this->menu->id,
+            'price_tier_id' => $reguler->id,
+            'sales_channel_id' => $dineIn->id,
+            'harga' => 20000,
+            'h_promo' => 0,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => true,
+                            'is_in_scope' => true,
+                            'target_module' => 'PRICING',
+                            'action_type' => 'UPDATE',
+                            'redirect_url' => '',
+                            'ai_response' => 'Harga berhasil diubah.',
+                            'payload' => [
+                                'menu_name' => 'Kopi Susu',
+                                'variant_name' => '',
+                                'price_tier' => 'Dine In',
+                                'sales_channel' => '',
+                                'price_value' => 30000,
+                                'employee_name' => '',
+                                'shift_name' => '',
+                                'item_name' => '',
+                                'branch_name' => '',
+                                'qty' => 0,
+                                'unit_name' => '',
+                                'fine_amount' => 0,
+                                'date' => '',
+                                'report_type' => 'none',
+                                'date_from' => '',
+                                'date_to' => '',
+                                'limit' => 5,
+                            ],
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'Tolong rubah harga menu Kopi Susu menjadi 30.000 di tier Dine In')
+            ->call('executeCommand')
+            ->assertSee('Status: Berhasil')
+            ->assertSee('Tier: Reguler, Channel: Dine In')
+            ->assertSee('Dine In')
+            ->assertDispatched('showToast');
+
+        $this->assertDatabaseHas('menu_prices', [
+            'menu_id' => $this->menu->id,
+            'price_tier_id' => $reguler->id,
+            'sales_channel_id' => $dineIn->id,
+            'harga' => 30000,
+        ]);
+    }
+
+    public function test_price_update_reuses_legacy_null_dine_in_row()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $reguler = PriceTier::firstOrCreate(['nama_tier' => 'Reguler'], ['is_active' => true]);
+        $dineIn = SalesChannel::firstOrCreate(['nama_channel' => 'Dine In'], ['is_active' => true]);
+
+        $legacyPrice = MenuPrice::create([
+            'menu_id' => $this->menu->id,
+            'price_tier_id' => $reguler->id,
+            'sales_channel_id' => null,
+            'harga' => 20000,
+            'h_promo' => 0,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => true,
+                            'is_in_scope' => true,
+                            'target_module' => 'PRICING',
+                            'action_type' => 'UPDATE',
+                            'redirect_url' => '',
+                            'ai_response' => 'Harga berhasil diubah.',
+                            'payload' => [
+                                'menu_name' => 'Kopi Susu',
+                                'variant_name' => '',
+                                'price_tier' => 'Reguler',
+                                'sales_channel' => 'Dine In',
+                                'price_value' => 30000,
+                                'employee_name' => '',
+                                'shift_name' => '',
+                                'item_name' => '',
+                                'branch_name' => '',
+                                'qty' => 0,
+                                'unit_name' => '',
+                                'fine_amount' => 0,
+                                'date' => '',
+                                'report_type' => 'none',
+                                'date_from' => '',
+                                'date_to' => '',
+                                'limit' => 5,
+                            ],
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'Tolong rubah harga menu Kopi Susu menjadi 30.000 di tier Reguler channel Dine In')
+            ->call('executeCommand')
+            ->assertSee('Status: Berhasil');
+
+        $this->assertDatabaseHas('menu_prices', [
+            'id' => $legacyPrice->id,
+            'sales_channel_id' => $dineIn->id,
+            'harga' => 30000,
         ]);
     }
 

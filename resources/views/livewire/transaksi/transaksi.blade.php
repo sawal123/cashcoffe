@@ -1,4 +1,38 @@
 <div>
+    <style>
+        .ui-date-range-field .flatpickr-input[readonly],
+        .ui-date-range-field .flatpickr-input[readonly="readonly"],
+        .ui-date-range-field .ui-date-range-alt {
+            width: 100%;
+            background: rgb(250 250 250);
+            color: rgb(64 64 64);
+            border: 1px solid rgb(229 229 229);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem 0.75rem 3.75rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            line-height: 1.25rem;
+            box-shadow: none;
+            cursor: pointer;
+        }
+
+        .dark .ui-date-range-field .flatpickr-input[readonly],
+        .dark .ui-date-range-field .flatpickr-input[readonly="readonly"],
+        .dark .ui-date-range-field .ui-date-range-alt {
+            background: rgb(23 23 23);
+            color: rgb(212 212 212);
+            border-color: rgb(64 64 64);
+        }
+
+        .ui-date-range-field .ui-date-range-alt:focus,
+        .ui-date-range-field .flatpickr-input[readonly]:focus,
+        .ui-date-range-field .flatpickr-input[readonly="readonly"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgb(59 130 246 / 0.25);
+            border-color: rgb(59 130 246);
+        }
+    </style>
+
     <x-toast />
 
     {{-- Stats Section --}}
@@ -82,16 +116,25 @@
                     </x-ui.select>
                 </div>
 
-                {{-- Date Pickers --}}
-                <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <x-ui.input type="date" wire:model.live="dateFrom" class="!py-3" />
-                    <span class="text-neutral-300">-</span>
-                    <x-ui.input type="date" wire:model.live="dateTo" class="!py-3" />
+                {{-- Date Range --}}
+                <div class="w-full sm:w-[320px] ui-date-range-field" wire:ignore>
+                    <div class="relative">
+                        <input id="transaksiDateRange" type="text" readonly value="{{ $dateRange }}"
+                            placeholder="Pilih rentang tanggal"
+                            class="w-full bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl py-3 pl-[60px] pr-4 text-sm font-semibold text-neutral-700 dark:text-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                        <iconify-icon icon="lucide:calendar-range"
+                            class="absolute left-4 top-1/2 -translate-y-1/2 text-lg text-blue-500 z-10 pointer-events-none"></iconify-icon>
+                    </div>
                 </div>
             </div>
 
             {{-- Actions --}}
             <div class="flex items-center gap-3 w-full lg:w-auto justify-end">
+                <x-ui.button color="blue" wire:click="resetDateRange"
+                    class="!px-4 !py-3 !rounded-2xl !bg-white !text-neutral-700 border border-neutral-200 hover:!bg-neutral-50 dark:!bg-neutral-900 dark:!text-neutral-200 dark:border-neutral-700 shadow-none">
+                    <iconify-icon icon="lucide:rotate-ccw" class="mr-2"></iconify-icon>
+                    Reset
+                </x-ui.button>
                 <x-ui.button color="blue"
                     class="!px-6 !py-3 !rounded-2xl !bg-white !text-neutral-700 border border-neutral-200 hover:!bg-neutral-50 dark:!bg-neutral-900 dark:!text-neutral-200 dark:border-neutral-700 shadow-none"
                     onclick="printSection('print-area')">
@@ -377,7 +420,52 @@
         </div>
     </x-mdl>
 
+    <script src="{{ asset('assets/js/flatpickr.js') }}" data-navigate-once></script>
     <script>
+        function initTransaksiDateRangePicker() {
+            const input = document.getElementById('transaksiDateRange');
+
+            if (!input || typeof flatpickr === 'undefined') {
+                return;
+            }
+
+            if (input._flatpickr) {
+                input._flatpickr.destroy();
+            }
+
+            const dateFrom = @js($dateFrom);
+            const dateTo = @js($dateTo);
+            const defaultDates = [dateFrom, dateTo].filter(Boolean);
+
+            flatpickr(input, {
+                mode: 'range',
+                dateFormat: 'Y-m-d',
+                altInput: true,
+                altInputClass: 'ui-date-range-alt',
+                altFormat: 'd M Y',
+                defaultDate: defaultDates,
+                allowInput: false,
+                disableMobile: true,
+                onChange(selectedDates, dateStr, instance) {
+                    const formatDate = (date) => instance.formatDate(date, 'Y-m-d');
+                    const from = selectedDates[0] ? formatDate(selectedDates[0]) : '';
+                    const to = selectedDates[1] ? formatDate(selectedDates[1]) : from;
+
+                    @this.call('setDateRange', from, to, dateStr);
+                },
+            });
+        }
+
+        document.addEventListener('livewire:navigated', initTransaksiDateRangePicker);
+        document.addEventListener('livewire:initialized', initTransaksiDateRangePicker);
+        document.addEventListener('transaksi-date-range-reset', () => {
+            const input = document.getElementById('transaksiDateRange');
+            if (input && input._flatpickr) {
+                input._flatpickr.clear();
+            }
+        });
+        setTimeout(initTransaksiDateRangePicker, 80);
+
         function printSection(areaId) {
             const content = document.getElementById(areaId).innerHTML;
             const printWindow = window.open('', '', 'width=900,height=600');

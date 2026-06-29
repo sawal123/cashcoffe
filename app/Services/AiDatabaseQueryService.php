@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AiDatabaseQueryService
 {
-    public function answer(string $reportType, array $payload): ?string
+    public function answer(string $reportType, array $payload, string $userQuery = ''): ?string
     {
         return match (strtolower($reportType)) {
             'menu_sales' => $this->menuSales($payload),
@@ -22,6 +22,7 @@ class AiDatabaseQueryService
             'sales_summary' => $this->salesSummary($payload),
             'inventory_stock' => $this->inventoryStock($payload),
             'employee_attendance' => $this->employeeAttendance($payload),
+            'menu_ingredients' => $this->menuIngredients($payload, $userQuery),
             default => null,
         };
     }
@@ -226,6 +227,52 @@ class AiDatabaseQueryService
 
         return "Absensi {$employee->name} ({$periodLabel}): "
             .($statuses !== '' ? $statuses : 'belum ada data.');
+    }
+
+    private function menuIngredients(array $payload, string $userQuery): string
+    {
+        $query = mb_strtolower($userQuery);
+
+        // If the query asks for menus without ingredients/compositions (e.g. "belum memiliki komposisi", "tanpa komposisi", "tidak ada bahan")
+        if (str_contains($query, 'belum') || str_contains($query, 'tanpa') || str_contains($query, 'tidak memiliki') || str_contains($query, 'tidak ada')) {
+            $menus = Menu::doesntHave('ingredients')->get();
+            if ($menus->isEmpty()) {
+                return 'Semua menu sudah memiliki komposisi bahan baku.';
+            }
+            $list = $menus->map(fn ($m) => "- {$m->nama_menu}")->implode("\n");
+
+            return "Berikut adalah menu yang belum memiliki komposisi bahan baku:\n".$list;
+        }
+
+        // Extract menu name from payload or query string
+        $menuName = trim((string) ($payload['menu_name'] ?? ''));
+        if ($menuName === '' || strcasecmp($menuName, 'none') === 0) {
+            $menu = Menu::query()->get(['nama_menu'])
+                ->first(fn ($menu) => str_contains($query, mb_strtolower($menu->nama_menu)));
+            if ($menu) {
+                $menuName = $menu->nama_menu;
+            }
+        }
+
+        if ($menuName !== '') {
+            $menu = Menu::where('nama_menu', 'like', '%'.$menuName.'%')->with('ingredients.satuan')->first();
+            if (! $menu) {
+                return "Menu '{$menuName}' tidak ditemukan.";
+            }
+            if ($menu->ingredients->isEmpty()) {
+                return "Menu '{$menu->nama_menu}' belum memiliki komposisi bahan baku.";
+            }
+            $list = $menu->ingredients->map(function ($i) {
+                $qty = $i->pivot->qty ?? 0;
+                $satuan = $i->satuan->nama_satuan ?? 'unit';
+
+                return "- {$i->nama_bahan}: ".number_format($qty, 0, ',', '.')." {$satuan}";
+            })->implode("\n");
+
+            return "Komposisi bahan baku untuk menu {$menu->nama_menu}:\n".$list;
+        }
+
+        return 'Sebutkan nama menu yang ingin dicek komposisinya atau tanyakan menu yang belum memiliki komposisi.';
     }
 
     private function completedOrderScope(

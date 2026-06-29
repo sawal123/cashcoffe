@@ -32,6 +32,10 @@ class AiCommandCenter extends Component
 
     public $chatHistory = [];
 
+    public $chatSessions = [];
+
+    public $activeChatId = null;
+
     protected $paginationTheme = 'tailwind';
 
     public function formatMessage($text)
@@ -53,20 +57,63 @@ class AiCommandCenter extends Component
             abort(403, 'Unauthorized action.');
         }
 
-        $this->chatHistory = AiChatHistory::query()
+        $latestChat = AiChatHistory::query()
             ->where('user_id', auth()->id())
-            ->value('messages') ?? [];
+            ->latest('updated_at')
+            ->first();
 
-        // Initialize chat history with a welcoming assistant message
+        if ($latestChat) {
+            $this->activeChatId = $latestChat->id;
+            $this->chatHistory = $latestChat->messages ?? [];
+
+            if (empty($this->chatHistory)) {
+                $this->chatHistory[] = $this->greetingMessage();
+                $this->persistChatHistory();
+            }
+        } else {
+            $this->startNewChat(false);
+        }
+
+        $this->refreshChatSessions();
+    }
+
+    public function startNewChat(bool $dispatchEvent = true): void
+    {
+        if (! auth()->check()) {
+            return;
+        }
+
+        $history = AiChatHistory::create([
+            'user_id' => auth()->id(),
+            'title' => 'Chat baru',
+            'messages' => [$this->greetingMessage()],
+        ]);
+
+        $this->activeChatId = $history->id;
+        $this->chatHistory = $history->messages;
+        $this->refreshChatSessions();
+
+        if ($dispatchEvent) {
+            $this->dispatch('chat-message-added');
+        }
+    }
+
+    public function loadChat(int $chatId): void
+    {
+        $history = AiChatHistory::query()
+            ->where('user_id', auth()->id())
+            ->findOrFail($chatId);
+
+        $this->activeChatId = $history->id;
+        $this->chatHistory = $history->messages ?? [];
+
         if (empty($this->chatHistory)) {
-            $this->chatHistory[] = [
-                'sender' => 'ai',
-                'text' => 'Halo! Saya POS AI Assistant. Saya siap membantu Anda mengelola sistem kasir. Silakan ajukan pertanyaan atau instruksikan perubahan!',
-                'time' => now()->format('H:i'),
-            ];
-
+            $this->chatHistory[] = $this->greetingMessage();
             $this->persistChatHistory();
         }
+
+        $this->refreshChatSessions();
+        $this->dispatch('chat-message-added');
     }
 
     public function updatingSearch()
@@ -91,6 +138,7 @@ class AiCommandCenter extends Component
             'text' => $userQuery,
             'time' => now()->format('H:i'),
         ];
+        $this->updateActiveChatTitle($userQuery);
 
         // Clear the input instantly for superior UX
         $this->commandText = '';
@@ -482,10 +530,10 @@ Database Context saat ini:
                                         'date' => [
                                             'type' => 'string',
                                         ],
-                                         'report_type' => [
-                                             'type' => 'string',
-                                             'enum' => ['menu_sales', 'top_selling_menus', 'least_selling_menus', 'sales_summary', 'inventory_stock', 'employee_attendance', 'none'],
-                                         ],
+                                        'report_type' => [
+                                            'type' => 'string',
+                                            'enum' => ['menu_sales', 'top_selling_menus', 'least_selling_menus', 'sales_summary', 'inventory_stock', 'employee_attendance', 'menu_ingredients', 'none'],
+                                        ],
                                         'date_from' => [
                                             'type' => 'string',
                                         ],
@@ -613,7 +661,7 @@ Database Context saat ini:
                 $reportType = $this->resolveReportType($payload, $userQuery);
 
                 if ($reportType !== 'none') {
-                    $databaseAnswer = (new AiDatabaseQueryService)->answer($reportType, $payload);
+                    $databaseAnswer = (new AiDatabaseQueryService)->answer($reportType, $payload, $userQuery);
 
                     if ($databaseAnswer !== null) {
                         $aiResponse = $databaseAnswer;
@@ -640,7 +688,7 @@ Database Context saat ini:
                         return "- {$e->name} (Role: ".($e->roles->pluck('name')->implode(', ') ?: 'Karyawan').')';
                     })->implode("\n");
                     $aiResponse .= "\n\nBerikut daftar karyawan terdaftar:\n".$list;
-                } elseif ($reportType === 'none' && (stripos($userQuery, 'harga') !== false || stripos($userQuery, 'menu') !== false || stripos($userQuery, 'tier') !== false)) {
+                } elseif ($reportType === 'none' && (stripos($userQuery, 'harga') !== false || stripos($userQuery, 'daftar harga') !== false || stripos($userQuery, 'price') !== false || stripos($userQuery, 'tier') !== false || stripos($userQuery, 'biaya') !== false)) {
                     $menuPrices = MenuPrice::with('menu', 'priceTier', 'salesChannel')->take(5)->get();
                     if ($menuPrices->count() > 0) {
                         $list = $menuPrices->map(function ($p) {
@@ -718,68 +766,88 @@ Database Context saat ini:
                                 break;
                             }
 
-                            // Determine Tiers to update
-                            $tiersToUpdate = [];
-                            if (strcasecmp($priceTier, 'all') === 0 || strcasecmp($priceTier, 'semua') === 0) {
-                                $tiersToUpdate = PriceTier::all();
-                            } elseif (! empty($priceTier)) {
-                                $t = PriceTier::where('nama_tier', 'LIKE', '%'.$priceTier.'%')->first();
-                                if ($t) {
-                                    $tiersToUpdate[] = $t;
-                                }
-                            }
+                            $targets = $this->resolvePricingTargets($priceTier, $salesChannel, $menu);
 
-                            if (count($tiersToUpdate) === 0) {
-                                $availableTiers = PriceTier::pluck('nama_tier')->implode(', ');
+                            if (! empty($targets['error'])) {
                                 $this->chatHistory[] = [
                                     'sender' => 'ai',
-                                    'text' => "Mau tier mana yang diubah? (Tier yang tersedia: {$availableTiers})",
+                                    'text' => $targets['error'],
                                     'time' => now()->format('H:i'),
                                 ];
                                 break;
                             }
 
-                            // Determine Channels to update
-                            $channelsToUpdate = [];
-                            if (strcasecmp($salesChannel, 'all') === 0 || strcasecmp($salesChannel, 'semua') === 0) {
-                                $channelsToUpdate = SalesChannel::all();
-                            } elseif (! empty($salesChannel)) {
-                                $c = SalesChannel::where('nama_channel', 'LIKE', '%'.$salesChannel.'%')->first();
-                                if ($c) {
-                                    $channelsToUpdate[] = $c;
-                                }
-                            }
+                            $tiersToUpdate = $targets['tiers'];
+                            $channelsToUpdate = $targets['channels'];
+                            $updatedRows = [];
 
-                            if (count($channelsToUpdate) === 0) {
-                                $availableChannels = SalesChannel::pluck('nama_channel')->implode(', ');
-                                $this->chatHistory[] = [
-                                    'sender' => 'ai',
-                                    'text' => "Mau sales channel mana yang diubah? (Channel yang tersedia: {$availableChannels})",
-                                    'time' => now()->format('H:i'),
-                                ];
-                                break;
-                            }
-
-                            // Update or Create matching rows
                             foreach ($tiersToUpdate as $tObj) {
                                 foreach ($channelsToUpdate as $cObj) {
-                                    MenuPrice::updateOrCreate(
-                                        [
+                                    $price = MenuPrice::query()
+                                        ->where('menu_id', $menu->id)
+                                        ->where('price_tier_id', $tObj->id)
+                                        ->where('sales_channel_id', $cObj->id)
+                                        ->first();
+
+                                    if (! $price && $this->isDefaultDineInChannel($cObj)) {
+                                        $price = MenuPrice::query()
+                                            ->where('menu_id', $menu->id)
+                                            ->where('price_tier_id', $tObj->id)
+                                            ->whereNull('sales_channel_id')
+                                            ->first();
+                                    }
+
+                                    if ($price) {
+                                        $price->update([
+                                            'sales_channel_id' => $cObj->id,
+                                            'harga' => $priceValue,
+                                        ]);
+                                    } else {
+                                        $price = MenuPrice::create([
                                             'menu_id' => $menu->id,
                                             'price_tier_id' => $tObj->id,
                                             'sales_channel_id' => $cObj->id,
-                                        ],
-                                        ['harga' => $priceValue]
-                                    );
+                                            'harga' => $priceValue,
+                                            'h_promo' => 0,
+                                        ]);
+                                    }
+
+                                    if ($this->isDefaultBasePriceTarget($tObj, $cObj)) {
+                                        $menu->update(['harga' => $priceValue]);
+                                    }
+
+                                    $updatedRows[] = [
+                                        'tier' => $tObj->nama_tier,
+                                        'channel' => $cObj->nama_channel,
+                                        'price_id' => $price->id,
+                                    ];
                                 }
                             }
+
+                            $verifiedCount = MenuPrice::query()
+                                ->whereIn('id', collect($updatedRows)->pluck('price_id')->all())
+                                ->where('harga', $priceValue)
+                                ->count();
+
+                            if ($verifiedCount !== count($updatedRows)) {
+                                $this->chatHistory[] = [
+                                    'sender' => 'ai',
+                                    'text' => 'Status: Gagal'."\n".'Aksi: Harga belum berhasil diverifikasi di database, jadi perubahan tidak saya klaim berhasil.',
+                                    'time' => now()->format('H:i'),
+                                ];
+                                $this->dispatch('showToast', message: 'Harga belum berhasil diverifikasi.', type: 'error', title: 'Gagal');
+                                break;
+                            }
+
+                            $aiResponse = $this->pricingSuccessMessage($menu, $priceValue, $updatedRows, $targets['notes']);
 
                             $this->chatHistory[] = [
                                 'sender' => 'ai',
                                 'text' => $aiResponse,
+                                'redirect_url' => '/menu/'.$menu->id.'/edit',
                                 'time' => now()->format('H:i'),
                             ];
-                            $this->dispatch('showToast', message: $aiResponse, type: 'success', title: 'Berhasil');
+                            $this->dispatch('showToast', message: 'Harga menu berhasil diperbarui dan diverifikasi.', type: 'success', title: 'Berhasil');
                         }
                         break;
 
@@ -994,10 +1062,272 @@ Database Context saat ini:
             return;
         }
 
-        AiChatHistory::query()->updateOrCreate(
-            ['user_id' => auth()->id()],
-            ['messages' => array_values(array_slice($this->chatHistory, -100))]
-        );
+        if (! $this->activeChatId) {
+            $this->startNewChat(false);
+        }
+
+        AiChatHistory::query()
+            ->where('user_id', auth()->id())
+            ->where('id', $this->activeChatId)
+            ->update(['messages' => array_values(array_slice($this->chatHistory, -100))]);
+
+        $this->refreshChatSessions();
+    }
+
+    private function greetingMessage(): array
+    {
+        return [
+            'sender' => 'ai',
+            'text' => 'Halo! Saya POS AI Assistant. Saya siap membantu Anda mengelola sistem kasir. Silakan ajukan pertanyaan atau instruksikan perubahan!',
+            'time' => now()->format('H:i'),
+        ];
+    }
+
+    private function refreshChatSessions(): void
+    {
+        if (! auth()->check()) {
+            $this->chatSessions = [];
+
+            return;
+        }
+
+        $this->chatSessions = AiChatHistory::query()
+            ->where('user_id', auth()->id())
+            ->latest('updated_at')
+            ->limit(20)
+            ->get(['id', 'title', 'updated_at'])
+            ->map(fn ($history) => [
+                'id' => $history->id,
+                'title' => $history->title ?: 'Chat baru',
+                'updated_at' => optional($history->updated_at)->diffForHumans(),
+            ])
+            ->toArray();
+    }
+
+    private function updateActiveChatTitle(string $userQuery): void
+    {
+        if (! $this->activeChatId || ! auth()->check()) {
+            return;
+        }
+
+        $history = AiChatHistory::query()
+            ->where('user_id', auth()->id())
+            ->find($this->activeChatId);
+
+        if (! $history || ($history->title !== 'Chat baru' && ! str_starts_with($history->title, 'Chat '))) {
+            return;
+        }
+
+        $title = trim(preg_replace('/\s+/', ' ', $userQuery));
+        $title = mb_strlen($title) > 48 ? mb_substr($title, 0, 45).'...' : $title;
+
+        $history->update(['title' => $title ?: 'Chat baru']);
+        $this->refreshChatSessions();
+    }
+
+    private function resolvePricingTargets(string $priceTier, string $salesChannel, Menu $menu): array
+    {
+        $priceTier = $this->cleanAiValue($priceTier);
+        $salesChannel = $this->cleanAiValue($salesChannel);
+        $notes = [];
+
+        $tierMatchedAsChannel = $this->findSalesChannelByName($priceTier);
+        if ($tierMatchedAsChannel && $salesChannel === '') {
+            $salesChannel = $tierMatchedAsChannel->nama_channel;
+            $priceTier = '';
+            $notes[] = "'{$tierMatchedAsChannel->nama_channel}' dikenali sebagai sales channel, bukan price tier.";
+        }
+
+        $channelMatchedAsTier = $this->findPriceTierByName($salesChannel);
+        if ($channelMatchedAsTier && $priceTier === '') {
+            $priceTier = $channelMatchedAsTier->nama_tier;
+            $salesChannel = '';
+            $notes[] = "'{$channelMatchedAsTier->nama_tier}' dikenali sebagai price tier.";
+        }
+
+        $tiers = $this->resolvePriceTierSelection($priceTier, $menu, $salesChannel);
+        if (empty($tiers)) {
+            $availableTiers = PriceTier::pluck('nama_tier')->implode(', ');
+
+            return [
+                'error' => "Mau tier mana yang diubah? (Tier yang tersedia: {$availableTiers})",
+                'tiers' => [],
+                'channels' => [],
+                'notes' => $notes,
+            ];
+        }
+
+        $channels = $this->resolveSalesChannelSelection($salesChannel, $menu, $priceTier);
+        if (empty($channels)) {
+            $availableChannels = SalesChannel::pluck('nama_channel')->implode(', ');
+
+            return [
+                'error' => "Mau sales channel mana yang diubah? (Channel yang tersedia: {$availableChannels})",
+                'tiers' => [],
+                'channels' => [],
+                'notes' => $notes,
+            ];
+        }
+
+        if ($priceTier === '' && count($tiers) === 1) {
+            $notes[] = "Price tier otomatis dipakai: {$tiers[0]->nama_tier}.";
+        }
+
+        if ($salesChannel === '' && count($channels) === 1) {
+            $notes[] = "Sales channel otomatis dipakai: {$channels[0]->nama_channel}.";
+        }
+
+        return [
+            'error' => null,
+            'tiers' => $tiers,
+            'channels' => $channels,
+            'notes' => array_values(array_unique($notes)),
+        ];
+    }
+
+    private function resolvePriceTierSelection(string $priceTier, Menu $menu, string $salesChannel): array
+    {
+        if ($this->isAllValue($priceTier)) {
+            return PriceTier::query()->where('is_active', true)->get()->all();
+        }
+
+        if ($priceTier !== '') {
+            $tier = $this->findPriceTierByName($priceTier);
+
+            return $tier ? [$tier] : [];
+        }
+
+        $activeTiers = PriceTier::query()->where('is_active', true)->get();
+        if ($activeTiers->count() === 1) {
+            return [$activeTiers->first()];
+        }
+
+        if ($salesChannel !== '') {
+            $channel = $this->findSalesChannelByName($salesChannel);
+            if ($channel) {
+                $existingTiers = $menu->menuPrices()
+                    ->where('sales_channel_id', $channel->id)
+                    ->with('priceTier')
+                    ->get()
+                    ->pluck('priceTier')
+                    ->filter()
+                    ->unique('id')
+                    ->values();
+
+                if ($existingTiers->count() === 1) {
+                    return [$existingTiers->first()];
+                }
+            }
+        }
+
+        return [];
+    }
+
+    private function resolveSalesChannelSelection(string $salesChannel, Menu $menu, string $priceTier): array
+    {
+        if ($this->isAllValue($salesChannel)) {
+            return SalesChannel::query()->where('is_active', true)->get()->all();
+        }
+
+        if ($salesChannel !== '') {
+            $channel = $this->findSalesChannelByName($salesChannel);
+
+            return $channel ? [$channel] : [];
+        }
+
+        $activeChannels = SalesChannel::query()->where('is_active', true)->get();
+        if ($activeChannels->count() === 1) {
+            return [$activeChannels->first()];
+        }
+
+        if ($priceTier !== '') {
+            $tier = $this->findPriceTierByName($priceTier);
+            if ($tier) {
+                $existingChannels = $menu->menuPrices()
+                    ->where('price_tier_id', $tier->id)
+                    ->with('salesChannel')
+                    ->get()
+                    ->pluck('salesChannel')
+                    ->filter()
+                    ->unique('id')
+                    ->values();
+
+                if ($existingChannels->count() === 1) {
+                    return [$existingChannels->first()];
+                }
+            }
+        }
+
+        return [];
+    }
+
+    private function findPriceTierByName(string $name): ?PriceTier
+    {
+        return $this->findByNormalizedName(PriceTier::query()->where('is_active', true)->get(), 'nama_tier', $name);
+    }
+
+    private function findSalesChannelByName(string $name): ?SalesChannel
+    {
+        return $this->findByNormalizedName(SalesChannel::query()->where('is_active', true)->get(), 'nama_channel', $name);
+    }
+
+    private function findByNormalizedName($items, string $attribute, string $name)
+    {
+        $needle = $this->normalizeLookup($name);
+        if ($needle === '') {
+            return null;
+        }
+
+        return $items->first(function ($item) use ($attribute, $needle) {
+            $candidate = $this->normalizeLookup((string) $item->{$attribute});
+
+            return $candidate === $needle
+                || str_contains($candidate, $needle)
+                || str_contains($needle, $candidate);
+        });
+    }
+
+    private function cleanAiValue(mixed $value): string
+    {
+        $value = trim((string) $value);
+
+        return in_array(mb_strtolower($value), ['', 'none', 'null', '-'], true) ? '' : $value;
+    }
+
+    private function normalizeLookup(string $value): string
+    {
+        return preg_replace('/[^a-z0-9]+/', '', mb_strtolower($value));
+    }
+
+    private function isAllValue(string $value): bool
+    {
+        return in_array($this->normalizeLookup($value), ['all', 'semua', 'seluruh'], true);
+    }
+
+    private function isDefaultDineInChannel(SalesChannel $channel): bool
+    {
+        return $this->normalizeLookup($channel->nama_channel) === 'dinein';
+    }
+
+    private function isDefaultBasePriceTarget(PriceTier $tier, SalesChannel $channel): bool
+    {
+        return $this->normalizeLookup($tier->nama_tier) === 'reguler'
+            && $this->isDefaultDineInChannel($channel);
+    }
+
+    private function pricingSuccessMessage(Menu $menu, float $priceValue, array $updatedRows, array $notes): string
+    {
+        $targetList = collect($updatedRows)
+            ->map(fn ($row) => "- Tier: {$row['tier']}, Channel: {$row['channel']}")
+            ->implode("\n");
+
+        $noteText = empty($notes) ? '' : "\nCatatan: ".implode(' ', $notes);
+
+        return "Status: Berhasil\n"
+            .'Aksi: Harga menu '.$menu->nama_menu.' berhasil diperbarui menjadi Rp'.number_format($priceValue, 0, ',', '.')." dan sudah diverifikasi di database.\n"
+            ."Target:\n{$targetList}"
+            .$noteText."\n"
+            .'Link: /menu/'.$menu->id.'/edit';
     }
 
     private function resolveReportType(array &$payload, string $userQuery): string
@@ -1016,6 +1346,10 @@ Database Context saat ini:
 
         if (str_contains($query, 'sedikit') || str_contains($query, 'kurang laris') || str_contains($query, 'tidak laris') || str_contains($query, 'tersepi') || str_contains($query, 'paling sepi')) {
             return 'least_selling_menus';
+        }
+
+        if (str_contains($query, 'komposisi') || str_contains($query, 'resep') || str_contains($query, 'bahan baku menu') || str_contains($query, 'bahan menu')) {
+            return 'menu_ingredients';
         }
 
         if (str_contains($query, 'omzet') || str_contains($query, 'total penjualan') || str_contains($query, 'ringkasan penjualan')) {

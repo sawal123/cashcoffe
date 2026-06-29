@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('ai_chat_histories', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            $table->string('title')->default('Chat baru');
             $table->json('messages');
             $table->timestamps();
         });

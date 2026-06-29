@@ -2,29 +2,41 @@
 
 namespace App\Livewire\Transaksi;
 
-use Carbon\Carbon;
-use App\Models\Pesanan;
-use Livewire\Component;
 use App\Models\Ingredients;
-use Illuminate\Support\Str;
-use App\Models\RiwayatStock;
-use Livewire\WithPagination;
 use App\Models\MenuIngredients;
+use App\Models\Pesanan;
+use App\Models\RiwayatStock;
 use App\Models\VariantOption;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class Transaksi extends Component
 {
     use WithPagination;
+
     public $pembayaran = [];
+
     public $search = '';
+
     public $filterPembayaran = '';
+
     public $dateFrom;
+
     public $dateTo;
+
+    public $dateRange = '';
+
     public $perPage = 20;
+
     public $totalPerMetode = [];
+
     public $totalPerChannel = [];
+
     public $totalOmset = 0;
+
     protected $queryString = [
         'search' => ['except' => ''],
         'filterPembayaran' => ['except' => ''],
@@ -33,29 +45,60 @@ class Transaksi extends Component
     ];
 
     public $selectedOrder;
+
     public $status;
+
     public $detailOrder;
+
     public $metode_pembayaran;
+
+    public $selectedOrderItems = [];
 
     public function mount()
     {
         $this->pembayaran = \App\Models\PaymentMethod::where('is_active', true)->get();
+        $this->dateFrom = now()->toDateString();
+        $this->dateTo = now()->toDateString();
+        $this->syncDateRangeLabel();
     }
-
 
     public function updating($field)
     {
-        // reset pagination setiap kali filter berubah
-        if (in_array($field, ['search', 'filterPembayaran', 'dateFrom', 'dateTo'])) {
+        if (in_array($field, ['search', 'filterPembayaran', 'dateFrom', 'dateTo', 'dateRange'])) {
             $this->resetPage();
         }
     }
 
-    public $selectedOrderItems = [];
+    public function updatedDateFrom(): void
+    {
+        $this->normalizeDateRange();
+    }
+
+    public function updatedDateTo(): void
+    {
+        $this->normalizeDateRange();
+    }
+
+    public function setDateRange(?string $from = '', ?string $to = '', ?string $label = ''): void
+    {
+        $this->dateFrom = $from ?: '';
+        $this->dateTo = $to ?: $this->dateFrom;
+        $this->dateRange = $label ?: '';
+        $this->normalizeDateRange();
+        $this->resetPage();
+    }
+
+    public function resetDateRange(): void
+    {
+        $this->dateFrom = '';
+        $this->dateTo = '';
+        $this->dateRange = '';
+        $this->resetPage();
+        $this->dispatch('transaksi-date-range-reset');
+    }
 
     public function editStatus($encodedId)
     {
-        // TUTUP modal detail kalau terbuka
         $this->dispatch('close-modal', name: 'detail-order');
 
         $id = base64_decode($encodedId);
@@ -73,8 +116,6 @@ class Transaksi extends Component
         $this->dispatch('open-modal', name: 'edit-status-order');
     }
 
-
-
     public function updateStatus()
     {
         $this->validate([
@@ -82,23 +123,17 @@ class Transaksi extends Component
             'metode_pembayaran' => 'nullable',
         ]);
 
-        // Ambil data pesanan LENGKAP + items
         $pesanan = Pesanan::with('items')->findOrFail($this->selectedOrder->id);
 
         $oldStatus = $pesanan->status;
         $newStatus = $this->status;
 
-        // =========================
-        // LOGIKA STOCK
-        // =========================
-
-        // dari diproses -> selesai (KURANGI STOK)
         if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
             $this->reduceStock($pesanan);
 
             if ($pesanan->member_id) {
                 $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
+                $earnedPoints = floor($totalAfterDiscount / 10000);
                 $member = \App\Models\Member::find($pesanan->member_id);
                 if ($member) {
                     $member->increment('points', $earnedPoints);
@@ -107,13 +142,12 @@ class Transaksi extends Component
             }
         }
 
-        // dari selesai -> diproses ATAU dibatalkan (KEMBALIKAN STOK)
         if ($oldStatus === 'selesai' && in_array($newStatus, ['diproses', 'dibatalkan'])) {
             $this->restoreStock($pesanan);
 
             if ($pesanan->member_id) {
                 $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
+                $earnedPoints = floor($totalAfterDiscount / 10000);
                 $member = \App\Models\Member::find($pesanan->member_id);
                 if ($member) {
                     $member->decrement('points', $earnedPoints);
@@ -122,24 +156,15 @@ class Transaksi extends Component
             }
         }
 
-
-        // =========================
-        // UPDATE STATUS PESANAN
-        // =========================
         $pesanan->update([
             'status' => $newStatus,
             'payment_method_id' => $this->metode_pembayaran ?: null,
         ]);
 
-        if ($pesanan->status === 'dibatalkan') {
-            if ($pesanan->discount_id) {
-                $pesanan->discount->decrement('digunakan');
-            }
+        if ($pesanan->status === 'dibatalkan' && $pesanan->discount_id) {
+            $pesanan->discount->decrement('digunakan');
         }
 
-        // =========================
-        // UI FEEDBACK
-        // =========================
         $this->dispatch('close-modal', name: 'edit-status-order');
         $this->dispatch(
             'showToast',
@@ -148,32 +173,28 @@ class Transaksi extends Component
         );
     }
 
-
-
     private function reduceStock(Pesanan $pesanan)
     {
-        $stockChanges = []; // [ingredient_id => ['qty' => total, 'name' => name]]
+        $stockChanges = [];
 
         foreach ($pesanan->items as $item) {
-            // 1. Kumpulkan dari resep DASAR menu
             $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
             foreach ($komposisi as $k) {
-                if (!isset($stockChanges[$k->ingredient_id])) {
+                if (! isset($stockChanges[$k->ingredient_id])) {
                     $stockChanges[$k->ingredient_id] = ['qty' => 0];
                 }
                 $stockChanges[$k->ingredient_id]['qty'] += ($k->qty * $item->qty);
             }
 
-            // 2. Kumpulkan dari resep VARIAN
             $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
-            if (!empty($selectedVariantIds)) {
+            if (! empty($selectedVariantIds)) {
                 $variantOptions = VariantOption::with('ingredients')
                     ->whereIn('id', $selectedVariantIds)
                     ->get();
 
                 foreach ($variantOptions as $variant) {
                     foreach ($variant->ingredients as $vIngredient) {
-                        if (!isset($stockChanges[$vIngredient->id])) {
+                        if (! isset($stockChanges[$vIngredient->id])) {
                             $stockChanges[$vIngredient->id] = ['qty' => 0];
                         }
                         $stockChanges[$vIngredient->id]['qty'] += ($vIngredient->pivot->qty * $item->qty);
@@ -182,11 +203,11 @@ class Transaksi extends Component
             }
         }
 
-        // 3. Eksekusi pemotongan stok (Agregat)
         foreach ($stockChanges as $ingredientId => $data) {
             $ingredient = Ingredients::find($ingredientId);
-            if (!$ingredient)
+            if (! $ingredient) {
                 continue;
+            }
 
             $before = $ingredient->stok;
             $after = $before - $data['qty'];
@@ -195,40 +216,38 @@ class Transaksi extends Component
 
             RiwayatStock::create([
                 'ingredient_id' => $ingredient->id,
-                'kode' => strtoupper('OUT-' . Str::random(6)),
+                'kode' => strtoupper('OUT-'.Str::random(6)),
                 'qty' => $data['qty'],
                 'qty_before' => $before,
                 'qty_after' => $after,
                 'tipe' => 'out',
-                'keterangan' => 'Akumulasi resep: pesanan ' . $pesanan->kode,
+                'keterangan' => 'Akumulasi resep: pesanan '.$pesanan->kode,
             ]);
         }
     }
 
     private function restoreStock(Pesanan $pesanan)
     {
-        $stockChanges = []; // [ingredient_id => ['qty' => total]]
+        $stockChanges = [];
 
         foreach ($pesanan->items as $item) {
-            // 1. Kumpulkan dari resep DASAR menu
             $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
             foreach ($komposisi as $k) {
-                if (!isset($stockChanges[$k->ingredient_id])) {
+                if (! isset($stockChanges[$k->ingredient_id])) {
                     $stockChanges[$k->ingredient_id] = ['qty' => 0];
                 }
                 $stockChanges[$k->ingredient_id]['qty'] += ($k->qty * $item->qty);
             }
 
-            // 2. Kumpulkan dari resep VARIAN
             $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
-            if (!empty($selectedVariantIds)) {
+            if (! empty($selectedVariantIds)) {
                 $variantOptions = VariantOption::with('ingredients')
                     ->whereIn('id', $selectedVariantIds)
                     ->get();
 
                 foreach ($variantOptions as $variant) {
                     foreach ($variant->ingredients as $vIngredient) {
-                        if (!isset($stockChanges[$vIngredient->id])) {
+                        if (! isset($stockChanges[$vIngredient->id])) {
                             $stockChanges[$vIngredient->id] = ['qty' => 0];
                         }
                         $stockChanges[$vIngredient->id]['qty'] += ($vIngredient->pivot->qty * $item->qty);
@@ -237,11 +256,11 @@ class Transaksi extends Component
             }
         }
 
-        // 3. Eksekusi pengembalian stok (Agregat)
         foreach ($stockChanges as $ingredientId => $data) {
             $ingredient = Ingredients::find($ingredientId);
-            if (!$ingredient)
+            if (! $ingredient) {
                 continue;
+            }
 
             $before = $ingredient->stok;
             $after = $before + $data['qty'];
@@ -250,20 +269,15 @@ class Transaksi extends Component
 
             RiwayatStock::create([
                 'ingredient_id' => $ingredient->id,
-                'kode' => strtoupper('IN-' . Str::random(6)),
+                'kode' => strtoupper('IN-'.Str::random(6)),
                 'qty' => $data['qty'],
                 'qty_before' => $before,
                 'qty_after' => $after,
                 'tipe' => 'in',
-                'keterangan' => 'Pengembalian akumulasi: batal pesanan ' . $pesanan->kode,
+                'keterangan' => 'Pengembalian akumulasi: batal pesanan '.$pesanan->kode,
             ]);
         }
     }
-
-
-
-
-
 
     public function showDetail($encodedId)
     {
@@ -276,18 +290,14 @@ class Transaksi extends Component
         ])->findOrFail($id);
 
         $this->selectedOrderItems = $this->detailOrder->items;
-        // dd($this->detailOrder);
 
         $this->dispatch('open-modal', name: 'detail-order');
     }
-
-
 
     public function render()
     {
         $query = Pesanan::query()
             ->with(['user', 'paymentMethod'])
-
             ->when($this->search, function ($q) {
                 $q->where(function ($query) {
                     $query->where('kode', 'like', "%{$this->search}%")
@@ -297,7 +307,6 @@ class Transaksi extends Component
                         });
                 });
             })
-
             ->when($this->filterPembayaran, function ($q) {
                 if ($this->filterPembayaran === 'belum') {
                     $q->whereNull('payment_method_id');
@@ -305,21 +314,16 @@ class Transaksi extends Component
                     $q->where('payment_method_id', $this->filterPembayaran);
                 }
             })
-
-            // 👉 JIKA USER PILIH TANGGAL
             ->when($this->dateFrom && $this->dateTo, function ($q) {
                 $q->whereBetween('pesanans.created_at', [
                     Carbon::parse($this->dateFrom)->startOfDay(),
                     Carbon::parse($this->dateTo)->endOfDay(),
                 ]);
             })
-
-            // 👉 DEFAULT: HARI INI
-            ->when(!$this->dateFrom && !$this->dateTo, function ($q) {
+            ->when(! $this->dateFrom && ! $this->dateTo, function ($q) {
                 $q->whereDate('pesanans.created_at', Carbon::today());
             });
 
-        // Hitung total per metode pembayaran
         $this->totalPerMetode = $query->clone()
             ->where('status', 'selesai')
             ->join('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
@@ -328,7 +332,6 @@ class Transaksi extends Component
             ->pluck('total', 'payment_methods.nama_metode')
             ->toArray();
 
-        // Hitung total per sales channel
         $this->totalPerChannel = $query->clone()
             ->where('status', 'selesai')
             ->join('sales_channels', 'pesanans.sales_channel_id', '=', 'sales_channels.id')
@@ -337,20 +340,62 @@ class Transaksi extends Component
             ->pluck('total', 'sales_channels.nama_channel')
             ->toArray();
 
-        // Hitung total omset keseluruhan
         $this->totalOmset = $query->clone()
             ->where('status', 'selesai')
             ->where('status', '!=', 'dibatalkan')
             ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
             ->where(function ($q) {
                 $q->where('payment_methods.kode_metode', '!=', 'komplemen')
-                  ->orWhereNull('pesanans.payment_method_id');
+                    ->orWhereNull('pesanans.payment_method_id');
             })
             ->sum(DB::raw('total - discount_value'));
+
         $orders = $query->latest('pesanans.created_at')->paginate($this->perPage);
 
         return view('livewire.transaksi.transaksi', [
-            'orders' => $orders
+            'orders' => $orders,
         ])->layout('layouts.app', ['title' => 'Transaksi']);
+    }
+
+    private function normalizeDateRange(): void
+    {
+        $from = $this->validDate($this->dateFrom);
+        $to = $this->validDate($this->dateTo);
+
+        if ($from && $to && $from->gt($to)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $this->dateFrom = $from?->toDateString() ?? '';
+        $this->dateTo = $to?->toDateString() ?? '';
+        $this->syncDateRangeLabel();
+    }
+
+    private function syncDateRangeLabel(): void
+    {
+        if ($this->dateRange && str_contains($this->dateRange, ' to ')) {
+            return;
+        }
+
+        if ($this->dateFrom && $this->dateTo) {
+            $this->dateRange = $this->dateFrom.' to '.$this->dateTo;
+        } elseif ($this->dateFrom) {
+            $this->dateRange = $this->dateFrom;
+        } else {
+            $this->dateRange = '';
+        }
+    }
+
+    private function validDate(?string $date): ?Carbon
+    {
+        if (! $date) {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('Y-m-d', trim($date))->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
     }
 }

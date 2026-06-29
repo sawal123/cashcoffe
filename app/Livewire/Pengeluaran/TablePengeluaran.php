@@ -2,45 +2,69 @@
 
 namespace App\Livewire\Pengeluaran;
 
-use Livewire\Component;
 use App\Models\Pengeluaran;
-use Livewire\WithPagination;
-use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\Computed;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Computed;
+use Livewire\Component;
+use Livewire\WithPagination;
 
 class TablePengeluaran extends Component
 {
     use WithPagination;
 
     public $search = '';
+
     public $perPage = 10;
-    public $filterMonth = '';
-    public $filterYear = '';
+
+    public $dateFrom = '';
+
+    public $dateTo = '';
+
+    public $dateRange = '';
 
     protected $paginationTheme = 'tailwind';
 
     public function mount()
     {
-        $this->filterMonth = ''; // Initial empty for Dec/all
-        
-        // Default ke tahun sekarang, tapi jika tidak ada data, cari tahun terbaru yang ada datanya
-        $this->filterYear = date('Y');
-        $hasDataCurrentYear = Pengeluaran::whereYear('tanggal_pengeluaran', $this->filterYear)->exists();
-        
-        if (!$hasDataCurrentYear) {
-            $latestYearData = Pengeluaran::orderBy('tanggal_pengeluaran', 'desc')->value('tanggal_pengeluaran');
-            if ($latestYearData) {
-                $this->filterYear = \Carbon\Carbon::parse($latestYearData)->format('Y');
-            }
-        }
+        $this->dateFrom = now()->startOfMonth()->toDateString();
+        $this->dateTo = now()->toDateString();
+        $this->syncDateRangeLabel();
     }
 
     public function updated($property)
     {
-        if (in_array($property, ['search', 'filterMonth', 'filterYear', 'perPage'])) {
+        if (in_array($property, ['search', 'dateFrom', 'dateTo', 'dateRange', 'perPage'])) {
             $this->resetPage();
         }
+    }
+
+    public function updatedDateFrom(): void
+    {
+        $this->normalizeDateRange();
+    }
+
+    public function updatedDateTo(): void
+    {
+        $this->normalizeDateRange();
+    }
+
+    public function resetDateRange(): void
+    {
+        $this->dateFrom = '';
+        $this->dateTo = '';
+        $this->dateRange = '';
+        $this->resetPage();
+        $this->dispatch('pengeluaran-date-range-reset');
+    }
+
+    public function setDateRange(?string $from = '', ?string $to = '', ?string $label = ''): void
+    {
+        $this->dateFrom = $from ?: '';
+        $this->dateTo = $to ?: $this->dateFrom;
+        $this->dateRange = $label ?: '';
+        $this->normalizeDateRange();
+        $this->resetPage();
     }
 
     #[Computed]
@@ -48,17 +72,12 @@ class TablePengeluaran extends Component
     {
         return Pengeluaran::with(['branch', 'satuanBahan'])
             ->when($this->search, function ($q) {
-                $q->where(function($sub) {
+                $q->where(function ($sub) {
                     $sub->where('title', 'like', "%{$this->search}%")
                         ->orWhere('kategori', 'like', "%{$this->search}%");
                 });
             })
-            ->when($this->filterMonth, function ($q) {
-                $q->whereMonth('tanggal_pengeluaran', $this->filterMonth);
-            })
-            ->when($this->filterYear, function ($q) {
-                $q->whereYear('tanggal_pengeluaran', $this->filterYear);
-            })
+            ->tap(fn ($q) => $this->applyDateRange($q))
             ->orderBy('tanggal_pengeluaran', 'desc')
             ->paginate($this->perPage);
     }
@@ -67,9 +86,6 @@ class TablePengeluaran extends Component
     public function totalAllTime()
     {
         return Pengeluaran::query()
-            ->when($this->filterYear, function ($q) {
-                $q->whereYear('tanggal_pengeluaran', $this->filterYear);
-            })
             ->sum('total');
     }
 
@@ -78,17 +94,12 @@ class TablePengeluaran extends Component
     {
         return Pengeluaran::query()
             ->when($this->search, function ($q) {
-                $q->where(function($sub) {
+                $q->where(function ($sub) {
                     $sub->where('title', 'like', "%{$this->search}%")
                         ->orWhere('kategori', 'like', "%{$this->search}%");
                 });
             })
-            ->when($this->filterMonth, function ($q) {
-                $q->whereMonth('tanggal_pengeluaran', $this->filterMonth);
-            })
-            ->when($this->filterYear, function ($q) {
-                $q->whereYear('tanggal_pengeluaran', $this->filterYear);
-            })
+            ->tap(fn ($q) => $this->applyDateRange($q))
             ->sum('total');
     }
 
@@ -122,11 +133,12 @@ class TablePengeluaran extends Component
         $id = base64_decode($encodedId);
         $pengeluaran = Pengeluaran::find($id);
 
-        if (!$pengeluaran) {
+        if (! $pengeluaran) {
             $this->dispatchBrowserEvent('toast', [
                 'type' => 'error',
-                'message' => 'Data tidak ditemukan.'
+                'message' => 'Data tidak ditemukan.',
             ]);
+
             return;
         }
 
@@ -139,11 +151,71 @@ class TablePengeluaran extends Component
         $this->dispatch('showToast', type: 'success', message: 'Data pengeluaran berhasil dihapus');
     }
 
+    private function applyDateRange($query): void
+    {
+        $from = $this->validDate($this->dateFrom);
+        $to = $this->validDate($this->dateTo);
+
+        if ($from && $to && $from->gt($to)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        if ($from) {
+            $query->whereDate('tanggal_pengeluaran', '>=', $from->toDateString());
+        }
+
+        if ($to) {
+            $query->whereDate('tanggal_pengeluaran', '<=', $to->toDateString());
+        }
+    }
+
+    private function normalizeDateRange(): void
+    {
+        $from = $this->validDate($this->dateFrom);
+        $to = $this->validDate($this->dateTo);
+
+        if ($from && $to && $from->gt($to)) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $this->dateFrom = $from?->toDateString() ?? '';
+        $this->dateTo = $to?->toDateString() ?? '';
+        $this->syncDateRangeLabel();
+    }
+
+    private function syncDateRangeLabel(): void
+    {
+        if ($this->dateRange && str_contains($this->dateRange, ' to ')) {
+            return;
+        }
+
+        if ($this->dateFrom && $this->dateTo) {
+            $this->dateRange = $this->dateFrom.' to '.$this->dateTo;
+        } elseif ($this->dateFrom) {
+            $this->dateRange = $this->dateFrom;
+        } else {
+            $this->dateRange = '';
+        }
+    }
+
+    private function validDate(?string $date): ?Carbon
+    {
+        if (! $date) {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('Y-m-d', trim($date))->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     public function render()
     {
         return view('livewire.pengeluaran.table-pengeluaran', [
             'pengeluarans' => $this->pengeluarans,
-            'title' => 'Manajemen Pengeluaran'
+            'title' => 'Manajemen Pengeluaran',
         ])->layout('layouts.app', ['title' => 'Pengeluaran']);
     }
 }
