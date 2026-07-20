@@ -40,4 +40,12 @@ return [
         'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
     ],
 
+    'zenziva' => [
+        'userkey' => env('ZENZIVA_USERKEY'),
+        'passkey' => env('ZENZIVA_PASSKEY'),
+        'brand' => env('ZENZIVA_BRAND', 'Temuan Space'),
+        'otp_url' => env('ZENZIVA_OTP_URL', 'https://console.zenziva.net/waofficial/api/sendWAOfficial/'),
+        'timeout' => env('ZENZIVA_TIMEOUT', 30),
+    ],
+
 ];

@@ -2,6 +2,7 @@
 
 use App\Exports\OrdersExport;
 use App\Http\Controllers\MenuCompositionPdfController;
+use App\Http\Controllers\OtpController;
 use App\Http\Controllers\StruckController;
 use App\Livewire\Absensi\ClockIn as AbsensiClockIn;
 use App\Livewire\Absensi\History;
@@ -16,6 +17,18 @@ use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 
 Route::view('/', 'welcome');
+
+Route::get('/jadi-member', App\Livewire\Member\JadiMember::class)->name('jadi-member');
+
+Route::prefix('otp')->group(function () {
+    Route::post('/send', [OtpController::class, 'send'])
+        ->name('otp.send')
+        ->middleware('throttle:10,1');
+
+    Route::post('/verify', [OtpController::class, 'verify'])
+        ->name('otp.verify')
+        ->middleware('throttle:20,1');
+});
 
 Route::get('/absen/login', Login::class)->name('absensi.login');
 
