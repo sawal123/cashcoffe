@@ -14,6 +14,7 @@ class Pesanan extends Model
         'kode',
         'nama',
         'user_id',
+        'member_id',
         'mejas_id',
         'discount_id',
         'status',

@@ -2,9 +2,13 @@
 <html>
 
 <head>
+    @php
+        $receiptStoreName = trim((string) ($webSetting->app_name ?? 'Temuan Space')) ?: 'Temuan Space';
+        $receiptLogo = $webSetting->logo ?? 'logo/logo.png';
+    @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Struk {{ $pesanan->kode }}</title>
+    <title>Struk {{ $pesanan->kode }} - {{ $receiptStoreName }}</title>
     <style>
         /* Reset dasar untuk printer thermal */
         * {
@@ -379,9 +383,9 @@
         <div class="receipt-stage">
             <div class="receipt-wrapper">
                 <div class="center">
-                    <img id="logo" src="{{ asset('logo/logo.png') }}" width="60"
+                    <img id="logo" src="{{ asset($receiptLogo) }}" width="60"
                         style="display: block; margin: 0 auto 5px;"><br>
-                    <div class="bold">Temuan Space</div>
+                    <div class="bold">{{ $receiptStoreName }}</div>
                     <div style="font-size: 10px;">Jl. Tenis No.30, Ps. Merah Bar., Medan</div>
                     <div>{{ date('d/m/Y H:i') }}</div>
                 </div>
@@ -499,7 +503,7 @@
             ->values();
 
         $receiptData = [
-            'storeName' => 'Temuan Space',
+            'storeName' => $receiptStoreName,
             'address' => 'Jl. Tenis No.30, Ps. Merah Bar., Medan',
             'date' => now()->format('d/m/Y H:i'),
             'invoice' => $pesanan->kode,

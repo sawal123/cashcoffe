@@ -1,4 +1,5 @@
 <div x-data="{ showCartMobile: false }"
+    x-effect="document.documentElement.classList.toggle('overflow-hidden', showCartMobile); document.body.classList.toggle('overflow-hidden', showCartMobile)"
     class=" md:w-80 lg:w-[380px] shrink-0 order-2 md:order-2 md:sticky md:top-24 z-10 h-fit">
 
     <style>
@@ -12,12 +13,21 @@
                 inset: 0 !important;
                 z-index: 9999 !important;
                 width: 100% !important;
-                height: 100vh !important;
+                height: 100dvh !important;
+                min-height: 100dvh !important;
+                max-height: 100dvh !important;
                 overflow-y: auto !important;
                 padding-bottom: 90px !important;
                 margin: 0 !important;
                 border-radius: 0 !important;
                 max-width: none !important;
+                display: block !important;
+                background-color: #ffffff !important;
+                box-sizing: border-box !important;
+            }
+
+            .dark .mobile-fullscreen-cart {
+                background-color: #171717 !important;
             }
         }
 
@@ -77,9 +87,25 @@
         </div>
     @endif
 
+    <div x-show="showCartMobile" x-transition.opacity class="sm:hidden fixed inset-0 z-[9998] bg-white dark:bg-neutral-900"
+        style="display: none;"></div>
+
     <div id="pesan"
         class="bg-white dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl p-6 h-fit max-h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar transition-all duration-300 relative"
         :class="showCartMobile ? 'mobile-fullscreen-cart' : 'mobile-hide-cart'">
+
+        <div x-show="showCartMobile" style="display: none;"
+            class="sm:hidden sticky top-0 z-20 -mx-6 -mt-6 mb-6 flex items-center justify-between border-b border-neutral-100 bg-white/95 px-6 py-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
+            <div>
+                <span class="block text-[10px] font-black uppercase tracking-widest text-neutral-400">Keranjang</span>
+                <span class="block text-sm font-black text-neutral-900 dark:text-neutral-100">{{ count($pesanan) }} item terpilih</span>
+            </div>
+            <button type="button" @click="showCartMobile = false"
+                class="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 text-xs font-black uppercase tracking-widest text-neutral-700 shadow-sm transition hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+                <iconify-icon icon="mingcute:close-line" class="text-lg"></iconify-icon>
+                Tutup
+            </button>
+        </div>
 
         {{-- Header Cart --}}
         <div class="flex items-center justify-between mb-6 pb-4 border-b border-neutral-50 dark:border-neutral-700">
@@ -294,7 +320,7 @@
                         <div class="mt-4 mb-6">
                             @if ($discMessage && $status !== 'selesai')
                                 <div
-                                    class="flex items-center gap-2 {{ $isDiscountVerified || (isset($disc) && $disc['type'] === 'general') ? 'text-green-600' : 'text-amber-600' }}">
+                                    class="flex items-center gap-2 {{ str_contains($discMessage, 'berhasil') || $isDiscountVerified ? 'text-green-600' : 'text-amber-600' }}">
                                     <iconify-icon icon="mingcute:information-line" class="text-lg"></iconify-icon>
                                     <span class="text-[11px] font-bold">{{ $discMessage }}</span>
                                 </div>
@@ -329,25 +355,27 @@
 
                                 {{-- Menampilkan Poin dan Favorit Member --}}
                                 @if(isset($isMember) && $isMember)
-                                    <div class="mt-4 p-4 bg-green-50 rounded-2xl border border-green-100">
-                                        <div class="flex justify-between items-center mb-3 pb-3 border-b border-green-200">
-                                            <span class="text-xs font-bold text-green-800">Total Poin:</span>
-                                            <span class="text-lg font-black text-green-600">{{ $memberPoints ?? 0 }} pts</span>
+                                    <div
+                                        class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-800/70">
+                                        <div
+                                            class="flex justify-between items-center mb-3 pb-3 border-b border-green-200 dark:border-green-800/70">
+                                            <span class="text-xs font-bold !text-green-800 dark:!text-green-200">Total Poin:</span>
+                                            <span class="text-lg font-black !text-green-600 dark:!text-green-300">{{ $memberPoints ?? 0 }} pts</span>
                                         </div>
                                         @if(isset($memberFavorites) && $memberFavorites->count() > 0)
-                                            <p class="text-[11px] font-bold text-green-700 mb-2 uppercase tracking-wide">Menu
+                                            <p class="text-[11px] font-bold !text-green-700 dark:!text-green-300 mb-2 uppercase tracking-wide">Menu
                                                 Favorit:</p>
                                             <ul class="space-y-1">
                                                 @foreach($memberFavorites as $fav)
                                                     <li
-                                                        class="text-xs text-green-900 flex justify-between items-center bg-white rounded-lg px-2 py-1 shadow-sm">
+                                                        class="text-xs !text-green-900 dark:!text-green-100 flex justify-between items-center bg-white dark:bg-green-950/50 rounded-lg px-2 py-1 shadow-sm border border-transparent dark:border-green-800/50">
                                                         <span>{{ $fav->menu->nama_menu ?? 'Unknown' }}</span>
-                                                        <span class="font-bold text-green-600 px-1">{{ $fav->total_qty }}x</span>
+                                                        <span class="font-bold !text-green-600 dark:!text-green-300 px-1">{{ $fav->total_qty }}x</span>
                                                     </li>
                                                 @endforeach
                                             </ul>
                                         @else
-                                            <p class="text-xs text-green-600 italic">Belum ada riwayat pesanan.</p>
+                                            <p class="text-xs !text-green-600 dark:!text-green-300 italic">Belum ada riwayat pesanan.</p>
                                         @endif
                                     </div>
                                 @endif
@@ -364,7 +392,8 @@
         @if (
                 $status !== 'selesai' &&
                 $discount &&
-                ($disc === null || $disc['type'] === 'general' || ($disc['type'] === 'private' && ($isDiscountVerified || (isset($isMember) && $isMember))))
+                ($disc === null || (!($disc['member_only'] ?? false) || (isset($isMember) && $isMember)) &&
+                    ($disc['type'] === 'general' || ($disc['type'] === 'private' && ($isDiscountVerified || (isset($isMember) && $isMember)))))
             )
             <div
                 class="flex items-center justify-between p-3 mb-6 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800 rounded-2xl animate-pulse-slow">
@@ -509,6 +538,11 @@
                         Cetak Struk
                     </a>
                 @endif
+
+                <button x-show="showCartMobile" style="display: none;" type="button" @click="showCartMobile = false"
+                    class="sm:hidden w-full py-4 rounded-2xl border border-neutral-200 bg-white text-neutral-600 font-bold uppercase tracking-widest text-[10px] transition-all hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+                    Tutup Keranjang
+                </button>
             </div>
         </div>
     </div>

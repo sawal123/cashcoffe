@@ -1,15 +1,24 @@
 <!DOCTYPE html>
 <html class="light" lang="id">
 <head>
+    @php
+        $siteName = trim((string) ($webSetting->app_name ?? 'WorkSync')) ?: 'WorkSync';
+        $seoTitle = trim((string) ($webSetting->seo_title ?? '')) ?: $siteName . ' - Absensi';
+        $seoDescription = trim((string) ($webSetting->seo_description ?? '')) ?: $siteName . ' - portal absensi karyawan.';
+        $siteLogo = $webSetting->logo ?? 'logo/logow.png';
+        $siteIcon = $webSetting->icon ?? $siteLogo;
+    @endphp
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>{{ $title ?? 'WorkSync - Absensi' }}</title>
+    <title>{{ $title ?? $seoTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    <link rel="icon" type="image/png" href="{{ asset($siteIcon) }}" sizes="16x16">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#18181b">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="{{ asset('logo/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset($siteIcon) }}">
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -134,7 +143,7 @@
         <div class="flex justify-between items-center px-container-margin py-stack-md w-full max-w-[1280px] mx-auto">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl overflow-hidden bg-surface-container border border-outline-variant flex items-center justify-center p-1">
-                    <img alt="Brand Web Logo" class="w-full h-full object-contain" src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}"/>
+                    <img alt="Brand Web Logo" class="w-full h-full object-contain" src="{{ asset($siteLogo) }}"/>
                 </div>
                 <h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">{{ $webSetting->app_name ?? 'WorkSync' }}</h1>
             </div>

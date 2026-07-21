@@ -141,10 +141,15 @@ trait HandlesOrderSubmit
             $total = 0;
             $totalProfit = 0;
             $discountAmount = 0;
+            $memberId = $this->memberIdFromPhone($this->member);
 
             $disc = null;
             if ($this->discount_id) {
                 $disc = Discount::with('discountItems')->find($this->discount_id);
+                if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
+                    $disc = null;
+                    $this->discount_id = null;
+                }
             }
 
             foreach ($this->pesanan as $p) {
@@ -221,9 +226,9 @@ trait HandlesOrderSubmit
             $pesanan->update([
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
-                'member_id' => $this->member ? (\App\Models\Member::where('phone', $this->member)->value('id')) : null,
+                'member_id' => $memberId,
                 'payment_method_id' => $this->metode_pembayaran ?: null,
-                'discount_id' => $this->discount_id,
+                'discount_id' => $disc?->id,
                 'discount_value' => $discountAmount,
                 'sales_channel_id' => $this->sales_channel_id,
                 'total' => $total,
@@ -268,14 +273,15 @@ trait HandlesOrderSubmit
             $randomString = strtoupper(Str::random(8));
             $tanggal = date('dm');
             $kodeFinal = $randomString . $tanggal;
+            $memberId = $this->memberIdFromPhone($this->member);
 
             $pesanan = Pesanan::create([
                 'kode' => $kodeFinal,
                 'mejas_id' => $this->mejas_id,
                 'nama' => $this->nama_costumer,
                 'user_id' => Auth::id(),
-                'member_id' => $this->member ? (\App\Models\Member::where('phone', $this->member)->value('id')) : null,
-                'discount_id' => $this->discountId,
+                'member_id' => $memberId,
+                'discount_id' => null,
                 'discount_value' => 0,
                 'payment_method_id' => $this->metode_pembayaran ?: null,
                 'sales_channel_id' => $this->sales_channel_id,
@@ -291,6 +297,10 @@ trait HandlesOrderSubmit
             $disc = null;
             if ($this->discountId) {
                 $disc = Discount::with('discountItems')->find($this->discountId);
+                if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
+                    $disc = null;
+                    $this->discountId = null;
+                }
             }
 
             foreach ($this->pesanan as $p) {
@@ -382,7 +392,7 @@ trait HandlesOrderSubmit
             $totalAfterDiscount = max(0, $total - $discountAmount);
 
             $pesanan->update([
-                'discount_id' => $this->discountId,
+                'discount_id' => $disc?->id,
                 'nama' => $this->nama_costumer,
                 'discount_value' => $discountAmount,
                 'sales_channel_id' => $this->sales_channel_id,

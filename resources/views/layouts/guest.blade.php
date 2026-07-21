@@ -2,18 +2,29 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
+    @php
+        $siteName = trim((string) ($webSetting->app_name ?? 'WorkSync')) ?: 'WorkSync';
+        $seoTitle = trim((string) ($webSetting->seo_title ?? '')) ?: $siteName;
+        $seoDescription = trim((string) ($webSetting->seo_description ?? '')) ?: $siteName . ' - sistem kasir dan operasional bisnis.';
+        $siteLogo = $webSetting->logo ?? 'logo/logow.png';
+        $siteIcon = $webSetting->icon ?? $siteLogo;
+    @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ $webSetting->app_name ?? 'WorkSync' }}</title>
-    <link rel="icon" type="image/png" href="{{ asset($webSetting->icon ?? 'logo/logow.png') }}" sizes="16x16">
+    <title>{{ $seoTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    <meta property="og:title" content="{{ $seoTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:image" content="{{ asset($siteLogo) }}">
+    <link rel="icon" type="image/png" href="{{ asset($siteIcon) }}" sizes="16x16">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#18181b">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link class="apple-touch-icon" rel="apple-touch-icon" href="{{ asset('logo/logo.png') }}">
+    <link class="apple-touch-icon" rel="apple-touch-icon" href="{{ asset($siteIcon) }}">
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -29,7 +40,7 @@
             {{-- <a href="/" wire:navigate>
                 <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
             </a> --}}
-            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="auth-logo light-logo">
+            <img src="{{ asset($siteLogo) }}" alt="site logo" class="auth-logo light-logo">
         </div>
 
         <div class="auth-card">

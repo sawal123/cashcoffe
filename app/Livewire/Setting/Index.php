@@ -16,6 +16,10 @@ class Index extends Component
     public $newIcon;
     public $currentLogo;
     public $currentIcon;
+    public $seoTitle;
+    public $seoDescription;
+    public $seoKeywords;
+    public $seoAuthor;
 
     // Parameter Kompensasi Global
     public $default_potongan_terlambat = 0;
@@ -28,12 +32,20 @@ class Index extends Component
             $this->appName     = $setting->app_name;
             $this->currentLogo = $setting->logo;
             $this->currentIcon = $setting->icon;
+            $this->seoTitle = $setting->seo_title;
+            $this->seoDescription = $setting->seo_description;
+            $this->seoKeywords = $setting->seo_keywords;
+            $this->seoAuthor = $setting->seo_author;
             $this->default_potongan_terlambat = $setting->default_potongan_terlambat ?? 0;
             $this->default_potongan_alpha = $setting->default_potongan_alpha ?? 0;
         } else {
             $this->appName     = 'WorkSync CashCoffee';
             $this->currentLogo = 'logo/logow.png';
             $this->currentIcon = 'logo/logow.png';
+            $this->seoTitle = 'WorkSync CashCoffee';
+            $this->seoDescription = null;
+            $this->seoKeywords = null;
+            $this->seoAuthor = null;
             $this->default_potongan_terlambat = 0;
             $this->default_potongan_alpha = 0;
         }
@@ -43,6 +55,10 @@ class Index extends Component
     {
         $this->validate([
             'appName' => 'required|string|max:255',
+            'seoTitle' => 'nullable|string|max:255',
+            'seoDescription' => 'nullable|string|max:500',
+            'seoKeywords' => 'nullable|string|max:500',
+            'seoAuthor' => 'nullable|string|max:255',
             'newLogo' => 'nullable|image|max:2048',
             'newIcon' => 'nullable|image|max:1024',
             'default_potongan_terlambat' => 'nullable|numeric|min:0',
@@ -55,6 +71,10 @@ class Index extends Component
         }
 
         $setting->app_name = $this->appName;
+        $setting->seo_title = filled($this->seoTitle) ? trim($this->seoTitle) : null;
+        $setting->seo_description = filled($this->seoDescription) ? trim($this->seoDescription) : null;
+        $setting->seo_keywords = filled($this->seoKeywords) ? trim($this->seoKeywords) : null;
+        $setting->seo_author = filled($this->seoAuthor) ? trim($this->seoAuthor) : null;
         $setting->default_potongan_terlambat = empty($this->default_potongan_terlambat) ? 0 : $this->default_potongan_terlambat;
         $setting->default_potongan_alpha = empty($this->default_potongan_alpha) ? 0 : $this->default_potongan_alpha;
 
@@ -74,7 +94,7 @@ class Index extends Component
 
         $setting->save();
 
-        session()->flash('success', 'Konfigurasi Web & Lokasi berhasil diperbarui secara dinamis!');
+        session()->flash('success', 'Konfigurasi web, SEO, dan aset berhasil diperbarui.');
         
         return $this->redirect('/setting', navigate: true);
     }

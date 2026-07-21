@@ -6,6 +6,7 @@ use App\Models\Member;
 use App\Models\User;
 use App\Models\WhatsappOtp;
 use App\Services\ZenzivaOtpService;
+use App\Support\PhoneNumber;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -65,11 +66,11 @@ class JadiMember extends Component
             'otp.digits' => 'Kode OTP harus 6 digit.',
         ]);
 
-        $phone = $this->otpSentTo ?: $this->normalizePhone($this->phone);
+        $otpPhone = $this->otpSentTo ?: PhoneNumber::whatsapp($this->phone);
 
-        DB::transaction(function () use ($phone): void {
+        DB::transaction(function () use ($otpPhone): void {
             $otpRecord = WhatsappOtp::query()
-                ->where('phone', $phone)
+                ->where('phone', $otpPhone)
                 ->where('purpose', self::PURPOSE)
                 ->whereNull('used_at')
                 ->latest()
@@ -109,7 +110,7 @@ class JadiMember extends Component
             $otpRecord->update(['used_at' => now()]);
         });
 
-        $this->memberId = $this->createMemberFromVerifiedPhone($phone);
+        $this->memberId = $this->createMemberFromVerifiedPhone(PhoneNumber::member($otpPhone));
         $this->step = 'success';
     }
 
@@ -136,7 +137,7 @@ class JadiMember extends Component
     {
         return DB::transaction(function () use ($phone): int {
             $user = User::withTrashed()
-                ->where('phone', $phone)
+                ->whereIn('phone', PhoneNumber::lookupValues($phone))
                 ->first();
 
             if ($user) {
@@ -158,7 +159,7 @@ class JadiMember extends Component
             }
 
             $member = Member::query()
-                ->where('phone', $phone)
+                ->whereIn('phone', PhoneNumber::lookupValues($phone))
                 ->orWhere('user_id', $user->id)
                 ->first();
 
@@ -182,10 +183,11 @@ class JadiMember extends Component
 
     private function sendOtpToWhatsapp(): void
     {
-        $phone = $this->normalizePhone($this->phone);
+        $memberPhone = PhoneNumber::member($this->phone);
+        $otpPhone = PhoneNumber::whatsapp($memberPhone);
 
         $latestOtp = WhatsappOtp::query()
-            ->where('phone', $phone)
+            ->where('phone', $otpPhone)
             ->where('purpose', self::PURPOSE)
             ->latest()
             ->first();
@@ -198,15 +200,15 @@ class JadiMember extends Component
 
         $otp = (string) random_int(100000, 999999);
 
-        $otpRecord = DB::transaction(function () use ($phone, $otp): WhatsappOtp {
+        $otpRecord = DB::transaction(function () use ($otpPhone, $otp): WhatsappOtp {
             WhatsappOtp::query()
-                ->where('phone', $phone)
+                ->where('phone', $otpPhone)
                 ->where('purpose', self::PURPOSE)
                 ->whereNull('used_at')
                 ->update(['used_at' => now()]);
 
             return WhatsappOtp::create([
-                'phone' => $phone,
+                'phone' => $otpPhone,
                 'purpose' => self::PURPOSE,
                 'otp_hash' => Hash::make($otp),
                 'attempts' => 0,
@@ -215,12 +217,12 @@ class JadiMember extends Component
         });
 
         try {
-            app(ZenzivaOtpService::class)->sendOtp($phone, $otp);
+            app(ZenzivaOtpService::class)->sendOtp($otpPhone, $otp);
         } catch (Throwable $exception) {
             $otpRecord->update(['used_at' => now()]);
 
             Log::warning('Failed to send member WhatsApp OTP.', [
-                'phone' => $phone,
+                'phone' => $otpPhone,
                 'error' => $exception->getMessage(),
             ]);
 
@@ -229,23 +231,13 @@ class JadiMember extends Component
             ]);
         }
 
-        $this->otpSentTo = $phone;
+        $this->otpSentTo = $otpPhone;
         $this->step = 'otp';
     }
 
     private function normalizePhone(string $phone): string
     {
-        $phone = preg_replace('/\D+/', '', $phone) ?? '';
-
-        if (str_starts_with($phone, '0')) {
-            return '62'.substr($phone, 1);
-        }
-
-        if (str_starts_with($phone, '62')) {
-            return $phone;
-        }
-
-        return '62'.$phone;
+        return PhoneNumber::whatsapp($phone);
     }
 
     private function buildOtpMessage(string $otp): string

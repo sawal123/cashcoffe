@@ -3,6 +3,7 @@
 namespace App\Livewire\Member;
 
 use App\Models\Member;
+use App\Support\PhoneNumber;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -64,14 +65,20 @@ class TableMember extends Component
 
     public function render()
     {
+        $normalizedSearchPhone = PhoneNumber::member($this->search);
+
         $members = Member::with('user')
             ->whereHas('user', function ($q) {
                 $q->where('name', 'like', '%' . $this->search . '%')
                     ->orWhere('email', 'like', '%' . $this->search . '%');
             })
-            ->orWhere(function ($q) {
+            ->orWhere(function ($q) use ($normalizedSearchPhone) {
                 $q->where('phone', 'like', '%' . $this->search . '%')
                     ->orWhere('address', 'like', '%' . $this->search . '%');
+
+                if ($normalizedSearchPhone !== '') {
+                    $q->orWhere('phone', 'like', '%' . $normalizedSearchPhone . '%');
+                }
             })
             ->orderBy('id', 'desc')
             ->paginate(10);

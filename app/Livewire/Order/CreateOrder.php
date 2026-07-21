@@ -9,6 +9,7 @@ use App\Models\Discount;
 use App\Models\Meja;
 use App\Models\Member;
 use App\Models\Menu;
+use App\Support\PhoneNumber;
 // Import Trait yang baru kita buat
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -133,12 +134,30 @@ class CreateOrder extends Component
     public function updatedMember($value)
     {
         if ($value) {
-            $member = Member::where('phone', $value)->first();
+            $member = $this->findMemberByPhone($value);
             if ($member && $member->user) {
                 // Hanya timpa nama_costumer jika belum diisi, ATAU pengguna ingin memudahkan
                 $this->nama_costumer = $member->user->name;
             }
         }
+    }
+
+    protected function findMemberByPhone(?string $phone): ?Member
+    {
+        $lookupValues = PhoneNumber::lookupValues($phone);
+
+        if ($lookupValues === []) {
+            return null;
+        }
+
+        return Member::with('user')
+            ->whereIn('phone', $lookupValues)
+            ->first();
+    }
+
+    protected function memberIdFromPhone(?string $phone): ?int
+    {
+        return $this->findMemberByPhone($phone)?->id;
     }
 
     public function updatedSearch()
@@ -189,7 +208,7 @@ class CreateOrder extends Component
         $result = null;
         $itemDiscounts = []; // UI display
 
-        $cekMember = $this->member ? Member::with('user')->where('phone', $this->member)->first() : null;
+        $cekMember = $this->findMemberByPhone($this->member);
 
         // Hitung total awal
         $total = collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
@@ -211,13 +230,20 @@ class CreateOrder extends Component
                 'min' => $disc->minimum_transaksi,
                 'max' => $disc->maksimum_diskon,
                 'kode' => $disc->kode_diskon,
+                'member_only' => $disc->member_only,
             ];
 
             // 3. Cek apakah private dan belum diverifikasi
             // JALUR LLOYALTY BYPASS: Jika member valid, tidak perlu isDiscountVerified
             $isBypassed = ($disc->type === 'private' && $cekMember);
 
-            if ($disc->type === 'private' && ! $this->isDiscountVerified && ! $isBypassed) {
+            if (! $disc->canBeUsedBy($cekMember)) {
+                $discMessage = 'Diskon ini khusus member. Masukkan nomor member yang valid.';
+                $discountValue = 0;
+
+                $this->discountId = null;
+                $this->discount_id = null;
+            } elseif ($disc->type === 'private' && ! $this->isDiscountVerified && ! $isBypassed) {
                 $discMessage = 'Diskon private. Membutuhkan PIN/Password Admin.';
                 $discountValue = 0;
 
@@ -311,7 +337,7 @@ class CreateOrder extends Component
 
         $memberFavorites = collect();
         if ($cekMember) {
-            $memMessage = 'Member Tersedia ('.$cekMember->user->name.')';
+            $memMessage = 'Member Tersedia ('.($cekMember->user->name ?? $cekMember->phone).')';
             // $this->dispatch('showToast', message: $memMessage, type: 'success', title: 'Success');
 
             // Get favorite items
@@ -374,6 +400,9 @@ class CreateOrder extends Component
             ->where(function ($q) use ($user) {
                 $q->where('scope', 'global')
                     ->orWhere('branch_id', $user->branch_id);
+            })
+            ->when(! $cekMember, function ($q) {
+                $q->where('member_only', false);
             })
             ->get();
 

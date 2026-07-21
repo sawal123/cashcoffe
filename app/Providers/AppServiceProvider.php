@@ -30,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
                         'app_name' => 'WorkSync CashCoffee',
                         'logo'     => 'logo/logow.png',
                         'icon'     => 'logo/logow.png',
+                        'seo_title' => 'WorkSync CashCoffee',
+                        'seo_author' => 'WorkSync CashCoffee',
                     ]);
                 }
                 View::share('webSetting', $setting);

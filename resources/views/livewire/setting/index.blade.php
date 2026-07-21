@@ -26,9 +26,51 @@
                         label="Nama Aplikasi / Web" 
                         placeholder="Contoh: WorkSync CashCoffee" 
                         required 
-                        class="!py-3"
+                        class="!py-3 !text-neutral-900 dark:!text-neutral-100"
                     />
                     <span class="text-xs text-neutral-500">Nama ini akan ditampilkan pada tab peramban dan judul halaman portal.</span>
+                </div>
+
+                <hr class="border-neutral-100 dark:border-neutral-700">
+
+                <!-- SEO Settings -->
+                <div class="space-y-4">
+                    <h6 class="font-bold text-neutral-800 dark:text-neutral-200 text-sm mb-1 flex items-center gap-2">
+                        <iconify-icon icon="lucide:search-check" class="text-primary-600"></iconify-icon>
+                        SEO & Identitas Halaman
+                    </h6>
+                    <p class="text-xs text-neutral-500 dark:text-neutral-400 mb-3">
+                        Nilai ini dipakai untuk judul tab peramban, meta tag mesin pencari, dan preview saat link dibagikan.
+                    </p>
+                    <div class="space-y-4">
+                        <x-ui.input
+                            wire:model="seoTitle"
+                            label="SEO Title / Judul Browser"
+                            placeholder="Contoh: Temuan Space - Coffee & Order System"
+                            class="!py-3 !text-neutral-900 dark:!text-neutral-100"
+                        />
+                        <x-ui.textarea
+                            wire:model="seoDescription"
+                            label="Meta Description"
+                            placeholder="Deskripsi singkat bisnis atau aplikasi untuk hasil pencarian."
+                            maxlength="500"
+                            class="!text-neutral-900 dark:!text-neutral-100"
+                        />
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <x-ui.input
+                                wire:model="seoKeywords"
+                                label="Meta Keywords"
+                                placeholder="coffee, kasir, temuan space"
+                                class="!py-3 !text-neutral-900 dark:!text-neutral-100"
+                            />
+                            <x-ui.input
+                                wire:model="seoAuthor"
+                                label="Meta Author"
+                                placeholder="Temuan Space"
+                                class="!py-3 !text-neutral-900 dark:!text-neutral-100"
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 <hr class="border-neutral-100 dark:border-neutral-700">
@@ -147,6 +189,10 @@
                         <li class="flex items-center gap-2">
                             <iconify-icon icon="lucide:check" class="text-emerald-500"></iconify-icon>
                             <span>Favicon pada Meta Header Peramban</span>
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <iconify-icon icon="lucide:check" class="text-emerald-500"></iconify-icon>
+                            <span>SEO Title, Description, dan Preview Link</span>
                         </li>
                     </ul>
                 </div>

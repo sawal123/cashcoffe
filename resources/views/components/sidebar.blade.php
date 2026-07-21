@@ -1,13 +1,15 @@
 <aside class="sidebar">
+    @php
+        $siteLogo = $webSetting->logo ?? 'logo/logow.png';
+    @endphp
     <button type="button" class="sidebar-close-btn !mt-4">
         <iconify-icon icon="radix-icons:cross-2"></iconify-icon>
     </button>
     <div>
         <a href="{{ route('dashboard.index') }}" wire:navigate class="sidebar-logo">
-            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="light-logo">
-            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" style="width: 50ppx" alt="site logo"
-                class="dark-logo">
-            <img src="{{ asset($webSetting->logo ?? 'logo/logow.png') }}" alt="site logo" class="logo-icon">
+            <img src="{{ asset($siteLogo) }}" alt="site logo" class="light-logo">
+            <img src="{{ asset($siteLogo) }}" style="width: 50px" alt="site logo" class="dark-logo">
+            <img src="{{ asset($siteLogo) }}" alt="site logo" class="logo-icon">
         </a>
     </div>
     <style>

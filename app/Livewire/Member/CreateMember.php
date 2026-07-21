@@ -4,6 +4,7 @@ namespace App\Livewire\Member;
 
 use App\Models\User;
 use App\Models\Member;
+use App\Support\PhoneNumber;
 use Livewire\Component;
 use Illuminate\Support\Facades\Hash;
 
@@ -36,11 +37,15 @@ class CreateMember extends Component
             'phone'   => 'required|string|max:20',
             'address' => 'nullable|string|max:255',
         ]);
+        $phone = PhoneNumber::member($this->phone);
 
         $member = Member::with('user')->find(\base64_decode($id));
         // update user
         if ($member->user) {
-            $userUpdate = ['name' => $this->name];
+            $userUpdate = [
+                'name' => $this->name,
+                'phone' => $phone,
+            ];
             if ($this->email) {
                 $userUpdate['email'] = $this->email;
             }
@@ -49,10 +54,11 @@ class CreateMember extends Component
 
         // update member
         $member->update([
-            'phone'   => $this->phone,
+            'phone'   => $phone,
             'address' => $this->address,
         ]);
 
+        $this->phone = $phone;
 
         $this->dispatch('showToast', message: 'Member Berhasil Diupdate', type: 'success', title: 'Success');
     }
@@ -66,16 +72,18 @@ class CreateMember extends Component
             'phone'    => 'required|string|max:20',
             'address'  => 'nullable|string|max:255',
         ]);
+        $phone = PhoneNumber::member($this->phone);
         $email = $this->email ?: 'member_' . time() . '_' . uniqid() . '@member.com';
 
         $user = User::create([
             'name'     => $this->name,
             'email'    => $email,
+            'phone'    => $phone,
             'password' => Hash::make('member123'),
         ]);
         Member::create([
             'user_id' => $user->id,
-            'phone'   => $this->phone,
+            'phone'   => $phone,
             'address' => $this->address,
         ]);
 

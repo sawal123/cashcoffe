@@ -1,14 +1,37 @@
 <head>
+    @php
+        $siteName = trim((string) ($webSetting->app_name ?? 'WorkSync')) ?: 'WorkSync';
+        $seoTitle = trim((string) ($webSetting->seo_title ?? '')) ?: $siteName;
+        $seoDescription = trim((string) ($webSetting->seo_description ?? '')) ?: $siteName . ' - sistem kasir dan operasional bisnis.';
+        $seoKeywords = trim((string) ($webSetting->seo_keywords ?? ''));
+        $seoAuthor = trim((string) ($webSetting->seo_author ?? '')) ?: $siteName;
+        $siteLogo = $webSetting->logo ?? 'logo/logow.png';
+        $siteIcon = $webSetting->icon ?? $siteLogo;
+    @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $webSetting->app_name ?? 'WorkSync' }}</title>
-    <link rel="icon" type="image/png" href="{{ asset($webSetting->icon ?? 'logo/logow.png') }}" sizes="16x16">
+    <title>{{ $seoTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    @if ($seoKeywords)
+        <meta name="keywords" content="{{ $seoKeywords }}">
+    @endif
+    <meta name="author" content="{{ $seoAuthor }}">
+    <meta property="og:title" content="{{ $seoTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="{{ $siteName }}">
+    <meta property="og:image" content="{{ asset($siteLogo) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seoTitle }}">
+    <meta name="twitter:description" content="{{ $seoDescription }}">
+    <meta name="twitter:image" content="{{ asset($siteLogo) }}">
+    <link rel="icon" type="image/png" href="{{ asset($siteIcon) }}" sizes="16x16">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#18181b">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="{{ asset('logo/logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ asset($siteIcon) }}">
     <script data-navigate-once>
         (function () {
             const savedTheme = localStorage.getItem('color-theme');

@@ -16,6 +16,7 @@ class CreateDiscount extends Component
     public $nama_diskon, $jenis_diskon, $nilai_diskon, $minimum_transaksi, $limit, $type = 'general';
     public $maksimum_diskon, $kode_diskon, $tanggal_mulai, $tanggal_akhir;
     public $is_active = 1;
+    public $member_only = false;
     public $scope = 'global';
     public $branch_id = null;
     public $price_tier_id = null;
@@ -36,6 +37,7 @@ class CreateDiscount extends Component
         'tanggal_mulai' => 'nullable|date',
         'tanggal_akhir' => 'nullable|date|after_or_equal:tanggal_mulai',
         'is_active' => 'required|boolean',
+        'member_only' => 'required|boolean',
         'scope' => 'required|in:global,category,item',
         'branch_id' => 'nullable|exists:branches,id',
         'price_tier_id' => 'nullable|exists:price_tiers,id',
@@ -70,6 +72,7 @@ class CreateDiscount extends Component
         $this->tanggal_akhir = $diskon->tanggal_akhir;
         $this->limit = $diskon->limit;
         $this->is_active = $diskon->is_active;
+        $this->member_only = (bool) $diskon->member_only;
         $this->type = $diskon->type;
         $this->scope = $diskon->scope;
         $this->branch_id = $diskon->branch_id;
@@ -103,6 +106,7 @@ class CreateDiscount extends Component
             'tanggal_akhir' => $this->tanggal_akhir,
             'limit' => $this->limit,
             'is_active' => $this->is_active,
+            'member_only' => $this->member_only,
             'type' => $this->type,
             'scope' => $this->scope,
             'branch_id' => $this->branch_id ?: null,
@@ -141,6 +145,7 @@ class CreateDiscount extends Component
             'tanggal_akhir' => $this->tanggal_akhir,
             'limit' => $this->limit,
             'is_active' => $this->is_active,
+            'member_only' => $this->member_only,
             'type' => $this->type,
             'scope' => $this->scope,
             'branch_id' => $this->branch_id ?: null,
@@ -177,6 +182,7 @@ class CreateDiscount extends Component
         $this->tanggal_mulai = null;
         $this->tanggal_akhir = null;
         $this->is_active = 1;
+        $this->member_only = false;
         $this->limit = null;
         $this->type = '';
         $this->scope = 'global';

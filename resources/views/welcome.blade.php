@@ -2,9 +2,28 @@
 <html lang="id">
 
 <head>
+    @php
+        $siteName = trim((string) ($webSetting->app_name ?? 'Temuan Space')) ?: 'Temuan Space';
+        $seoTitle = trim((string) ($webSetting->seo_title ?? '')) ?: $siteName;
+        $seoDescription = trim((string) ($webSetting->seo_description ?? '')) ?: $siteName . ' - coffee space dan sistem pemesanan.';
+        $seoKeywords = trim((string) ($webSetting->seo_keywords ?? ''));
+        $seoAuthor = trim((string) ($webSetting->seo_author ?? '')) ?: $siteName;
+        $siteLogo = $webSetting->logo ?? 'logo/logow.png';
+        $siteIcon = $webSetting->icon ?? $siteLogo;
+    @endphp
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Temuan Space</title>
+    <title>{{ $seoTitle }}</title>
+    <meta name="description" content="{{ $seoDescription }}">
+    @if ($seoKeywords)
+        <meta name="keywords" content="{{ $seoKeywords }}">
+    @endif
+    <meta name="author" content="{{ $seoAuthor }}">
+    <meta property="og:title" content="{{ $seoTitle }}">
+    <meta property="og:description" content="{{ $seoDescription }}">
+    <meta property="og:image" content="{{ asset($siteLogo) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" type="image/png" href="{{ asset($siteIcon) }}" sizes="16x16">
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

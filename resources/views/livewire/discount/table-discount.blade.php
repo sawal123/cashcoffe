@@ -38,10 +38,18 @@
                     <span class="font-semibold text-neutral-800 dark:text-neutral-200">{{ $item->nama_diskon }}</span>
                 </td>
                 <td data-label="Jenis" class="px-6 py-4">
-                    <span
-                        class="text-sm border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 capitalize">
-                        {{ $item->jenis_diskon }}
-                    </span>
+                    <div class="flex flex-wrap gap-1.5">
+                        <span
+                            class="text-sm border border-neutral-200 dark:border-neutral-700 px-2.5 py-1 rounded-lg bg-neutral-50 dark:bg-neutral-900 text-neutral-600 dark:!text-neutral-400 capitalize">
+                            {{ $item->jenis_diskon }}
+                        </span>
+                        @if ($item->member_only)
+                            <span
+                                class="text-[10px] border border-purple-200 dark:border-purple-800 px-2.5 py-1 rounded-lg bg-purple-50 dark:bg-purple-900/30 !text-purple-700 dark:!text-purple-300 font-black uppercase tracking-widest">
+                                Member
+                            </span>
+                        @endif
+                    </div>
                 </td>
                 <td data-label="Nilai" class="px-6 py-4">
                     <span class="font-bold text-neutral-900 dark:text-white">
@@ -57,7 +65,7 @@
                 </td>
                 <td data-label="Status" class="px-6 py-4 text-center">
                     <span
-                        class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400' }}">
+                        class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:!text-green-400' : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:!text-red-400' }}">
                         {{ $item->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
