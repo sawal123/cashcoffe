@@ -38,8 +38,29 @@ class ApprovalList extends Component
             'keterangan' => 'required|string|max:255'
         ]);
 
-        $approval = DiscountApproval::find($this->selectedApprovalId);
+        $user = Auth::user();
+        if (!$user || (!$user->can('approve general discount') && !$user->can('approve all discount'))) {
+            abort(403, 'Anda tidak memiliki akses untuk memproses persetujuan diskon.');
+        }
+
+        $approval = DiscountApproval::with('discount')->find($this->selectedApprovalId);
         if ($approval && $approval->status === 'pending') {
+            if (!$approval->discount) {
+                abort(403, 'Data diskon tidak ditemukan atau sudah tidak tersedia.');
+            }
+
+            $discountType = $approval->discount->type;
+
+            if ($discountType === 'general') {
+                if (!$user->can('approve general discount') && !$user->can('approve all discount')) {
+                    abort(403, 'Anda tidak memiliki akses untuk menyetujui diskon ini.');
+                }
+            } else {
+                if (!$user->can('approve all discount')) {
+                    abort(403, 'Anda hanya boleh memproses diskon general.');
+                }
+            }
+
             $approval->update([
                 'status' => $this->actionType === 'approve' ? 'approved' : 'rejected',
                 'approved_by' => Auth::id(),
@@ -53,10 +74,24 @@ class ApprovalList extends Component
 
     public function render()
     {
-        $approvals = DiscountApproval::with(['kasir', 'discount', 'approver'])
-            ->where('status', $this->statusFilter)
-            ->latest()
-            ->paginate(10);
+        $user = Auth::user();
+
+        $query = DiscountApproval::with(['kasir', 'discount', 'approver'])
+            ->where('status', $this->statusFilter);
+
+        if ($user && $user->can('approve all discount')) {
+            // Can see all approvals
+        } elseif ($user && $user->can('approve general discount')) {
+            // Can only see general discount approvals
+            $query->whereHas('discount', function ($q) {
+                $q->where('type', 'general');
+            });
+        } else {
+            // No approval permission at all
+            $query->whereRaw('1 = 0');
+        }
+
+        $approvals = $query->latest()->paginate(10);
 
         return view('livewire.discount.approval-list', [
             'approvals' => $approvals

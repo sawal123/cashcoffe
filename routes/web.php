@@ -58,9 +58,12 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
 
     // Menu
     Route::get('/menu', App\Livewire\Menu\TableMenu::class)->name('menu.index');
-    Route::get('/menu/create', App\Livewire\Menu\Create::class)->name('menu.create');
-    Route::get('/menu/{menuId}/edit', App\Livewire\Menu\Create::class)->name('menu.edit');
-    Route::get('/menu/{id}/variants', App\Livewire\Variant\ManageMenuVariant::class)->name('menu.variants');
+
+    Route::middleware(['can:manage menu'])->group(function () {
+        Route::get('/menu/create', App\Livewire\Menu\Create::class)->name('menu.create');
+        Route::get('/menu/{menuId}/edit', App\Livewire\Menu\Create::class)->name('menu.edit');
+        Route::get('/menu/{id}/variants', App\Livewire\Variant\ManageMenuVariant::class)->name('menu.variants');
+    });
 
     // Order
     Route::get('/order', App\Livewire\Order\TableOrder::class)->name('order.index');
@@ -72,9 +75,11 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
 
     // Discount
     Route::get('/discount', App\Livewire\Discount\TableDiscount::class)->name('discount.index');
-    Route::get('/discount/create', App\Livewire\Discount\CreateDiscount::class)->name('discount.create');
-    Route::get('/discount/{id}/edit', App\Livewire\Discount\CreateDiscount::class)->name('discount.edit');
-    Route::get('/discount-approval', App\Livewire\Discount\ApprovalList::class)->name('discount-approval.index');
+    Route::middleware(['can:manage discount'])->group(function () {
+        Route::get('/discount/create', App\Livewire\Discount\CreateDiscount::class)->name('discount.create');
+        Route::get('/discount/{id}/edit', App\Livewire\Discount\CreateDiscount::class)->name('discount.edit');
+    });
+    Route::get('/discount-approval', App\Livewire\Discount\ApprovalList::class)->name('discount-approval.index')->middleware('permission:approve general discount|approve all discount');
 
     // Member
     Route::get('/member', App\Livewire\Member\TableMember::class)->name('member.index');
@@ -82,12 +87,16 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     Route::get('/member/{memberId}/edit', App\Livewire\Member\CreateMember::class)->name('member.edit');
 
     // Omset
-    Route::get('/omset', App\Livewire\Omset\TableOmset::class)->name('omset.index');
+    Route::middleware(['can:view sensitive reports'])->group(function () {
+        Route::get('/omset', App\Livewire\Omset\TableOmset::class)->name('omset.index');
+    });
 
     // Pengeluaran
     Route::get('/pengeluaran', App\Livewire\Pengeluaran\TablePengeluaran::class)->name('pengeluaran.index');
-    Route::get('/pengeluaran/create', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.create');
-    Route::get('/pengeluaran/{pengeluaranId}/edit', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.edit');
+    Route::middleware(['can:manage pengeluaran'])->group(function () {
+        Route::get('/pengeluaran/create', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.create');
+        Route::get('/pengeluaran/{pengeluaranId}/edit', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.edit');
+    });
 
     // Transaksi
     Route::get('/transaksi', App\Livewire\Transaksi\Transaksi::class)->name('transaksi.index');
@@ -104,7 +113,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
 
     Route::get('/orders/export', function () {
         return Excel::download(new OrdersExport, 'laporan-orders.xlsx');
-    })->name('orders.export');
+    })->name('orders.export')->middleware('can:view sensitive reports');
 
     Route::middleware(['role:superadmin'])->group(function () {
         Route::get('/branch', App\Livewire\Branch\Index::class)->name('branch.index');

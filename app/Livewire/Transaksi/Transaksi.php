@@ -125,6 +125,10 @@ class Transaksi extends Component
 
         $pesanan = Pesanan::with('items')->findOrFail($this->selectedOrder->id);
 
+        if (!auth()->user()->can('edit finished transaction') && $pesanan->status === 'selesai') {
+            abort(403, 'Anda tidak memiliki akses untuk mengubah transaksi yang sudah selesai.');
+        }
+
         $oldStatus = $pesanan->status;
         $newStatus = $this->status;
 

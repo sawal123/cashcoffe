@@ -56,6 +56,10 @@ class Create extends Component
 
     public function simpan()
     {
+        if (!Auth::user()->can('manage pengeluaran')) {
+            abort(403, 'Anda tidak memiliki akses untuk mengelola pengeluaran.');
+        }
+
         $this->validate([
             'tanggal_pengeluaran' => 'required|date',
             'kategori' => 'nullable|string|max:100',
@@ -96,6 +100,10 @@ class Create extends Component
 
     public function update($id)
     {
+        if (!Auth::user()->can('manage pengeluaran')) {
+            abort(403, 'Anda tidak memiliki akses untuk mengelola pengeluaran.');
+        }
+
         $this->validate([
             'tanggal_pengeluaran' => 'required|date',
             'kategori' => 'nullable|string|max:100',
