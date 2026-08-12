@@ -58,9 +58,12 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
 
     // Menu
     Route::get('/menu', App\Livewire\Menu\TableMenu::class)->name('menu.index');
-    Route::get('/menu/create', App\Livewire\Menu\Create::class)->name('menu.create');
-    Route::get('/menu/{menuId}/edit', App\Livewire\Menu\Create::class)->name('menu.edit');
-    Route::get('/menu/{id}/variants', App\Livewire\Variant\ManageMenuVariant::class)->name('menu.variants');
+
+    Route::middleware(['role:manager|superadmin'])->group(function () {
+        Route::get('/menu/create', App\Livewire\Menu\Create::class)->name('menu.create');
+        Route::get('/menu/{menuId}/edit', App\Livewire\Menu\Create::class)->name('menu.edit');
+        Route::get('/menu/{id}/variants', App\Livewire\Variant\ManageMenuVariant::class)->name('menu.variants');
+    });
 
     // Order
     Route::get('/order', App\Livewire\Order\TableOrder::class)->name('order.index');
@@ -82,12 +85,16 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
     Route::get('/member/{memberId}/edit', App\Livewire\Member\CreateMember::class)->name('member.edit');
 
     // Omset
-    Route::get('/omset', App\Livewire\Omset\TableOmset::class)->name('omset.index');
+    Route::middleware(['role:manager|superadmin'])->group(function () {
+        Route::get('/omset', App\Livewire\Omset\TableOmset::class)->name('omset.index');
+    });
 
     // Pengeluaran
     Route::get('/pengeluaran', App\Livewire\Pengeluaran\TablePengeluaran::class)->name('pengeluaran.index');
-    Route::get('/pengeluaran/create', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.create');
-    Route::get('/pengeluaran/{pengeluaranId}/edit', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.edit');
+    Route::middleware(['role:manager|superadmin'])->group(function () {
+        Route::get('/pengeluaran/create', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.create');
+        Route::get('/pengeluaran/{pengeluaranId}/edit', App\Livewire\Pengeluaran\Create::class)->name('pengeluaran.edit');
+    });
 
     // Transaksi
     Route::get('/transaksi', App\Livewire\Transaksi\Transaksi::class)->name('transaksi.index');

@@ -56,6 +56,10 @@ class Create extends Component
 
     public function simpan()
     {
+        if (Auth::user()->hasRole('kasir')) {
+            abort(403, 'Kasir tidak boleh membuat pengeluaran administratif.');
+        }
+
         $this->validate([
             'tanggal_pengeluaran' => 'required|date',
             'kategori' => 'nullable|string|max:100',
@@ -96,6 +100,10 @@ class Create extends Component
 
     public function update($id)
     {
+        if (Auth::user()->hasRole('kasir')) {
+            abort(403, 'Kasir tidak boleh mengubah pengeluaran administratif.');
+        }
+
         $this->validate([
             'tanggal_pengeluaran' => 'required|date',
             'kategori' => 'nullable|string|max:100',

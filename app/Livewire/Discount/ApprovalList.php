@@ -38,8 +38,12 @@ class ApprovalList extends Component
             'keterangan' => 'required|string|max:255'
         ]);
 
-        $approval = DiscountApproval::find($this->selectedApprovalId);
+        $approval = DiscountApproval::with('discount')->find($this->selectedApprovalId);
         if ($approval && $approval->status === 'pending') {
+            if (Auth::user()->hasRole('kasir') && $approval->discount->type !== 'general') {
+                abort(403, 'Kasir hanya boleh approve diskon general.');
+            }
+
             $approval->update([
                 'status' => $this->actionType === 'approve' ? 'approved' : 'rejected',
                 'approved_by' => Auth::id(),

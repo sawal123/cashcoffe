@@ -27,6 +27,10 @@ class Create extends Component
     }
     public function simpan()
     {
+        if (auth()->user()->hasRole('kasir')) {
+            abort(403, 'Kasir tidak boleh membuat menu.');
+        }
+
         $this->validate([
             'nama_menu' => 'string|max:255',
             'categories_id' => 'exists:categories,id',
@@ -79,6 +83,9 @@ class Create extends Component
     public function update()
     {
         // Security Check
+        if (auth()->user()->hasRole('kasir')) {
+            abort(403, 'Aksi ini tidak diperbolehkan untuk kasir.');
+        }
         if (!auth()->user()->hasRole('superadmin')) {
             abort(403, 'Aksi ini hanya diperbolehkan untuk Superadmin (Pusat).');
         }
