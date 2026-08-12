@@ -179,6 +179,7 @@ class CreateOrder extends Component
                 ->first();
 
             $menu = \App\Models\Menu::find($item['id']);
+            if (!$menu) continue;
             $hargaBase = ($tieredPrice)
                 ? (($tieredPrice->h_promo > 0) ? $tieredPrice->h_promo : $tieredPrice->harga)
                 : (($menu->h_promo > 0) ? $menu->h_promo : $menu->harga);

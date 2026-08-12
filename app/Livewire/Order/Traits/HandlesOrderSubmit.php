@@ -8,6 +8,12 @@ use App\Models\Discount;
 use App\Models\Ingredients;
 use App\Models\RiwayatStock;
 use App\Models\MenuIngredients;
+use App\Models\PaymentMethod;
+use App\Models\SalesChannel;
+use App\Models\PriceTier;
+use App\Models\VariantOption;
+use App\Models\VariantPrice;
+use App\Models\MenuPrice;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -108,11 +114,99 @@ trait HandlesOrderSubmit
         $this->dispatch('showToast', message: 'Pesanan berhasil dibatalkan.', type: 'success', title: 'Success');
     }
 
+    private function validateAndCalculateServerItems(int $salesChannelId, int $priceTierId): array
+    {
+        $itemsToProcess = [];
+
+        foreach ($this->pesanan as $p) {
+            // Validate Qty: integer, >= 1
+            $rawQty = $p['qty'] ?? null;
+            if (is_null($rawQty) || !is_numeric($rawQty) || filter_var($rawQty, FILTER_VALIDATE_INT) === false) {
+                throw new \InvalidArgumentException('Jumlah (qty) pesanan harus berupa integer!');
+            }
+            $qty = (int) $rawQty;
+            if ($qty < 1 || $qty > 10000) {
+                throw new \InvalidArgumentException('Jumlah (qty) pesanan tidak valid!');
+            }
+
+            // Fetch Menu from DB
+            $menuId = $p['id'] ?? null;
+            $menu = $menuId ? Menu::find($menuId) : null;
+            if (!$menu) {
+                throw new \InvalidArgumentException('Menu tidak ditemukan di database!');
+            }
+            if (isset($menu->is_active) && !$menu->is_active) {
+                throw new \InvalidArgumentException('Menu ' . $menu->nama_menu . ' tidak aktif!');
+            }
+
+            // Verify Variants & Calculate Extra Price from DB
+            $selectedOptionIds = $p['selected_options'] ?? [];
+            if (!is_array($selectedOptionIds)) {
+                throw new \InvalidArgumentException('Format opsi varian tidak valid!');
+            }
+
+            $extraPrice = 0;
+            if (!empty($selectedOptionIds)) {
+                $allowedGroupIds = $menu->variantGroups()->pluck('variant_groups.id')->toArray();
+
+                foreach ($selectedOptionIds as $optId) {
+                    $option = VariantOption::with('group')->find($optId);
+                    if (!$option) {
+                        throw new \InvalidArgumentException('Varian ID ' . $optId . ' tidak valid!');
+                    }
+
+                    if (!in_array($option->variant_group_id, $allowedGroupIds)) {
+                        throw new \InvalidArgumentException('Varian ' . $option->nama_opsi . ' tidak terkait dengan menu ' . $menu->nama_menu);
+                    }
+
+                    $vPrice = VariantPrice::where('variant_option_id', $optId)
+                        ->where('price_tier_id', $priceTierId)
+                        ->where('sales_channel_id', $salesChannelId)
+                        ->first();
+
+                    if ($vPrice) {
+                        $extraPrice += (int) $vPrice->extra_price;
+                    } else {
+                        $extraPrice += (int) ($option->extra_price ?? 0);
+                    }
+                }
+            }
+
+            // Base price recalculation from DB
+            $tieredPrice = MenuPrice::where('menu_id', $menu->id)
+                ->where('price_tier_id', $priceTierId)
+                ->where('sales_channel_id', $salesChannelId)
+                ->first();
+
+            if ($tieredPrice) {
+                $hargaBase = ($tieredPrice->h_promo > 0) ? $tieredPrice->h_promo : $tieredPrice->harga;
+            } else {
+                $hargaBase = ($menu->h_promo > 0) ? $menu->h_promo : $menu->harga;
+            }
+
+            $hargaJual = (int) ($hargaBase + $extraPrice);
+            $subtotalItem = $hargaJual * $qty;
+            $profitPerItem = ($hargaJual - $menu->h_pokok) * $qty;
+
+            $itemsToProcess[] = [
+                'menu' => $menu,
+                'qty' => $qty,
+                'harga_jual' => $hargaJual,
+                'subtotal' => $subtotalItem,
+                'profit' => $profitPerItem,
+                'selected_options' => $selectedOptionIds,
+                'catatan' => $p['catatan'] ?? null,
+            ];
+        }
+
+        return $itemsToProcess;
+    }
+
     public function updateOrder()
     {
         if (!$this->orderId) return;
 
-        if (empty($this->pesanan)) {
+        if (empty($this->pesanan) || !is_array($this->pesanan)) {
             $this->dispatch('showToast', message: 'Pesanan masih kosong', type: 'error', title: 'Error');
             return;
         }
@@ -127,133 +221,158 @@ trait HandlesOrderSubmit
             return;
         }
 
-        DB::beginTransaction();
         try {
-            $pesanan = Pesanan::with('items')->findOrFail($this->orderId);
+            DB::transaction(function () {
+                $pesanan = Pesanan::with('items')->findOrFail($this->orderId);
 
-            if ($pesanan->status === 'selesai') {
-                $this->dispatch('showToast', message: 'Pesanan sudah selesai dan tidak dapat diubah.', type: 'error');
-                return;
-            }
-
-            $pesanan->items()->delete();
-
-            $total = 0;
-            $totalProfit = 0;
-            $discountAmount = 0;
-            $memberId = $this->memberIdFromPhone($this->member);
-
-            $disc = null;
-            if ($this->discount_id) {
-                $disc = Discount::with('discountItems')->find($this->discount_id);
-                if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
-                    $disc = null;
-                    $this->discount_id = null;
+                if ($pesanan->status === 'selesai') {
+                    throw new \InvalidArgumentException('Pesanan sudah selesai dan tidak dapat diubah.');
                 }
-            }
 
-            foreach ($this->pesanan as $p) {
-                $menu = Menu::find($p['id']);
-                if (!$menu) continue;
+                // 1. Verify Payment Method
+                $pm = PaymentMethod::find($this->metode_pembayaran);
+                if (!$pm || (isset($pm->is_active) && !$pm->is_active)) {
+                    throw new \InvalidArgumentException('Metode pembayaran tidak valid atau tidak aktif!');
+                }
 
-                $hargaJual = $p['harga'];
-                $qty = $p['qty'];
-                $subtotalItem = $hargaJual * $qty;
-                $profitPerItem = ($hargaJual - $menu->h_pokok) * $qty;
+                // 2. Verify Sales Channel
+                $salesChannelId = $this->sales_channel_id ?? 1;
+                $salesChannel = SalesChannel::find($salesChannelId);
+                if (!$salesChannel || (isset($salesChannel->is_active) && !$salesChannel->is_active)) {
+                    throw new \InvalidArgumentException('Sales channel tidak valid atau tidak aktif!');
+                }
 
-                $itemDiscountValue = 0;
+                // 3. Verify Price Tier
+                $user = Auth::user();
+                $priceTierId = $user?->branch ? $user->branch->price_tier_id : (PriceTier::first()?->id ?? 1);
+                $priceTier = PriceTier::find($priceTierId);
+                if (!$priceTier) {
+                    throw new \InvalidArgumentException('Price tier tidak valid!');
+                }
 
-                if ($disc && $disc->is_active && $disc->scope !== 'global') {
-                    $isEligible = false;
-                    foreach ($disc->discountItems as $di) {
-                        if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
-                            $isEligible = true; break;
-                        }
-                        if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
-                            $isEligible = true; break;
-                        }
+                // 4. Validate and calculate items server side
+                $itemsToProcess = $this->validateAndCalculateServerItems($salesChannelId, $priceTierId);
+
+                $pesanan->items()->delete();
+
+                $total = 0;
+                $totalProfit = 0;
+                $discountAmount = 0;
+                $memberId = $this->memberIdFromPhone($this->member);
+
+                $disc = null;
+                if ($this->discount_id) {
+                    $disc = Discount::with('discountItems')->find($this->discount_id);
+                    if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
+                        $disc = null;
+                        $this->discount_id = null;
                     }
-                    if ($isEligible) {
-                        if ($disc->jenis_diskon === 'persentase') {
-                            $itemDiscountValue = round($subtotalItem * ($disc->nilai_diskon / 100));
-                            if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
-                                $itemDiscountValue = $disc->maksimum_diskon;
+                }
+
+                foreach ($itemsToProcess as $item) {
+                    $menu = $item['menu'];
+                    $qty = $item['qty'];
+                    $hargaJual = $item['harga_jual'];
+                    $subtotalItem = $item['subtotal'];
+                    $profitPerItem = $item['profit'];
+                    $selectedOptionIds = $item['selected_options'];
+
+                    $itemDiscountValue = 0;
+
+                    if ($disc && $disc->is_active && $disc->scope !== 'global') {
+                        $isEligible = false;
+                        foreach ($disc->discountItems as $di) {
+                            if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
+                                $isEligible = true; break;
                             }
-                        } elseif ($disc->jenis_diskon === 'nominal') {
-                            $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                            if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
+                                $isEligible = true; break;
+                            }
+                        }
+                        if ($isEligible) {
+                            if ($disc->jenis_diskon === 'persentase') {
+                                $itemDiscountValue = round($subtotalItem * ($disc->nilai_diskon / 100));
+                                if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
+                                    $itemDiscountValue = $disc->maksimum_diskon;
+                                }
+                            } elseif ($disc->jenis_diskon === 'nominal') {
+                                $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                            }
+                        }
+                    }
+
+                    $newItem = $pesanan->items()->create([
+                        'menus_id' => $menu->id,
+                        'qty' => $qty,
+                        'harga_satuan' => $hargaJual,
+                        'subtotal' => $subtotalItem - $itemDiscountValue,
+                        'discount_value' => $itemDiscountValue,
+                        'profit' => $profitPerItem - $itemDiscountValue,
+                        'catatan_item' => $item['catatan'],
+                    ]);
+
+                    if (!empty($selectedOptionIds)) {
+                        $newItem->variants()->sync($selectedOptionIds);
+                    }
+
+                    $total += $subtotalItem - $itemDiscountValue;
+                    $totalProfit += $profitPerItem - $itemDiscountValue;
+                }
+
+                if ($disc && $disc->is_active && $disc->scope === 'global') {
+                    if (
+                        (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
+                        (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
+                    ) {
+                        if (!is_null($disc->limit) && !is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+                            // limit habis
+                        } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
+                            // tidak memenuhi minimum transaksi
+                        } else {
+                            if ($disc->jenis_diskon === 'persentase') {
+                                $discountAmount = round($total * ($disc->nilai_diskon / 100));
+                                if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
+                                    $discountAmount = $disc->maksimum_diskon;
+                                }
+                            } elseif ($disc->jenis_diskon === 'nominal') {
+                                $discountAmount = $disc->nilai_diskon;
+                            }
                         }
                     }
                 }
 
-                $pesanan->items()->create([
-                    'menus_id' => $p['id'],
-                    'qty' => $qty,
-                    'harga_satuan' => $hargaJual,
-                    'subtotal' => $subtotalItem,
-                    'discount_value' => $itemDiscountValue,
-                    'profit' => $profitPerItem,
-                    'catatan_item' => $p['catatan'] ?? null,
+                $totalAfterDiscount = max(0, $total - $discountAmount);
+
+                $pesanan->update([
+                    'mejas_id' => $this->mejas_id,
+                    'nama' => $this->nama_costumer,
+                    'member_id' => $memberId,
+                    'payment_method_id' => $this->metode_pembayaran ?: null,
+                    'discount_id' => $disc?->id,
+                    'discount_value' => $discountAmount,
+                    'sales_channel_id' => $salesChannelId,
+                    'total' => $total,
+                    'total_profit' => $totalProfit,
+                    'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
+                    'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
                 ]);
 
-                $total += $subtotalItem - $itemDiscountValue;
-                $totalProfit += $profitPerItem - $itemDiscountValue;
-            }
-
-            if ($disc && $disc->is_active && $disc->scope === 'global') {
-                if (
-                    (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
-                    (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
-                ) {
-                    if (!is_null($disc->limit) && !is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
-                        // limit habis
-                    } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
-                        // tidak memenuhi minimum transaksi
-                    } else {
-                        if ($disc->jenis_diskon === 'persentase') {
-                            $discountAmount = round($total * ($disc->nilai_diskon / 100));
-                            if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
-                                $discountAmount = $disc->maksimum_diskon;
-                            }
-                        } elseif ($disc->jenis_diskon === 'nominal') {
-                            $discountAmount = $disc->nilai_diskon;
-                        }
+                if ($pesanan->status === 'dibatalkan') {
+                    if ($pesanan->discount_id) {
+                        $pesanan->discount->decrement('digunakan');
                     }
                 }
-            }
+            });
 
-            $totalAfterDiscount = max(0, $total - $discountAmount);
-
-            $pesanan->update([
-                'mejas_id' => $this->mejas_id,
-                'nama' => $this->nama_costumer,
-                'member_id' => $memberId,
-                'payment_method_id' => $this->metode_pembayaran ?: null,
-                'discount_id' => $disc?->id,
-                'discount_value' => $discountAmount,
-                'sales_channel_id' => $this->sales_channel_id,
-                'total' => $total,
-                'total_profit' => $totalProfit,
-                'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
-                'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
-            ]);
-
-            if ($pesanan->status === 'dibatalkan') {
-                if ($pesanan->discount_id) {
-                    $pesanan->discount->decrement('digunakan');
-                }
-            }
-
-            DB::commit();
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
         } catch (\Exception $e) {
-            DB::rollBack();
             $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: ' . $e->getMessage());
         }
     }
 
     public function saveOrder()
     {
-        if (empty($this->pesanan)) {
+        if (empty($this->pesanan) || !is_array($this->pesanan)) {
             $this->dispatch('showToast', message: 'Pesanan masih kosong', type: 'error', title: 'Error');
             return;
         }
@@ -268,141 +387,153 @@ trait HandlesOrderSubmit
             return;
         }
 
-        DB::beginTransaction();
         try {
-            $randomString = strtoupper(Str::random(8));
-            $tanggal = date('dm');
-            $kodeFinal = $randomString . $tanggal;
-            $memberId = $this->memberIdFromPhone($this->member);
-
-            $pesanan = Pesanan::create([
-                'kode' => $kodeFinal,
-                'mejas_id' => $this->mejas_id,
-                'nama' => $this->nama_costumer,
-                'user_id' => Auth::id(),
-                'member_id' => $memberId,
-                'discount_id' => null,
-                'discount_value' => 0,
-                'payment_method_id' => $this->metode_pembayaran ?: null,
-                'sales_channel_id' => $this->sales_channel_id,
-                'total' => 0,
-                'total_profit' => 0,
-                'catatan' => null,
-            ]);
-
-            $total = 0;
-            $totalProfit = 0;
-            $discountAmount = 0;
-
-            $disc = null;
-            if ($this->discountId) {
-                $disc = Discount::with('discountItems')->find($this->discountId);
-                if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
-                    $disc = null;
-                    $this->discountId = null;
+            $pesanan = DB::transaction(function () {
+                // 1. Verify Payment Method
+                $pm = PaymentMethod::find($this->metode_pembayaran);
+                if (!$pm || (isset($pm->is_active) && !$pm->is_active)) {
+                    throw new \InvalidArgumentException('Metode pembayaran tidak valid atau tidak aktif!');
                 }
-            }
 
-            foreach ($this->pesanan as $p) {
-                $menu = Menu::find($p['id']);
-                if (! $menu) continue;
+                // 2. Verify Sales Channel
+                $salesChannelId = $this->sales_channel_id ?? 1;
+                $salesChannel = SalesChannel::find($salesChannelId);
+                if (!$salesChannel || (isset($salesChannel->is_active) && !$salesChannel->is_active)) {
+                    throw new \InvalidArgumentException('Sales channel tidak valid atau tidak aktif!');
+                }
 
-                $hargaJual = $p['harga'];
-                $qty = $p['qty'];
-                $subtotalItem = $hargaJual * $qty;
-                $profitPerItem = ($hargaJual - $menu->h_pokok) * $qty;
+                // 3. Verify Price Tier
+                $user = Auth::user();
+                $priceTierId = $user?->branch ? $user->branch->price_tier_id : (PriceTier::first()?->id ?? 1);
+                $priceTier = PriceTier::find($priceTierId);
+                if (!$priceTier) {
+                    throw new \InvalidArgumentException('Price tier tidak valid!');
+                }
 
-                $itemDiscountValue = 0;
+                // 4. Validate and calculate items server side
+                $itemsToProcess = $this->validateAndCalculateServerItems($salesChannelId, $priceTierId);
 
-                if ($disc && $disc->is_active && $disc->scope !== 'global') {
-                    $isEligible = false;
-                    foreach ($disc->discountItems as $di) {
-                        if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
-                            $isEligible = true; break;
-                        }
-                        if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
-                            $isEligible = true; break;
-                        }
+                $randomString = strtoupper(Str::random(8));
+                $tanggal = date('dm');
+                $kodeFinal = $randomString . $tanggal;
+                $memberId = $this->memberIdFromPhone($this->member);
+
+                $pesanan = Pesanan::create([
+                    'kode' => $kodeFinal,
+                    'mejas_id' => $this->mejas_id,
+                    'nama' => $this->nama_costumer,
+                    'user_id' => Auth::id(),
+                    'member_id' => $memberId,
+                    'discount_id' => null,
+                    'discount_value' => 0,
+                    'payment_method_id' => $this->metode_pembayaran ?: null,
+                    'sales_channel_id' => $salesChannelId,
+                    'total' => 0,
+                    'total_profit' => 0,
+                    'catatan' => null,
+                ]);
+
+                $total = 0;
+                $totalProfit = 0;
+                $discountAmount = 0;
+
+                $disc = null;
+                if ($this->discountId) {
+                    $disc = Discount::with('discountItems')->find($this->discountId);
+                    if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
+                        $disc = null;
+                        $this->discountId = null;
                     }
-                    if ($isEligible) {
-                        if ($disc->jenis_diskon === 'persentase') {
-                            $itemDiscountValue = round($subtotalItem * ($disc->nilai_diskon / 100));
-                            if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
-                                $itemDiscountValue = $disc->maksimum_diskon;
+                }
+
+                foreach ($itemsToProcess as $item) {
+                    $menu = $item['menu'];
+                    $qty = $item['qty'];
+                    $hargaJual = $item['harga_jual'];
+                    $subtotalItem = $item['subtotal'];
+                    $profitPerItem = $item['profit'];
+                    $selectedOptionIds = $item['selected_options'];
+
+                    $itemDiscountValue = 0;
+
+                    if ($disc && $disc->is_active && $disc->scope !== 'global') {
+                        $isEligible = false;
+                        foreach ($disc->discountItems as $di) {
+                            if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
+                                $isEligible = true; break;
                             }
-                        } elseif ($disc->jenis_diskon === 'nominal') {
-                            $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                            if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
+                                $isEligible = true; break;
+                            }
+                        }
+                        if ($isEligible) {
+                            if ($disc->jenis_diskon === 'persentase') {
+                                $itemDiscountValue = round($subtotalItem * ($disc->nilai_diskon / 100));
+                                if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
+                                    $itemDiscountValue = $disc->maksimum_diskon;
+                                }
+                            } elseif ($disc->jenis_diskon === 'nominal') {
+                                $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                            }
                         }
                     }
-                }
 
-                $existingItem = $pesanan->items()->where('menus_id', $p['id'])->first();
-
-                if ($existingItem) {
-                    $newQty = $existingItem->qty + $qty;
-                    $existingItem->update([
-                        'qty' => $newQty,
-                        'subtotal' => ($newQty * $hargaJual) - $itemDiscountValue, // recalculating assuming all in same batch
-                        'discount_value' => $itemDiscountValue, // simplify, this shouldn't really happen since cart keys are unique
-                        'profit' => (($hargaJual - $menu->h_pokok) * $newQty) - $itemDiscountValue,
-                    ]);
-                } else {
                     $newItem = $pesanan->items()->create([
-                        'menus_id' => $p['id'],
+                        'menus_id' => $menu->id,
                         'qty' => $qty,
                         'harga_satuan' => $hargaJual,
                         'subtotal' => $subtotalItem - $itemDiscountValue,
                         'discount_value' => $itemDiscountValue,
                         'profit' => $profitPerItem - $itemDiscountValue,
-                        'catatan_item' => null,
+                        'catatan_item' => $item['catatan'],
                     ]);
 
-                    if (!empty($p['selected_options'])) {
-                        $newItem->variants()->sync($p['selected_options']);
+                    if (!empty($selectedOptionIds)) {
+                        $newItem->variants()->sync($selectedOptionIds);
                     }
+
+                    $total += $subtotalItem - $itemDiscountValue;
+                    $totalProfit += $profitPerItem - $itemDiscountValue;
                 }
 
-                $total += $subtotalItem - $itemDiscountValue;
-                $totalProfit += $profitPerItem - $itemDiscountValue;
-            }
-
-            if ($disc && $disc->is_active && $disc->scope === 'global') {
-                if (
-                    (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
-                    (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
-                ) {
-                    if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
-                        // Limit habis
-                    } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
-                        // Tidak memenuhi minimal transaksi
-                    } else {
-                        if ($disc->jenis_diskon === 'persentase') {
-                            $discountAmount = round($total * ($disc->nilai_diskon / 100));
-                            if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
-                                $discountAmount = $disc->maksimum_diskon;
+                if ($disc && $disc->is_active && $disc->scope === 'global') {
+                    if (
+                        (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
+                        (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
+                    ) {
+                        if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+                            // Limit habis
+                        } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
+                            // Tidak memenuhi minimal transaksi
+                        } else {
+                            if ($disc->jenis_diskon === 'persentase') {
+                                $discountAmount = round($total * ($disc->nilai_diskon / 100));
+                                if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
+                                    $discountAmount = $disc->maksimum_diskon;
+                                }
+                            } elseif ($disc->jenis_diskon === 'nominal') {
+                                $discountAmount = $disc->nilai_diskon;
                             }
-                        } elseif ($disc->jenis_diskon === 'nominal') {
-                            $discountAmount = $disc->nilai_diskon;
+                            $disc->increment('digunakan');
                         }
-                        $disc->increment('digunakan');
                     }
                 }
-            }
 
-            $totalAfterDiscount = max(0, $total - $discountAmount);
+                $totalAfterDiscount = max(0, $total - $discountAmount);
 
-            $pesanan->update([
-                'discount_id' => $disc?->id,
-                'nama' => $this->nama_costumer,
-                'discount_value' => $discountAmount,
-                'sales_channel_id' => $this->sales_channel_id,
-                'total' => $total,
-                'total_profit' => $totalProfit,
-                'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
-                'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
-            ]);
+                $pesanan->update([
+                    'discount_id' => $disc?->id,
+                    'nama' => $this->nama_costumer,
+                    'discount_value' => $discountAmount,
+                    'sales_channel_id' => $salesChannelId,
+                    'total' => $total,
+                    'total_profit' => $totalProfit,
+                    'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
+                    'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
+                ]);
 
-            DB::commit();
+                return $pesanan;
+            });
 
             $this->pesanan = [];
             $this->mejas_id = null;
@@ -420,8 +551,7 @@ trait HandlesOrderSubmit
                 $this->dispatch('open-modal', name: 'order-success');
             }
         } catch (\Exception $e) {
-                DB::rollBack();
-                $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
+            $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
         }
     }
 
