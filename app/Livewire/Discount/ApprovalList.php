@@ -40,8 +40,8 @@ class ApprovalList extends Component
 
         $approval = DiscountApproval::with('discount')->find($this->selectedApprovalId);
         if ($approval && $approval->status === 'pending') {
-            if (Auth::user()->hasRole('kasir') && $approval->discount->type !== 'general') {
-                abort(403, 'Kasir hanya boleh approve diskon general.');
+            if (!Auth::user()->can('approve all discount') && $approval->discount->type !== 'general') {
+                abort(403, 'Anda hanya boleh menyetujui diskon general.');
             }
 
             $approval->update([
@@ -57,10 +57,16 @@ class ApprovalList extends Component
 
     public function render()
     {
-        $approvals = DiscountApproval::with(['kasir', 'discount', 'approver'])
-            ->where('status', $this->statusFilter)
-            ->latest()
-            ->paginate(10);
+        $query = DiscountApproval::with(['kasir', 'discount', 'approver'])
+            ->where('status', $this->statusFilter);
+
+        if (!Auth::user()->can('approve all discount')) {
+            $query->whereHas('discount', function ($q) {
+                $q->where('type', 'general');
+            });
+        }
+
+        $approvals = $query->latest()->paginate(10);
 
         return view('livewire.discount.approval-list', [
             'approvals' => $approvals

@@ -56,8 +56,8 @@ class Create extends Component
 
     public function simpan()
     {
-        if (Auth::user()->hasRole('kasir')) {
-            abort(403, 'Kasir tidak boleh membuat pengeluaran administratif.');
+        if (!Auth::user()->can('manage pengeluaran')) {
+            abort(403, 'Anda tidak memiliki akses untuk mengelola pengeluaran.');
         }
 
         $this->validate([
@@ -100,8 +100,8 @@ class Create extends Component
 
     public function update($id)
     {
-        if (Auth::user()->hasRole('kasir')) {
-            abort(403, 'Kasir tidak boleh mengubah pengeluaran administratif.');
+        if (!Auth::user()->can('manage pengeluaran')) {
+            abort(403, 'Anda tidak memiliki akses untuk mengelola pengeluaran.');
         }
 
         $this->validate([

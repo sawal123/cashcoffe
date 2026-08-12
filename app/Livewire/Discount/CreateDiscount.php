@@ -92,6 +92,9 @@ class CreateDiscount extends Component
 
     public function simpan()
     {
+        if (!auth()->user()->can('manage discount')) {
+            abort(403, 'Anda tidak memiliki akses untuk mengelola diskon.');
+        }
         $this->validate();
 
         $discount = Discount::create([
@@ -130,6 +133,9 @@ class CreateDiscount extends Component
 
     public function update($id)
     {
+        if (!auth()->user()->can('manage discount')) {
+            abort(403, 'Anda tidak memiliki akses untuk mengelola diskon.');
+        }
         // $this->validate();
 
         $diskon = Discount::findOrFail($id);
