@@ -38,10 +38,17 @@ class ApprovalList extends Component
             'keterangan' => 'required|string|max:255'
         ]);
 
+        $user = Auth::user();
+        if (!$user || (!$user->can('approve general discount') && !$user->can('approve all discount'))) {
+            abort(403, 'Anda tidak memiliki akses untuk memproses persetujuan diskon.');
+        }
+
         $approval = DiscountApproval::with('discount')->find($this->selectedApprovalId);
         if ($approval && $approval->status === 'pending') {
-            if (!Auth::user()->can('approve all discount') && $approval->discount->type !== 'general') {
-                abort(403, 'Anda hanya boleh menyetujui diskon general.');
+            $discountType = $approval->discount->type ?? 'general';
+
+            if ($discountType !== 'general' && !$user->can('approve all discount')) {
+                abort(403, 'Anda hanya boleh memproses diskon general.');
             }
 
             $approval->update([
@@ -57,13 +64,21 @@ class ApprovalList extends Component
 
     public function render()
     {
+        $user = Auth::user();
+
         $query = DiscountApproval::with(['kasir', 'discount', 'approver'])
             ->where('status', $this->statusFilter);
 
-        if (!Auth::user()->can('approve all discount')) {
+        if ($user && $user->can('approve all discount')) {
+            // Can see all approvals
+        } elseif ($user && $user->can('approve general discount')) {
+            // Can only see general discount approvals
             $query->whereHas('discount', function ($q) {
                 $q->where('type', 'general');
             });
+        } else {
+            // No approval permission at all
+            $query->whereRaw('1 = 0');
         }
 
         $approvals = $query->latest()->paginate(10);

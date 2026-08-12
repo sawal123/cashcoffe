@@ -30,9 +30,9 @@ class RbacSeeder extends Seeder
         $kasir = Role::firstOrCreate(['name' => 'kasir']);
 
         // Give all permissions to superadmin
-        $superadmin->givePermissionTo(Permission::all());
+        $superadmin->syncPermissions(Permission::all());
         
-        $manager->givePermissionTo([
+        $manager->syncPermissions([
             'operate pos',
             'approve general discount',
             'approve all discount',
@@ -43,7 +43,7 @@ class RbacSeeder extends Seeder
             'view sensitive reports',
         ]);
 
-        $kasir->givePermissionTo([
+        $kasir->syncPermissions([
             'operate pos',
             'approve general discount',
         ]);

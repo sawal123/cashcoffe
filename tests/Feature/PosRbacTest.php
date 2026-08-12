@@ -8,8 +8,9 @@ use App\Models\User;
 use App\Models\Discount;
 use App\Models\DiscountApproval;
 use App\Models\Pesanan;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\Pengeluaran;
+use App\Models\Menu;
+use Database\Seeders\RbacSeeder;
 use Livewire\Livewire;
 
 class PosRbacTest extends TestCase
@@ -20,42 +21,7 @@ class PosRbacTest extends TestCase
     {
         parent::setUp();
         
-        $permissions = [
-            'operate pos',
-            'approve general discount',
-            'approve all discount',
-            'manage discount',
-            'manage menu',
-            'manage pengeluaran',
-            'edit finished transaction',
-            'view sensitive reports',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-        }
-
-        $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
-        $manager = Role::firstOrCreate(['name' => 'manager']);
-        $kasir = Role::firstOrCreate(['name' => 'kasir']);
-
-        $superadmin->givePermissionTo(Permission::all());
-        
-        $manager->givePermissionTo([
-            'operate pos',
-            'approve general discount',
-            'approve all discount',
-            'manage discount',
-            'manage menu',
-            'manage pengeluaran',
-            'edit finished transaction',
-            'view sensitive reports',
-        ]);
-
-        $kasir->givePermissionTo([
-            'operate pos',
-            'approve general discount',
-        ]);
+        $this->seed(RbacSeeder::class);
     }
 
     private function createKasir()
@@ -77,6 +43,12 @@ class PosRbacTest extends TestCase
         $user = User::factory()->create();
         $user->assignRole('superadmin');
         return $user;
+    }
+
+    public function test_rbac_seeder_dapat_dijalankan_ulang_tanpa_error()
+    {
+        $this->seed(RbacSeeder::class);
+        $this->assertTrue(true);
     }
 
     public function test_kasir_bisa_mengakses_order()
@@ -144,43 +116,129 @@ class PosRbacTest extends TestCase
             
         $this->assertEquals('pending', $approval->fresh()->status);
     }
+
+    public function test_user_tanpa_permission_approval_ditolak_approve_diskon_general()
+    {
+        $userNoPerm = User::factory()->create(); // No roles or permissions assigned
+
+        $discount = Discount::create([
+            'nama_diskon' => 'General',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 1000,
+            'is_active' => true,
+            'type' => 'general'
+        ]);
+
+        $approval = DiscountApproval::create([
+            'discount_id' => $discount->id,
+            'status' => 'pending',
+            'kasir_id' => $userNoPerm->id
+        ]);
+
+        Livewire::actingAs($userNoPerm)
+            ->test(\App\Livewire\Discount\ApprovalList::class)
+            ->set('selectedApprovalId', $approval->id)
+            ->set('actionType', 'approve')
+            ->set('keterangan', 'ok')
+            ->call('submitAction')
+            ->assertForbidden();
+
+        $this->assertEquals('pending', $approval->fresh()->status);
+    }
+
+    public function test_manager_dapat_approve_diskon_non_general()
+    {
+        $manager = $this->createManager();
+        
+        $discount = Discount::create([
+            'nama_diskon' => 'Private Special',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'is_active' => true,
+            'type' => 'private'
+        ]);
+
+        $approval = DiscountApproval::create([
+            'discount_id' => $discount->id,
+            'status' => 'pending',
+            'kasir_id' => $manager->id
+        ]);
+
+        Livewire::actingAs($manager)
+            ->test(\App\Livewire\Discount\ApprovalList::class)
+            ->set('selectedApprovalId', $approval->id)
+            ->set('actionType', 'approve')
+            ->set('keterangan', 'approved by manager')
+            ->call('submitAction')
+            ->assertDispatched('close-modal');
+
+        $this->assertEquals('approved', $approval->fresh()->status);
+    }
     
-    public function test_kasir_ditolak_membuat_master_diskon()
+    public function test_kasir_ditolak_simpan_dan_update_master_diskon()
     {
         $kasir = $this->createKasir();
 
-        $response = $this->actingAs($kasir)->get('/discount/create');
-        $response->assertForbidden();
+        $this->actingAs($kasir)->get('/discount/create')->assertForbidden();
 
         Livewire::actingAs($kasir)
             ->test(\App\Livewire\Discount\CreateDiscount::class)
             ->call('simpan')
             ->assertForbidden();
+
+        $discount = Discount::create([
+            'nama_diskon' => 'Test Disc',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 1000,
+            'is_active' => true,
+            'type' => 'general'
+        ]);
+
+        Livewire::actingAs($kasir)
+            ->test(\App\Livewire\Discount\CreateDiscount::class)
+            ->call('update', $discount->id)
+            ->assertForbidden();
     }
 
-    public function test_kasir_ditolak_membuat_menu()
+    public function test_kasir_ditolak_simpan_dan_update_menu()
     {
         $kasir = $this->createKasir();
 
-        $response = $this->actingAs($kasir)->get('/menu/create');
-        $response->assertForbidden();
+        $this->actingAs($kasir)->get('/menu/create')->assertForbidden();
 
         Livewire::actingAs($kasir)
             ->test(\App\Livewire\Menu\Create::class)
             ->call('simpan')
             ->assertForbidden();
+
+        Livewire::actingAs($kasir)
+            ->test(\App\Livewire\Menu\Create::class)
+            ->call('update')
+            ->assertForbidden();
     }
 
-    public function test_kasir_ditolak_membuat_pengeluaran()
+    public function test_kasir_ditolak_simpan_dan_update_pengeluaran()
     {
         $kasir = $this->createKasir();
 
-        $response = $this->actingAs($kasir)->get('/pengeluaran/create');
-        $response->assertForbidden();
+        $this->actingAs($kasir)->get('/pengeluaran/create')->assertForbidden();
 
         Livewire::actingAs($kasir)
             ->test(\App\Livewire\Pengeluaran\Create::class)
             ->call('simpan')
+            ->assertForbidden();
+
+        $pengeluaran = Pengeluaran::create([
+            'user_id' => $kasir->id,
+            'tanggal_pengeluaran' => now()->toDateString(),
+            'title' => 'Test',
+            'jumlah' => 1,
+            'total' => 1000,
+        ]);
+
+        Livewire::actingAs($kasir)
+            ->test(\App\Livewire\Pengeluaran\Create::class)
+            ->call('update', $pengeluaran->id)
             ->assertForbidden();
     }
 
@@ -209,14 +267,11 @@ class PosRbacTest extends TestCase
     {
         $kasir = $this->createKasir();
 
-        $response = $this->actingAs($kasir)->get('/omset');
-        $response->assertForbidden();
-        
-        $response = $this->actingAs($kasir)->get('/orders/export');
-        $response->assertForbidden();
+        $this->actingAs($kasir)->get('/omset')->assertForbidden();
+        $this->actingAs($kasir)->get('/orders/export')->assertForbidden();
     }
 
-    public function test_manager_dapat_melakukan_operasi_diizinkan()
+    public function test_manager_dapat_menjalankan_action_server_side_dan_buka_halaman()
     {
         $manager = $this->createManager();
 
@@ -225,6 +280,20 @@ class PosRbacTest extends TestCase
         $this->actingAs($manager)->get('/pengeluaran/create')->assertStatus(200);
         $this->actingAs($manager)->get('/discount/create')->assertStatus(200);
         $this->actingAs($manager)->get('/orders/export')->assertStatus(200);
+
+        // Test server-side action calls for manager
+        Livewire::actingAs($manager)
+            ->test(\App\Livewire\Discount\CreateDiscount::class)
+            ->set('nama_diskon', 'Manager Disc')
+            ->set('jenis_diskon', 'nominal')
+            ->set('nilai_diskon', 500)
+            ->set('is_active', 1)
+            ->set('member_only', false)
+            ->set('scope', 'global')
+            ->call('simpan')
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('discounts', ['nama_diskon' => 'Manager Disc']);
     }
     
     public function test_superadmin_tetap_memiliki_akses_administratif()

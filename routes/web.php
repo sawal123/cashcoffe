@@ -79,7 +79,7 @@ Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () 
         Route::get('/discount/create', App\Livewire\Discount\CreateDiscount::class)->name('discount.create');
         Route::get('/discount/{id}/edit', App\Livewire\Discount\CreateDiscount::class)->name('discount.edit');
     });
-    Route::get('/discount-approval', App\Livewire\Discount\ApprovalList::class)->name('discount-approval.index');
+    Route::get('/discount-approval', App\Livewire\Discount\ApprovalList::class)->name('discount-approval.index')->middleware('permission:approve general discount|approve all discount');
 
     // Member
     Route::get('/member', App\Livewire\Member\TableMember::class)->name('member.index');
