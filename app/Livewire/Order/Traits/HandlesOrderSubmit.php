@@ -27,6 +27,7 @@ trait HandlesOrderSubmit
         $pesanan = Pesanan::with(['items.menu', 'items.variants', 'discount'])->findOrFail($id);
         $this->mejas_id = $pesanan->mejas_id;
         $this->metode_pembayaran = $pesanan->payment_method_id;
+        $this->sales_channel_id = $pesanan->sales_channel_id;
         $this->status = $pesanan->status;
 
         $this->discountId = $pesanan->discount_id;
@@ -140,35 +141,61 @@ trait HandlesOrderSubmit
             }
 
             // Verify Variants & Calculate Extra Price from DB
-            $selectedOptionIds = $p['selected_options'] ?? [];
-            if (!is_array($selectedOptionIds)) {
+            $rawSelectedOptions = $p['selected_options'] ?? [];
+            if (!is_array($rawSelectedOptions)) {
                 throw new \InvalidArgumentException('Format opsi varian tidak valid!');
             }
 
-            $extraPrice = 0;
-            if (!empty($selectedOptionIds)) {
-                $allowedGroupIds = $menu->variantGroups()->pluck('variant_groups.id')->toArray();
+            // Deduplicate options to prevent double counting or rule bypass
+            $selectedOptionIds = array_values(array_unique($rawSelectedOptions));
 
-                foreach ($selectedOptionIds as $optId) {
-                    $option = VariantOption::with('group')->find($optId);
-                    if (!$option) {
+            $variantGroups = $menu->variantGroups()->with('options')->get();
+
+            $optionToGroupMap = [];
+            $groupOptionCount = [];
+            foreach ($variantGroups as $vg) {
+                $groupOptionCount[$vg->id] = 0;
+                foreach ($vg->options as $opt) {
+                    $optionToGroupMap[$opt->id] = $vg->id;
+                }
+            }
+
+            $extraPrice = 0;
+            foreach ($selectedOptionIds as $optId) {
+                if (!isset($optionToGroupMap[$optId])) {
+                    $optModel = VariantOption::find($optId);
+                    if (!$optModel) {
                         throw new \InvalidArgumentException('Varian ID ' . $optId . ' tidak valid!');
                     }
+                    throw new \InvalidArgumentException('Varian ' . $optModel->nama_opsi . ' tidak terkait dengan menu ' . $menu->nama_menu);
+                }
 
-                    if (!in_array($option->variant_group_id, $allowedGroupIds)) {
-                        throw new \InvalidArgumentException('Varian ' . $option->nama_opsi . ' tidak terkait dengan menu ' . $menu->nama_menu);
-                    }
+                $groupId = $optionToGroupMap[$optId];
+                $groupOptionCount[$groupId]++;
 
-                    $vPrice = VariantPrice::where('variant_option_id', $optId)
-                        ->where('price_tier_id', $priceTierId)
-                        ->where('sales_channel_id', $salesChannelId)
-                        ->first();
+                $vPrice = VariantPrice::where('variant_option_id', $optId)
+                    ->where('price_tier_id', $priceTierId)
+                    ->where('sales_channel_id', $salesChannelId)
+                    ->first();
 
-                    if ($vPrice) {
-                        $extraPrice += (int) $vPrice->extra_price;
-                    } else {
-                        $extraPrice += (int) ($option->extra_price ?? 0);
-                    }
+                if ($vPrice) {
+                    $extraPrice += (int) $vPrice->extra_price;
+                } else {
+                    $optModel = VariantOption::find($optId);
+                    $extraPrice += (int) ($optModel->extra_price ?? 0);
+                }
+            }
+
+            // Validate VariantGroup rules (is_required & selection_type)
+            foreach ($variantGroups as $vg) {
+                $count = $groupOptionCount[$vg->id];
+
+                if ($vg->is_required && $count === 0) {
+                    throw new \InvalidArgumentException('Varian ' . $vg->nama_group . ' wajib dipilih!');
+                }
+
+                if ($vg->selection_type === 'single' && $count > 1) {
+                    throw new \InvalidArgumentException('Varian ' . $vg->nama_group . ' hanya boleh dipilih maksimal 1 opsi!');
                 }
             }
 
@@ -246,8 +273,8 @@ trait HandlesOrderSubmit
                 $user = Auth::user();
                 $priceTierId = $user?->branch ? $user->branch->price_tier_id : (PriceTier::first()?->id ?? 1);
                 $priceTier = PriceTier::find($priceTierId);
-                if (!$priceTier) {
-                    throw new \InvalidArgumentException('Price tier tidak valid!');
+                if (!$priceTier || (isset($priceTier->is_active) && !$priceTier->is_active)) {
+                    throw new \InvalidArgumentException('Price tier tidak valid atau tidak aktif!');
                 }
 
                 // 4. Validate and calculate items server side
@@ -406,8 +433,8 @@ trait HandlesOrderSubmit
                 $user = Auth::user();
                 $priceTierId = $user?->branch ? $user->branch->price_tier_id : (PriceTier::first()?->id ?? 1);
                 $priceTier = PriceTier::find($priceTierId);
-                if (!$priceTier) {
-                    throw new \InvalidArgumentException('Price tier tidak valid!');
+                if (!$priceTier || (isset($priceTier->is_active) && !$priceTier->is_active)) {
+                    throw new \InvalidArgumentException('Price tier tidak valid atau tidak aktif!');
                 }
 
                 // 4. Validate and calculate items server side

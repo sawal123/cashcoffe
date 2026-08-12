@@ -65,7 +65,7 @@ class ServerAuthoritativePricingTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->groupA = VariantGroup::create(['nama_group' => 'Ukuran']);
+        $this->groupA = VariantGroup::create(['nama_group' => 'Ukuran', 'selection_type' => 'single', 'is_required' => false]);
         $this->optionA = VariantOption::create([
             'variant_group_id' => $this->groupA->id,
             'nama_opsi' => 'Large',
@@ -73,7 +73,7 @@ class ServerAuthoritativePricingTest extends TestCase
         ]);
         $this->menuA->variantGroups()->attach($this->groupA->id);
 
-        $this->groupB = VariantGroup::create(['nama_group' => 'Topping']);
+        $this->groupB = VariantGroup::create(['nama_group' => 'Topping', 'selection_type' => 'multiple', 'is_required' => false]);
         $this->optionB = VariantOption::create([
             'variant_group_id' => $this->groupB->id,
             'nama_opsi' => 'Boba',
@@ -302,10 +302,11 @@ class ServerAuthoritativePricingTest extends TestCase
         ]);
     }
 
-    // 9. Price tier tidak valid ditolak.
-    public function test_9_invalid_price_tier_rejected()
+    // 9. Price tier tidak valid / inactive ditolak.
+    public function test_9_invalid_or_inactive_price_tier_rejected()
     {
-        PriceTier::query()->delete();
+        // Test inactive price tier
+        $this->priceTier->update(['is_active' => false]);
 
         $cartKey = (string) $this->menuA->id;
         $pesananData = [
@@ -488,6 +489,189 @@ class ServerAuthoritativePricingTest extends TestCase
 
         $this->assertDatabaseHas('pesanans', [
             'total' => 35000,
+        ]);
+    }
+
+    // 14. Preserve sales channel saat edit/update order.
+    public function test_14_preserve_sales_channel_on_edit_and_update_order()
+    {
+        $gofoodChannel = SalesChannel::create(['nama_channel' => 'Gofood', 'is_active' => true]);
+
+        MenuPrice::create([
+            'menu_id' => $this->menuA->id,
+            'price_tier_id' => $this->priceTier->id,
+            'sales_channel_id' => $gofoodChannel->id,
+            'harga' => 30000,
+            'h_promo' => 0,
+        ]);
+
+        $cartKey = (string) $this->menuA->id;
+        $pesananData = [
+            $cartKey => [
+                'id' => $this->menuA->id,
+                'nama_menu' => $this->menuA->nama_menu,
+                'harga' => 30000,
+                'gambar' => '',
+                'qty' => 1,
+                'selected_options' => [],
+            ],
+        ];
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Gofood User')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $gofoodChannel->id)
+            ->set('pesanan', $pesananData)
+            ->call('saveOrder');
+
+        $pesanan = Pesanan::first();
+        $this->assertEquals($gofoodChannel->id, $pesanan->sales_channel_id);
+
+        $testComponent = Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('orderId', base64_encode($pesanan->id))
+            ->call('editOrder', $pesanan->id);
+
+        $this->assertEquals($gofoodChannel->id, $testComponent->get('sales_channel_id'));
+
+        $testComponent->call('updateOrder');
+
+        $this->assertDatabaseHas('pesanans', [
+            'id' => $pesanan->id,
+            'sales_channel_id' => $gofoodChannel->id,
+            'total' => 30000,
+        ]);
+    }
+
+    // 15. Validasi required variant group di server.
+    public function test_15_required_variant_group_must_have_selected_option()
+    {
+        $reqGroup = VariantGroup::create(['nama_group' => 'Suhu', 'selection_type' => 'single', 'is_required' => true]);
+        $optHot = VariantOption::create(['variant_group_id' => $reqGroup->id, 'nama_opsi' => 'Hot', 'extra_price' => 0]);
+        $this->menuA->variantGroups()->attach($reqGroup->id);
+
+        $cartKey = (string) $this->menuA->id;
+        $pesananData = [
+            $cartKey => [
+                'id' => $this->menuA->id,
+                'nama_menu' => $this->menuA->nama_menu,
+                'harga' => 20000,
+                'gambar' => '',
+                'qty' => 1,
+                'selected_options' => [], // Missing required option!
+            ],
+        ];
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Test User')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $pesananData)
+            ->call('saveOrder');
+
+        $this->assertDatabaseCount('pesanans', 0);
+    }
+
+    // 16. Validasi single selection variant group di server.
+    public function test_16_single_selection_variant_group_cannot_have_multiple_options()
+    {
+        $singleGroup = VariantGroup::create(['nama_group' => 'Suhu', 'selection_type' => 'single', 'is_required' => false]);
+        $optHot = VariantOption::create(['variant_group_id' => $singleGroup->id, 'nama_opsi' => 'Hot', 'extra_price' => 0]);
+        $optIce = VariantOption::create(['variant_group_id' => $singleGroup->id, 'nama_opsi' => 'Ice', 'extra_price' => 0]);
+        $this->menuA->variantGroups()->attach($singleGroup->id);
+
+        $cartKey = (string) $this->menuA->id;
+        $pesananData = [
+            $cartKey => [
+                'id' => $this->menuA->id,
+                'nama_menu' => $this->menuA->nama_menu,
+                'harga' => 20000,
+                'gambar' => '',
+                'qty' => 1,
+                'selected_options' => [$optHot->id, $optIce->id], // 2 options for single selection!
+            ],
+        ];
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Test User')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $pesananData)
+            ->call('saveOrder');
+
+        $this->assertDatabaseCount('pesanans', 0);
+    }
+
+    // 17. Tolak / normalisasi duplicate variant option tanpa double charging extra price.
+    public function test_17_duplicate_variant_option_normalized_without_double_charging()
+    {
+        $cartKey = (string) $this->menuA->id;
+        $pesananData = [
+            $cartKey => [
+                'id' => $this->menuA->id,
+                'nama_menu' => $this->menuA->nama_menu,
+                'harga' => 20000,
+                'gambar' => '',
+                'qty' => 1,
+                'selected_options' => [$this->optionA->id, $this->optionA->id, $this->optionA->id], // Duplicated!
+            ],
+        ];
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Test User')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $pesananData)
+            ->call('saveOrder');
+
+        // Total: menu 20000 + optionA (5000) = 25000 (extra price NOT charged 3 times)
+        $this->assertDatabaseHas('pesanans', [
+            'total' => 25000,
+        ]);
+    }
+
+    // 18. Regression test: database price change after order opened but before updateOrder reflected.
+    public function test_18_database_price_change_after_order_opened_before_update_reflected()
+    {
+        $cartKey = (string) $this->menuA->id;
+        $pesananData = [
+            $cartKey => [
+                'id' => $this->menuA->id,
+                'nama_menu' => $this->menuA->nama_menu,
+                'harga' => 20000,
+                'gambar' => '',
+                'qty' => 1,
+                'selected_options' => [],
+            ],
+        ];
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Initial Order')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $pesananData)
+            ->call('saveOrder');
+
+        $pesanan = Pesanan::first();
+
+        $component = Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('orderId', base64_encode($pesanan->id))
+            ->call('editOrder', $pesanan->id);
+
+        // Update database price after order opened in edit view
+        $this->menuA->update(['harga' => 40000]);
+
+        $component->call('updateOrder');
+
+        $this->assertDatabaseHas('pesanans', [
+            'id' => $pesanan->id,
+            'total' => 40000,
         ]);
     }
 }
