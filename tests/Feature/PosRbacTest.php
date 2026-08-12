@@ -146,6 +146,41 @@ class PosRbacTest extends TestCase
         $this->assertEquals('pending', $approval->fresh()->status);
     }
 
+    public function test_approval_dengan_diskon_tidak_tersedia_ditolak_fail_closed()
+    {
+        $manager = $this->createManager();
+
+        $discount = Discount::create([
+            'nama_diskon' => 'Deleted Discount',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 1000,
+            'is_active' => true,
+            'type' => 'general'
+        ]);
+
+        $approval = DiscountApproval::create([
+            'discount_id' => $discount->id,
+            'status' => 'pending',
+            'kasir_id' => $manager->id,
+            'approved_by' => null,
+        ]);
+
+        // Soft delete the discount so relation becomes null
+        $discount->delete();
+
+        Livewire::actingAs($manager)
+            ->test(\App\Livewire\Discount\ApprovalList::class)
+            ->set('selectedApprovalId', $approval->id)
+            ->set('actionType', 'approve')
+            ->set('keterangan', 'proses approval data hilang')
+            ->call('submitAction')
+            ->assertForbidden();
+
+        $freshApproval = $approval->fresh();
+        $this->assertEquals('pending', $freshApproval->status);
+        $this->assertNull($freshApproval->approved_by);
+    }
+
     public function test_manager_dapat_approve_diskon_non_general()
     {
         $manager = $this->createManager();

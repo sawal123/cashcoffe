@@ -45,10 +45,20 @@ class ApprovalList extends Component
 
         $approval = DiscountApproval::with('discount')->find($this->selectedApprovalId);
         if ($approval && $approval->status === 'pending') {
-            $discountType = $approval->discount->type ?? 'general';
+            if (!$approval->discount) {
+                abort(403, 'Data diskon tidak ditemukan atau sudah tidak tersedia.');
+            }
 
-            if ($discountType !== 'general' && !$user->can('approve all discount')) {
-                abort(403, 'Anda hanya boleh memproses diskon general.');
+            $discountType = $approval->discount->type;
+
+            if ($discountType === 'general') {
+                if (!$user->can('approve general discount') && !$user->can('approve all discount')) {
+                    abort(403, 'Anda tidak memiliki akses untuk menyetujui diskon ini.');
+                }
+            } else {
+                if (!$user->can('approve all discount')) {
+                    abort(403, 'Anda hanya boleh memproses diskon general.');
+                }
             }
 
             $approval->update([
