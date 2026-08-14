@@ -148,7 +148,7 @@ class Transaksi extends Component
                 }
 
                 if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
-                    $this->reduceStock($pesanan);
+                    $pesanan->processInventoryDeduction();
 
                     if ($pesanan->member_id) {
                         $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
@@ -191,58 +191,6 @@ class Transaksi extends Component
         }
     }
 
-    private function reduceStock(Pesanan $pesanan)
-    {
-        $stockChanges = [];
-
-        foreach ($pesanan->items as $item) {
-            $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
-            foreach ($komposisi as $k) {
-                if (! isset($stockChanges[$k->ingredient_id])) {
-                    $stockChanges[$k->ingredient_id] = ['qty' => 0];
-                }
-                $stockChanges[$k->ingredient_id]['qty'] += ($k->qty * $item->qty);
-            }
-
-            $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
-            if (! empty($selectedVariantIds)) {
-                $variantOptions = VariantOption::with('ingredients')
-                    ->whereIn('id', $selectedVariantIds)
-                    ->get();
-
-                foreach ($variantOptions as $variant) {
-                    foreach ($variant->ingredients as $vIngredient) {
-                        if (! isset($stockChanges[$vIngredient->id])) {
-                            $stockChanges[$vIngredient->id] = ['qty' => 0];
-                        }
-                        $stockChanges[$vIngredient->id]['qty'] += ($vIngredient->pivot->qty * $item->qty);
-                    }
-                }
-            }
-        }
-
-        foreach ($stockChanges as $ingredientId => $data) {
-            $ingredient = Ingredients::find($ingredientId);
-            if (! $ingredient) {
-                continue;
-            }
-
-            $before = $ingredient->stok;
-            $after = $before - $data['qty'];
-
-            $ingredient->update(['stok' => $after]);
-
-            RiwayatStock::create([
-                'ingredient_id' => $ingredient->id,
-                'kode' => strtoupper('OUT-'.Str::random(6)),
-                'qty' => $data['qty'],
-                'qty_before' => $before,
-                'qty_after' => $after,
-                'tipe' => 'out',
-                'keterangan' => 'Akumulasi resep: pesanan '.$pesanan->kode,
-            ]);
-        }
-    }
 
     private function restoreStock(Pesanan $pesanan)
     {
