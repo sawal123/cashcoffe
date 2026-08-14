@@ -43,102 +43,102 @@ class TableOrder extends Component
 
     public function saji($id)
     {
-        // Cukup panggil relasinya
-        $pesanan = Pesanan::with(['items', 'discount'])->findOrFail(base64_decode($id));
+        $decodedId = base64_decode($id);
 
-        // Jika belum pilih metode pembayaran, batalkan proses
-        if ($pesanan->payment_method_id === null) {
-            $this->dispatch('showToast', message: 'Metode pembayaran harus dipilih!', type: 'info', title: 'Info');
-            return;
-        }
+        try {
+            DB::transaction(function () use ($decodedId) {
+                $pesanan = Pesanan::where('id', $decodedId)
+                    ->lockForUpdate()
+                    ->with(['items', 'discount'])
+                    ->firstOrFail();
 
-        $statusSebelumnya = $pesanan->status;
-
-        // Jika status sebelumnya DICAP sudah selesai → SKIP proses ke bawah
-        if ($statusSebelumnya === 'selesai') {
-            $this->dispatch('showToast', message: 'Pesanan sudah selesai sebelumnya.', type: 'info', title: 'Info');
-            return;
-        }
-
-        // Update status pesanan
-        $pesanan->status = $pesanan->status == 'diproses' ? 'selesai' : $this->status;
-        $pesanan->save();
-
-        // 🔥 Jika status baru saja berubah jadi selesai
-        if ($pesanan->status === 'selesai') {
-
-            // LOGIKA POINTS: Tambah poin ke member
-            if ($pesanan->member_id) {
-                // total_after_discount calculation:
-                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
-
-                $member = \App\Models\Member::find($pesanan->member_id);
-                if ($member) {
-                    $member->increment('points', $earnedPoints);
-                    $member->increment('total_pengeluaran', $totalAfterDiscount);
+                if ($pesanan->payment_method_id === null) {
+                    $this->dispatch('showToast', message: 'Metode pembayaran harus dipilih!', type: 'info', title: 'Info');
+                    return;
                 }
-            }
 
-            // 1. PERBAIKAN DISKON: Gunakan increment() agar aman & menghindari error null
-            // if ($pesanan->discount_id && $pesanan->discount) {
-            //     $pesanan->discount->increment('digunakan');
-            // }
+                if ($pesanan->status === 'selesai') {
+                    $this->dispatch('showToast', message: 'Pesanan sudah selesai sebelumnya.', type: 'info', title: 'Info');
+                    return;
+                }
 
-            // 2. Kurangi stok bahan (Agregasi)
-            $stockChanges = []; // [ingredient_id => qty]
+                if ($pesanan->status === 'dibatalkan') {
+                    $this->dispatch('showToast', message: 'Pesanan yang sudah dibatalkan tidak dapat disajikan.', type: 'error', title: 'Error');
+                    return;
+                }
 
-            foreach ($pesanan->items as $item) {
-                // A. Kumpulkan dari resep DASAR menu
-                $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
-                foreach ($komposisi as $k) {
-                    if (!isset($stockChanges[$k->ingredient_id])) {
-                        $stockChanges[$k->ingredient_id] = 0;
+                if ($pesanan->status !== 'diproses') {
+                    $this->dispatch('showToast', message: 'Transisi status tidak valid.', type: 'error', title: 'Error');
+                    return;
+                }
+
+                $pesanan->status = 'selesai';
+                $pesanan->save();
+
+                if ($pesanan->member_id) {
+                    $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
+                    $earnedPoints = floor($totalAfterDiscount / 10000);
+
+                    $member = \App\Models\Member::find($pesanan->member_id);
+                    if ($member) {
+                        $member->increment('points', $earnedPoints);
+                        $member->increment('total_pengeluaran', $totalAfterDiscount);
                     }
-                    $stockChanges[$k->ingredient_id] += ($k->qty * $item->qty);
                 }
 
-                // B. Kumpulkan dari resep VARIAN
-                $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
-                if (!empty($selectedVariantIds)) {
-                    $variantOptions = VariantOption::with('ingredients')
-                        ->whereIn('id', $selectedVariantIds)
-                        ->get();
+                $stockChanges = [];
 
-                    foreach ($variantOptions as $variant) {
-                        foreach ($variant->ingredients as $vIngredient) {
-                            if (!isset($stockChanges[$vIngredient->id])) {
-                                $stockChanges[$vIngredient->id] = 0;
+                foreach ($pesanan->items as $item) {
+                    $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
+                    foreach ($komposisi as $k) {
+                        if (!isset($stockChanges[$k->ingredient_id])) {
+                            $stockChanges[$k->ingredient_id] = 0;
+                        }
+                        $stockChanges[$k->ingredient_id] += ($k->qty * $item->qty);
+                    }
+
+                    $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
+                    if (!empty($selectedVariantIds)) {
+                        $variantOptions = VariantOption::with('ingredients')
+                            ->whereIn('id', $selectedVariantIds)
+                            ->get();
+
+                        foreach ($variantOptions as $variant) {
+                            foreach ($variant->ingredients as $vIngredient) {
+                                if (!isset($stockChanges[$vIngredient->id])) {
+                                    $stockChanges[$vIngredient->id] = 0;
+                                }
+                                $stockChanges[$vIngredient->id] += ($vIngredient->pivot->qty * $item->qty);
                             }
-                            $stockChanges[$vIngredient->id] += ($vIngredient->pivot->qty * $item->qty);
                         }
                     }
                 }
-            }
 
-            // C. Eksekusi pemotongan stok (Satu kali per bahan)
-            foreach ($stockChanges as $ingredientId => $totalQty) {
-                $ingredient = Ingredients::find($ingredientId);
-                if (!$ingredient) continue;
+                foreach ($stockChanges as $ingredientId => $totalQty) {
+                    $ingredient = Ingredients::find($ingredientId);
+                    if (!$ingredient) continue;
 
-                $before = $ingredient->stok;
-                $after = $before - $totalQty;
+                    $before = $ingredient->stok;
+                    $after = $before - $totalQty;
 
-                $ingredient->update(['stok' => $after]);
+                    $ingredient->update(['stok' => $after]);
 
-                RiwayatStock::create([
-                    'ingredient_id' => $ingredient->id,
-                    'kode'          => strtoupper('OUT-' . Str::random(6)),
-                    'qty'           => $totalQty,
-                    'qty_before'    => $before,
-                    'qty_after'     => $after,
-                    'tipe'          => 'out',
-                    'keterangan'    => 'Akumulasi resep: pesanan ' . $pesanan->kode,
-                ]);
-            }
+                    RiwayatStock::create([
+                        'ingredient_id' => $ingredient->id,
+                        'kode'          => strtoupper('OUT-' . Str::random(6)),
+                        'qty'           => $totalQty,
+                        'qty_before'    => $before,
+                        'qty_after'     => $after,
+                        'tipe'          => 'out',
+                        'keterangan'    => 'Akumulasi resep: pesanan ' . $pesanan->kode,
+                    ]);
+                }
+
+                $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
+            });
+        } catch (\Exception $e) {
+            $this->dispatch('showToast', message: 'Gagal menyajikan pesanan: ' . $e->getMessage(), type: 'error', title: 'Error');
         }
-
-        $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
     }
 
     public function showDetail($encodedId)
@@ -158,16 +158,24 @@ class TableOrder extends Component
 
     public function delPesanan($id)
     {
-        $order = Pesanan::find(base64_decode($id));
-        if ($order) {
-            if ($order->status == 'selesai') {
-                $this->dispatch('showToast', message: 'Pesanan Selesai Tidak Bisa Dihapus', type: 'warning', title: 'Warning');
-                return;
-            }
-            $order->delete();
-            $this->dispatch('showToast', message: 'Pesanan Berhasil diHapus', type: 'success', title: 'Success');
-        } else {
-            $this->dispatch('showToast', message: 'Pesanan Gagal Dihapus', type: 'warning', title: 'Warning');
+        $decodedId = base64_decode($id);
+
+        try {
+            DB::transaction(function () use ($decodedId) {
+                $order = Pesanan::where('id', $decodedId)->lockForUpdate()->first();
+                if ($order) {
+                    if ($order->status !== 'diproses') {
+                        $this->dispatch('showToast', message: "Pesanan dengan status '{$order->status}' tidak dapat dihapus", type: 'warning', title: 'Warning');
+                        return;
+                    }
+                    $order->delete();
+                    $this->dispatch('showToast', message: 'Pesanan Berhasil diHapus', type: 'success', title: 'Success');
+                } else {
+                    $this->dispatch('showToast', message: 'Pesanan Gagal Dihapus', type: 'warning', title: 'Warning');
+                }
+            });
+        } catch (\Exception $e) {
+            $this->dispatch('showToast', message: 'Gagal menghapus pesanan: ' . $e->getMessage(), type: 'error', title: 'Error');
         }
     }
     public $totalPerMetode = [];

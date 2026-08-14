@@ -68,51 +68,39 @@ trait HandlesOrderSubmit
 
     public function batalkanPesanan($id)
     {
-        // 1. Pastikan me-load relasi 'discount' agar tidak error saat decrement
-        // Catatan: Jika parameter $id dari view di-encode, gunakan base64_decode($id)
-        $pesanan = Pesanan::with(['items', 'discount'])->findOrFail($id);
+        $targetId = is_numeric($id) ? $id : base64_decode($id);
 
-        if ($pesanan->status === 'dibatalkan') {
-            $this->dispatch('showToast', message: 'Pesanan sudah dibatalkan sebelumnya.', type: 'info', title: 'Info');
-            return;
-        }
+        try {
+            DB::transaction(function () use ($targetId) {
+                $pesanan = Pesanan::where('id', $targetId)->lockForUpdate()->with(['items', 'discount'])->firstOrFail();
 
-        $statusSebelumnya = $pesanan->status;
-
-        // 2. KEMBALIKAN STOK HANYA JIKA SUDAH DIPOTONG
-        // Berdasarkan kode saji() Anda sebelumnya, stok HANYA dipotong saat status 'selesai'.
-        // Jadi jika pesanan masih 'diproses' dan dibatalkan, kita tidak boleh menambah stok (karena belum dipotong).
-        if ($statusSebelumnya === 'selesai') {
-            $this->restoreStock($pesanan);
-
-            // DEDUCT POINTS if member exists
-            if ($pesanan->member_id) {
-                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                $earnedPoints = floor($totalAfterDiscount / 10000); // 1 point per 10k
-                $member = \App\Models\Member::find($pesanan->member_id);
-                if ($member) {
-                    $member->decrement('points', $earnedPoints);
-                    $member->decrement('total_pengeluaran', $totalAfterDiscount);
+                if ($pesanan->status === 'dibatalkan') {
+                    $this->dispatch('showToast', message: 'Pesanan sudah dibatalkan sebelumnya.', type: 'info', title: 'Info');
+                    return;
                 }
-            }
+
+                if ($pesanan->status === 'selesai') {
+                    $this->dispatch('showToast', message: 'Pesanan yang sudah selesai tidak dapat dibatalkan.', type: 'error', title: 'Error');
+                    return;
+                }
+
+                if ($pesanan->status !== 'diproses') {
+                    $this->dispatch('showToast', message: 'Status pesanan tidak valid untuk dibatalkan.', type: 'error', title: 'Error');
+                    return;
+                }
+
+                $pesanan->decrementDiscountUsageOnCancellation();
+
+                $pesanan->update([
+                    'status' => 'dibatalkan',
+                ]);
+
+                $this->dispatch('close-modal', name: 'confirm-cancel-modal');
+                $this->dispatch('showToast', message: 'Pesanan berhasil dibatalkan.', type: 'success', title: 'Success');
+            });
+        } catch (\Exception $e) {
+            $this->dispatch('showToast', message: 'Gagal membatalkan pesanan: ' . $e->getMessage(), type: 'error', title: 'Error');
         }
-
-        // 3. Kurangi penggunaan diskon jika pesanan menggunakan diskon
-        if ($pesanan->discount_id && $pesanan->discount) {
-            $pesanan->discount->decrement('digunakan');
-        }
-
-        // 4. Update status (dan reset nilai diskon jika memang Anda ingin mengosongkannya di struk)
-        $pesanan->update([
-            'status' => 'dibatalkan',
-            'discount_id' => null,
-            'discount_value' => 0,
-            // Opsional: Anda mungkin perlu mengupdate total harga juga jika discount_value di-nol-kan
-            // 'total' => $pesanan->total + $pesanan->discount_value
-        ]);
-        $this->dispatch('close-modal', name: 'confirm-cancel-modal');
-
-        $this->dispatch('showToast', message: 'Pesanan berhasil dibatalkan.', type: 'success', title: 'Success');
     }
 
     private function validateAndCalculateServerItems(int $salesChannelId, int $priceTierId): array
@@ -250,10 +238,18 @@ trait HandlesOrderSubmit
 
         try {
             DB::transaction(function () {
-                $pesanan = Pesanan::with('items')->findOrFail($this->orderId);
+                $pesanan = Pesanan::where('id', $this->orderId)->lockForUpdate()->with(['items', 'discount'])->firstOrFail();
 
-                if ($pesanan->status === 'selesai') {
-                    throw new \InvalidArgumentException('Pesanan sudah selesai dan tidak dapat diubah.');
+                if ($pesanan->status !== 'diproses') {
+                    throw new \InvalidArgumentException('Pesanan dengan status ' . $pesanan->status . ' tidak dapat diubah.');
+                }
+
+                // Capture old applied global discount before any changes
+                $oldDiscountId = null;
+                $oldDiscountModel = null;
+                if ($pesanan->discount_id && $pesanan->discount && $pesanan->discount->scope === 'global' && $pesanan->discount_value > 0) {
+                    $oldDiscountId = $pesanan->discount_id;
+                    $oldDiscountModel = $pesanan->discount;
                 }
 
                 // 1. Verify Payment Method
@@ -346,13 +342,23 @@ trait HandlesOrderSubmit
                     $totalProfit += $profitPerItem - $itemDiscountValue;
                 }
 
+                // Determine new applied global discount
+                $newDiscountId = null;
                 if ($disc && $disc->is_active && $disc->scope === 'global') {
                     if (
                         (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
-                        if (!is_null($disc->limit) && !is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
-                            // limit habis
+                        // Existing order using same discount may bypass limit check:
+                        // the slot is already "occupied" by this order's previous usage.
+                        $isSameExistingDiscount = ($disc->id === $oldDiscountId);
+                        $limitBlocking = !$isSameExistingDiscount
+                            && !is_null($disc->limit)
+                            && !is_null($disc->digunakan)
+                            && $disc->digunakan >= $disc->limit;
+
+                        if ($limitBlocking) {
+                            // limit habis & bukan discount yang sama → tolak
                         } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
                             // tidak memenuhi minimum transaksi
                         } else {
@@ -364,8 +370,32 @@ trait HandlesOrderSubmit
                             } elseif ($disc->jenis_diskon === 'nominal') {
                                 $discountAmount = $disc->nilai_diskon;
                             }
+                            if ($discountAmount > 0) {
+                                $newDiscountId = $disc->id;
+                            }
                         }
                     }
+                }
+
+                // Discount usage accounting: diff old vs new
+                if ($oldDiscountId !== $newDiscountId) {
+                    // Old applied global discount no longer active
+                    if ($oldDiscountId !== null && $oldDiscountModel && $oldDiscountModel->digunakan > 0) {
+                        $oldDiscountModel->decrement('digunakan');
+                    }
+                    // New applied global discount (fresh increment) — only when genuinely new
+                    if ($newDiscountId !== null && $newDiscountId !== $oldDiscountId) {
+                        $disc->increment('digunakan');
+                    }
+                }
+                // If same discount remains applied: no change to counter
+
+                // For global disc: only persist to order if it was actually applied
+                // For non-global (item) disc: $disc is the applied disc regardless
+                if ($disc && $disc->scope === 'global') {
+                    $appliedDiscountId = $newDiscountId;
+                } else {
+                    $appliedDiscountId = $disc?->id;
                 }
 
                 $totalAfterDiscount = max(0, $total - $discountAmount);
@@ -375,7 +405,7 @@ trait HandlesOrderSubmit
                     'nama' => $this->nama_costumer,
                     'member_id' => $memberId,
                     'payment_method_id' => $this->metode_pembayaran ?: null,
-                    'discount_id' => $disc?->id,
+                    'discount_id' => $appliedDiscountId,
                     'discount_value' => $discountAmount,
                     'sales_channel_id' => $salesChannelId,
                     'total' => $total,
@@ -383,12 +413,6 @@ trait HandlesOrderSubmit
                     'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
                     'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
                 ]);
-
-                if ($pesanan->status === 'dibatalkan') {
-                    if ($pesanan->discount_id) {
-                        $pesanan->discount->decrement('digunakan');
-                    }
-                }
             });
 
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
@@ -607,13 +631,13 @@ trait HandlesOrderSubmit
 
         DB::beginTransaction();
         try {
-            $pesanan = Pesanan::with([
+            $pesanan = Pesanan::where('id', $this->lastPesananId)->lockForUpdate()->with([
                 'items.variants',
                 'items.menu',
                 'discount',
                 'paymentMethod',
                 'salesChannel',
-            ])->findOrFail($this->lastPesananId);
+            ])->firstOrFail();
 
             if (! $pesanan->payment_method_id) {
                 $this->dispatch('showToast', message: 'Metode pembayaran harus dipilih!', type: 'info', title: 'Info');
@@ -626,6 +650,18 @@ trait HandlesOrderSubmit
                 $this->dispatch('showToast', message: 'Pesanan sudah selesai sebelumnya.', type: 'info', title: 'Info');
                 DB::rollBack();
                 return $pesanan;
+            }
+
+            if ($pesanan->status === 'dibatalkan') {
+                $this->dispatch('showToast', message: 'Pesanan yang sudah dibatalkan tidak dapat diselesaikan.', type: 'error', title: 'Error');
+                DB::rollBack();
+                return null;
+            }
+
+            if ($pesanan->status !== 'diproses') {
+                $this->dispatch('showToast', message: 'Status pesanan tidak valid untuk diselesaikan.', type: 'error', title: 'Error');
+                DB::rollBack();
+                return null;
             }
 
             $pesanan->update(['status' => 'selesai']);
