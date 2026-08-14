@@ -847,5 +847,77 @@ class TransactionStateIntegrityTest extends TestCase
         $this->doUpdateOrder($order, $disc);
         $this->assertEquals($countAfterCreate, $disc->fresh()->digunakan);
     }
-}
 
+    // =========================================================
+    // updateOrder() existing-discount at full limit edge cases
+    // =========================================================
+
+    /**
+     * UD-10: Existing order uses a discount that is now at limit → update same discount keeps it applied.
+     * limit=1, digunakan=0 → saveOrder → digunakan=1 → updateOrder same discount → still applied, digunakan=1.
+     */
+    public function test_update_existing_discount_at_limit_stays_applied()
+    {
+        $disc = $this->makeGlobalDiscount('FULL-LIMIT-SAME', 0, 1); // limit=1
+        $order = $this->doSaveOrder($disc);
+
+        // After saveOrder, digunakan should be 1 = limit
+        $this->assertEquals(1, $disc->fresh()->digunakan);
+
+        // Update same order with same discount
+        $this->doUpdateOrder($order, $disc);
+
+        $order->refresh();
+        $this->assertEquals($disc->id, $order->discount_id);
+        $this->assertGreaterThan(0, $order->discount_value);
+        // Usage must not change: still 1
+        $this->assertEquals(1, $disc->fresh()->digunakan);
+    }
+
+    /**
+     * UD-11: Order without discount tries to add a discount already at full limit → not applied, digunakan unchanged.
+     */
+    public function test_update_new_order_cannot_add_full_limit_discount()
+    {
+        $disc = $this->makeGlobalDiscount('FULL-LIMIT-NEW', 5, 5); // digunakan == limit
+
+        $order = $this->doSaveOrder(); // no discount
+        $this->assertNull($order->discount_id);
+
+        $this->doUpdateOrder($order, $disc);
+
+        $order->refresh();
+        $this->assertNull($order->discount_id);
+        $this->assertEquals(0, $order->discount_value);
+        $this->assertEquals(5, $disc->fresh()->digunakan); // unchanged
+    }
+
+    /**
+     * UD-12: Existing order uses discount at full limit; after update total drops below minimum_transaksi.
+     * Expected: discount removed, usage decremented exactly 1x.
+     */
+    public function test_update_existing_discount_at_limit_min_trx_fails_usage_decremented()
+    {
+        // menu harga = 20000 (standard from setUp)
+        // minimum_transaksi = 999999 → will fail after update
+        $disc = $this->makeGlobalDiscount('FULL-LIMIT-MIN-TRX', 0, 1); // limit=1
+        // Override minimum_transaksi to be high so it fails during update
+        $disc->update(['minimum_transaksi' => 999999]);
+
+        // For saveOrder to initially apply the discount, temporarily lower minimum
+        $disc->update(['minimum_transaksi' => null]);
+        $order = $this->doSaveOrder($disc);
+        $usageAfterCreate = $disc->fresh()->digunakan; // should be 1
+
+        // Restore high minimum before updateOrder
+        $disc->update(['minimum_transaksi' => 999999]);
+
+        $this->doUpdateOrder($order, $disc);
+
+        $order->refresh();
+        // Discount should no longer be applied (min_trx fails)
+        $this->assertEquals(0, $order->discount_value);
+        // Usage should be decremented once
+        $this->assertEquals($usageAfterCreate - 1, $disc->fresh()->digunakan);
+    }
+}

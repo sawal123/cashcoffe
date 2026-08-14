@@ -349,8 +349,16 @@ trait HandlesOrderSubmit
                         (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
-                        if (!is_null($disc->limit) && !is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
-                            // limit habis
+                        // Existing order using same discount may bypass limit check:
+                        // the slot is already "occupied" by this order's previous usage.
+                        $isSameExistingDiscount = ($disc->id === $oldDiscountId);
+                        $limitBlocking = !$isSameExistingDiscount
+                            && !is_null($disc->limit)
+                            && !is_null($disc->digunakan)
+                            && $disc->digunakan >= $disc->limit;
+
+                        if ($limitBlocking) {
+                            // limit habis & bukan discount yang sama → tolak
                         } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
                             // tidak memenuhi minimum transaksi
                         } else {
@@ -375,12 +383,20 @@ trait HandlesOrderSubmit
                     if ($oldDiscountId !== null && $oldDiscountModel && $oldDiscountModel->digunakan > 0) {
                         $oldDiscountModel->decrement('digunakan');
                     }
-                    // New applied global discount (fresh increment)
-                    if ($newDiscountId !== null) {
+                    // New applied global discount (fresh increment) — only when genuinely new
+                    if ($newDiscountId !== null && $newDiscountId !== $oldDiscountId) {
                         $disc->increment('digunakan');
                     }
                 }
                 // If same discount remains applied: no change to counter
+
+                // For global disc: only persist to order if it was actually applied
+                // For non-global (item) disc: $disc is the applied disc regardless
+                if ($disc && $disc->scope === 'global') {
+                    $appliedDiscountId = $newDiscountId;
+                } else {
+                    $appliedDiscountId = $disc?->id;
+                }
 
                 $totalAfterDiscount = max(0, $total - $discountAmount);
 
@@ -389,7 +405,7 @@ trait HandlesOrderSubmit
                     'nama' => $this->nama_costumer,
                     'member_id' => $memberId,
                     'payment_method_id' => $this->metode_pembayaran ?: null,
-                    'discount_id' => $disc?->id,
+                    'discount_id' => $appliedDiscountId,
                     'discount_value' => $discountAmount,
                     'sales_channel_id' => $salesChannelId,
                     'total' => $total,
