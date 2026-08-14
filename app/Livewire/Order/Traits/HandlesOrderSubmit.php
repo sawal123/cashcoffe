@@ -238,10 +238,18 @@ trait HandlesOrderSubmit
 
         try {
             DB::transaction(function () {
-                $pesanan = Pesanan::where('id', $this->orderId)->lockForUpdate()->with('items')->firstOrFail();
+                $pesanan = Pesanan::where('id', $this->orderId)->lockForUpdate()->with(['items', 'discount'])->firstOrFail();
 
                 if ($pesanan->status !== 'diproses') {
                     throw new \InvalidArgumentException('Pesanan dengan status ' . $pesanan->status . ' tidak dapat diubah.');
+                }
+
+                // Capture old applied global discount before any changes
+                $oldDiscountId = null;
+                $oldDiscountModel = null;
+                if ($pesanan->discount_id && $pesanan->discount && $pesanan->discount->scope === 'global' && $pesanan->discount_value > 0) {
+                    $oldDiscountId = $pesanan->discount_id;
+                    $oldDiscountModel = $pesanan->discount;
                 }
 
                 // 1. Verify Payment Method
@@ -334,6 +342,8 @@ trait HandlesOrderSubmit
                     $totalProfit += $profitPerItem - $itemDiscountValue;
                 }
 
+                // Determine new applied global discount
+                $newDiscountId = null;
                 if ($disc && $disc->is_active && $disc->scope === 'global') {
                     if (
                         (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
@@ -352,9 +362,25 @@ trait HandlesOrderSubmit
                             } elseif ($disc->jenis_diskon === 'nominal') {
                                 $discountAmount = $disc->nilai_diskon;
                             }
+                            if ($discountAmount > 0) {
+                                $newDiscountId = $disc->id;
+                            }
                         }
                     }
                 }
+
+                // Discount usage accounting: diff old vs new
+                if ($oldDiscountId !== $newDiscountId) {
+                    // Old applied global discount no longer active
+                    if ($oldDiscountId !== null && $oldDiscountModel && $oldDiscountModel->digunakan > 0) {
+                        $oldDiscountModel->decrement('digunakan');
+                    }
+                    // New applied global discount (fresh increment)
+                    if ($newDiscountId !== null) {
+                        $disc->increment('digunakan');
+                    }
+                }
+                // If same discount remains applied: no change to counter
 
                 $totalAfterDiscount = max(0, $total - $discountAmount);
 
@@ -371,12 +397,6 @@ trait HandlesOrderSubmit
                     'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
                     'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
                 ]);
-
-                if ($pesanan->status === 'dibatalkan') {
-                    if ($pesanan->discount_id) {
-                        $pesanan->discount->decrement('digunakan');
-                    }
-                }
             });
 
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');

@@ -641,4 +641,211 @@ class TransactionStateIntegrityTest extends TestCase
         $this->assertEquals(5000, $order->discount_value);
         $this->assertEquals(5, $discount->fresh()->digunakan);
     }
+
+    // =========================================================
+    // updateOrder() discount accounting end-to-end tests
+    // =========================================================
+
+    private function buildCartPayload(): array
+    {
+        $cartKey = (string) $this->menu->id;
+        return [
+            $cartKey => [
+                'id' => $this->menu->id,
+                'nama_menu' => $this->menu->nama_menu,
+                'harga' => $this->menu->harga,
+                'gambar' => '',
+                'qty' => 1,
+                'catatan' => null,
+                'status' => null,
+                'selected_options' => [],
+                'display_options' => [],
+            ],
+        ];
+    }
+
+    private function doSaveOrder(?Discount $discount = null): Pesanan
+    {
+        $component = Livewire::actingAs($this->user)->test(CreateOrder::class)
+            ->set('nama_costumer', 'Tester')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->buildCartPayload());
+
+        if ($discount) {
+            $component->set('discountId', $discount->id)
+                ->set('discount_id', $discount->id);
+        }
+
+        $component->call('saveOrder');
+
+        return Pesanan::latest('id')->first();
+    }
+
+    private function doUpdateOrder(Pesanan $order, ?Discount $discount = null): void
+    {
+        $component = Livewire::actingAs($this->user)->test(CreateOrder::class)
+            ->call('editOrder', $order->id)
+            ->set('nama_costumer', 'Tester Updated')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->buildCartPayload());
+
+        if ($discount) {
+            $component->set('discount_id', $discount->id);
+        } else {
+            $component->set('discount_id', null);
+        }
+
+        $component->call('updateOrder');
+    }
+
+    private function makeGlobalDiscount(string $kode, int $digunakan = 0, ?int $limit = null, ?int $minimumTransaksi = null): Discount
+    {
+        return Discount::create([
+            'nama_diskon' => $kode,
+            'type' => 'fixed',
+            'kode_diskon' => $kode,
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => $digunakan,
+            'limit' => $limit,
+            'minimum_transaksi' => $minimumTransaksi,
+        ]);
+    }
+
+    /** UD-1: Create tanpa diskon → update tambah global discount → digunakan +1 */
+    public function test_update_add_global_discount_increments_digunakan()
+    {
+        $order = $this->doSaveOrder();
+        $this->assertNull($order->discount_id);
+
+        $discount = $this->makeGlobalDiscount('ADD-DISC', 0);
+        $this->doUpdateOrder($order, $discount);
+
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+        $order->refresh();
+        $this->assertEquals($discount->id, $order->discount_id);
+        $this->assertGreaterThan(0, $order->discount_value);
+    }
+
+    /** UD-2: Setelah UD-1 dibatalkan → digunakan kembali ke 0 */
+    public function test_cancel_after_update_add_discount_restores_digunakan()
+    {
+        $order = $this->doSaveOrder();
+        $discount = $this->makeGlobalDiscount('CANCEL-AFTER-ADD', 0);
+        $this->doUpdateOrder($order, $discount);
+
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+
+        // Cancel
+        Livewire::actingAs($this->user)->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $this->assertEquals(0, $discount->fresh()->digunakan);
+    }
+
+    /** UD-3: Create dengan Promo A → update ganti Promo B → A -1, B +1 */
+    public function test_update_swap_discount_decrements_old_increments_new()
+    {
+        $promoA = $this->makeGlobalDiscount('PROMO-A', 5);
+        $order = $this->doSaveOrder($promoA);
+        $startA = $promoA->fresh()->digunakan;
+
+        $promoB = $this->makeGlobalDiscount('PROMO-B', 2);
+        $this->doUpdateOrder($order, $promoB);
+
+        $this->assertEquals($startA - 1, $promoA->fresh()->digunakan);
+        $this->assertEquals(3, $promoB->fresh()->digunakan);
+    }
+
+    /** UD-4: Update tetap memakai Promo A → counter tidak berubah */
+    public function test_update_same_discount_counter_unchanged()
+    {
+        $promoA = $this->makeGlobalDiscount('SAME-A', 5);
+        $order = $this->doSaveOrder($promoA);
+        $countAfterCreate = $promoA->fresh()->digunakan;
+
+        $this->doUpdateOrder($order, $promoA);
+
+        $this->assertEquals($countAfterCreate, $promoA->fresh()->digunakan);
+    }
+
+    /** UD-5: Create dengan Promo A → update hapus discount → A -1 */
+    public function test_update_remove_discount_decrements_digunakan()
+    {
+        $promoA = $this->makeGlobalDiscount('REMOVE-A', 5);
+        $order = $this->doSaveOrder($promoA);
+        $countAfterCreate = $promoA->fresh()->digunakan;
+
+        $this->doUpdateOrder($order, null); // remove discount
+
+        $this->assertEquals($countAfterCreate - 1, $promoA->fresh()->digunakan);
+        $order->refresh();
+        $this->assertEquals(0, $order->discount_value);
+    }
+
+    /** UD-6: Update global discount gagal minimum transaksi → tidak increment */
+    public function test_update_global_discount_failing_min_trx_no_increment()
+    {
+        $order = $this->doSaveOrder();
+        // menu harga = 20000, set minimum 999999 sehingga pasti gagal
+        $disc = $this->makeGlobalDiscount('MIN-TRX-FAIL', 3, null, 999999);
+
+        $this->doUpdateOrder($order, $disc);
+
+        $this->assertEquals(3, $disc->fresh()->digunakan);
+        $order->refresh();
+        $this->assertEquals(0, $order->discount_value);
+    }
+
+    /** UD-7: Update global discount sudah mencapai limit → tidak increment */
+    public function test_update_global_discount_at_limit_no_increment()
+    {
+        $order = $this->doSaveOrder();
+        $disc = $this->makeGlobalDiscount('LIMIT-REACHED', 5, 5); // digunakan == limit
+
+        $this->doUpdateOrder($order, $disc);
+
+        $this->assertEquals(5, $disc->fresh()->digunakan);
+        $order->refresh();
+        $this->assertEquals(0, $order->discount_value);
+    }
+
+    /** UD-8: Non-global discount saat update → tidak mengubah digunakan */
+    public function test_update_non_global_discount_no_digunakan_change()
+    {
+        $order = $this->doSaveOrder();
+        $nonGlobal = Discount::create([
+            'nama_diskon' => 'Item Disc',
+            'type' => 'fixed',
+            'kode_diskon' => 'ITEM-DISC-UPD',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'item',
+            'is_active' => true,
+            'digunakan' => 7,
+        ]);
+
+        $this->doUpdateOrder($order, $nonGlobal);
+
+        $this->assertEquals(7, $nonGlobal->fresh()->digunakan);
+    }
+
+    /** UD-9: Repeat update dengan state yang sama tidak menyebabkan double increment/decrement */
+    public function test_repeat_update_same_state_no_double_change()
+    {
+        $disc = $this->makeGlobalDiscount('REPEAT-SAME', 2);
+        $order = $this->doSaveOrder($disc);
+        $countAfterCreate = $disc->fresh()->digunakan;
+
+        $this->doUpdateOrder($order, $disc);
+        $this->assertEquals($countAfterCreate, $disc->fresh()->digunakan);
+
+        $this->doUpdateOrder($order, $disc);
+        $this->assertEquals($countAfterCreate, $disc->fresh()->digunakan);
+    }
 }
+
