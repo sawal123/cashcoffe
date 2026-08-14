@@ -52,6 +52,15 @@ class Pesanan extends Model
         return in_array($this->status, [self::STATUS_SELESAI, self::STATUS_DIBATALKAN], true);
     }
 
+    public function decrementDiscountUsageOnCancellation(): void
+    {
+        if ($this->discount_id && $this->discount) {
+            if ($this->discount->scope === 'global' && $this->discount_value > 0 && $this->discount->digunakan > 0) {
+                $this->discount->decrement('digunakan');
+            }
+        }
+    }
+
     public function items()
     {
         return $this->hasMany(PesananItem::class, 'pesanans_id');

@@ -89,14 +89,10 @@ trait HandlesOrderSubmit
                     return;
                 }
 
-                if ($pesanan->discount_id && $pesanan->discount && $pesanan->discount->digunakan > 0) {
-                    $pesanan->discount->decrement('digunakan');
-                }
+                $pesanan->decrementDiscountUsageOnCancellation();
 
                 $pesanan->update([
                     'status' => 'dibatalkan',
-                    'discount_id' => null,
-                    'discount_value' => 0,
                 ]);
 
                 $this->dispatch('close-modal', name: 'confirm-cancel-modal');

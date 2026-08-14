@@ -56,10 +56,15 @@ class TransactionStateIntegrityTest extends TestCase
             'is_active' => true,
         ]);
 
+        $satuan = \App\Models\SatuanBahan::create([
+            'nama_satuan' => 'Gram',
+        ]);
+
         $this->ingredient = Ingredients::create([
-            'nama' => 'Biji Kopi',
+            'nama_bahan' => 'Biji Kopi',
+            'satuan_id' => $satuan->id,
             'stok' => 100,
-            'satuan' => 'gram',
+            'hpp' => 1000,
         ]);
 
         MenuIngredients::create([
@@ -69,7 +74,7 @@ class TransactionStateIntegrityTest extends TestCase
         ]);
 
         $this->member = Member::create([
-            'nama' => 'Member Test',
+            'user_id' => $this->user->id,
             'phone' => '081234567890',
             'points' => 0,
             'total_pengeluaran' => 0,
@@ -273,6 +278,8 @@ class TransactionStateIntegrityTest extends TestCase
     public function test_complete_action_called_twice_discount_usage_not_duplicated()
     {
         $discount = Discount::create([
+            'nama_diskon' => 'Promo 5K',
+            'type' => 'fixed',
             'kode_diskon' => 'PROMO5K',
             'jenis_diskon' => 'nominal',
             'nilai_diskon' => 5000,
@@ -299,6 +306,8 @@ class TransactionStateIntegrityTest extends TestCase
     public function test_cancel_action_called_twice_no_double_decrement()
     {
         $discount = Discount::create([
+            'nama_diskon' => 'Promo 10',
+            'type' => 'fixed',
             'kode_diskon' => 'PROMO10',
             'jenis_diskon' => 'nominal',
             'nilai_diskon' => 5000,
@@ -327,6 +336,8 @@ class TransactionStateIntegrityTest extends TestCase
     public function test_invalid_transition_leaves_data_untouched()
     {
         $discount = Discount::create([
+            'nama_diskon' => 'Promo Fix',
+            'type' => 'fixed',
             'kode_diskon' => 'PROMOFIX',
             'jenis_diskon' => 'nominal',
             'nilai_diskon' => 5000,
@@ -374,5 +385,260 @@ class TransactionStateIntegrityTest extends TestCase
 
         // Status in DB remains 'selesai'
         $this->assertEquals('selesai', $order->fresh()->status);
+    }
+
+    /** Regression 1: batalkanPesanan() tetap menyimpan discount_id dan discount_value */
+    public function test_batalkanPesanan_retains_discount_id_and_discount_value()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Promo Diskon',
+            'type' => 'fixed',
+            'kode_diskon' => 'PROMOFULL',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 1,
+        ]);
+
+        $order = $this->createTestOrder('diproses', $discount);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $order->refresh();
+        $this->assertEquals('dibatalkan', $order->status);
+        $this->assertEquals($discount->id, $order->discount_id);
+        $this->assertEquals(5000, $order->discount_value);
+    }
+
+    /** Regression 2: Transaksi::updateStatus() cancellation menghasilkan snapshot diskon yang sama */
+    public function test_transaksi_updateStatus_cancellation_retains_identical_discount_snapshot()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Promo Diskon',
+            'type' => 'fixed',
+            'kode_diskon' => 'PROMOFULL2',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 1,
+        ]);
+
+        $order = $this->createTestOrder('diproses', $discount);
+
+        Livewire::actingAs($this->user)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'dibatalkan')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus');
+
+        $order->refresh();
+        $this->assertEquals('dibatalkan', $order->status);
+        $this->assertEquals($discount->id, $order->discount_id);
+        $this->assertEquals(5000, $order->discount_value);
+    }
+
+    /** Regression 3: cancellation dari kedua jalur menghasilkan state final order yang konsisten */
+    public function test_both_cancellation_paths_produce_consistent_final_order_state()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Promo Diskon',
+            'type' => 'fixed',
+            'kode_diskon' => 'PROMOBOTH',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 2,
+        ]);
+
+        $orderA = $this->createTestOrder('diproses', $discount);
+        $orderB = $this->createTestOrder('diproses', $discount);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $orderA->id);
+
+        Livewire::actingAs($this->user)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $orderB)
+            ->set('status', 'dibatalkan')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus');
+
+        $orderA->refresh();
+        $orderB->refresh();
+
+        $this->assertEquals($orderA->status, $orderB->status);
+        $this->assertEquals($orderA->discount_id, $orderB->discount_id);
+        $this->assertEquals($orderA->discount_value, $orderB->discount_value);
+        $this->assertEquals($orderA->total, $orderB->total);
+        $this->assertEquals(0, $discount->fresh()->digunakan);
+    }
+
+    /** Regression 4: non-global discount tidak mengurangi digunakan jika flow create tidak pernah increment */
+    public function test_non_global_discount_does_not_decrement_digunakan_on_cancel()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Menu Discount',
+            'type' => 'fixed',
+            'kode_diskon' => 'MENUDISC',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'item',
+            'is_active' => true,
+            'digunakan' => 5,
+        ]);
+
+        $order = $this->createTestOrder('diproses', $discount);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $this->assertEquals(5, $discount->fresh()->digunakan);
+    }
+
+    /** Regression 5: global discount gagal minimum transaksi tidak mengurangi digunakan */
+    public function test_global_discount_failing_minimum_transaction_does_not_decrement_digunakan()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Min Trx Discount',
+            'type' => 'fixed',
+            'kode_diskon' => 'MINTRX',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 5,
+        ]);
+
+        // Order created with discount attached but discount_value = 0 (minimum transaction failed)
+        $order = Pesanan::create([
+            'kode' => 'ORD-' . uniqid(),
+            'nama' => 'Pelanggan Test',
+            'user_id' => $this->user->id,
+            'member_id' => $this->member->id,
+            'payment_method_id' => $this->paymentMethod->id,
+            'sales_channel_id' => $this->salesChannel->id,
+            'discount_id' => $discount->id,
+            'discount_value' => 0,
+            'total' => 20000,
+            'total_profit' => 10000,
+            'status' => 'diproses',
+        ]);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $this->assertEquals(5, $discount->fresh()->digunakan);
+    }
+
+    /** Regression 6: global discount yang benar-benar diterapkan -> cancel mengurangi digunakan tepat 1x */
+    public function test_valid_applied_global_discount_decrements_digunakan_exactly_once()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Valid Discount',
+            'type' => 'fixed',
+            'kode_diskon' => 'VALIDDISC',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 3,
+        ]);
+
+        $order = $this->createTestOrder('diproses', $discount);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $this->assertEquals(2, $discount->fresh()->digunakan);
+    }
+
+    /** Regression 7: cancel kedua kali tidak mengurangi usage lagi */
+    public function test_repeat_cancel_does_not_decrement_usage_again()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Valid Discount 2',
+            'type' => 'fixed',
+            'kode_diskon' => 'VALIDDISC2',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 3,
+        ]);
+
+        $order = $this->createTestOrder('diproses', $discount);
+
+        $component = Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $this->assertEquals(2, $discount->fresh()->digunakan);
+
+        // Cancel again
+        $component->call('batalkanPesanan', $order->id);
+        $this->assertEquals(2, $discount->fresh()->digunakan);
+    }
+
+    /** Regression 8: digunakan tidak pernah menjadi negatif */
+    public function test_digunakan_never_becomes_negative()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Zero Discount',
+            'type' => 'fixed',
+            'kode_diskon' => 'ZERODISC',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 0,
+        ]);
+
+        $order = $this->createTestOrder('diproses', $discount);
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $this->assertEquals(0, $discount->fresh()->digunakan);
+    }
+
+    /** Regression 9: invalid/final-state transition tidak mengubah discount snapshot atau usage */
+    public function test_invalid_transition_does_not_alter_discount_snapshot_or_usage()
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'Final Test Disc',
+            'type' => 'fixed',
+            'kode_diskon' => 'FINALTEST',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 5,
+        ]);
+
+        $order = $this->createTestOrder('selesai', $discount);
+
+        Livewire::actingAs($this->user)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'dibatalkan')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus');
+
+        $order->refresh();
+        $this->assertEquals('selesai', $order->status);
+        $this->assertEquals($discount->id, $order->discount_id);
+        $this->assertEquals(5000, $order->discount_value);
+        $this->assertEquals(5, $discount->fresh()->digunakan);
     }
 }

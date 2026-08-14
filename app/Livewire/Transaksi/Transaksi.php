@@ -162,9 +162,7 @@ class Transaksi extends Component
                 }
 
                 if ($oldStatus === 'diproses' && $newStatus === 'dibatalkan') {
-                    if ($pesanan->discount_id && $pesanan->discount && $pesanan->discount->digunakan > 0) {
-                        $pesanan->discount->decrement('digunakan');
-                    }
+                    $pesanan->decrementDiscountUsageOnCancellation();
                 }
 
                 $pesanan->update([
@@ -179,6 +177,10 @@ class Transaksi extends Component
                     message: 'Transaksi berhasil diperbarui'
                 );
             });
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            throw $e;
+        } catch (\Illuminate\Auth\Access\AuthorizationException $e) {
+            throw $e;
         } catch (\Exception $e) {
             $this->dispatch('close-modal', name: 'edit-status-order');
             $this->dispatch(
