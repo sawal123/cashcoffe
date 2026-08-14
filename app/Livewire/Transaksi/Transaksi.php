@@ -123,58 +123,70 @@ class Transaksi extends Component
             'metode_pembayaran' => 'nullable',
         ]);
 
-        $pesanan = Pesanan::with('items')->findOrFail($this->selectedOrder->id);
+        try {
+            DB::transaction(function () {
+                $pesanan = Pesanan::where('id', $this->selectedOrder->id)
+                    ->lockForUpdate()
+                    ->with(['items', 'discount'])
+                    ->firstOrFail();
 
-        if (!auth()->user()->can('edit finished transaction') && $pesanan->status === 'selesai') {
-            abort(403, 'Anda tidak memiliki akses untuk mengubah transaksi yang sudah selesai.');
-        }
+                $oldStatus = $pesanan->status;
+                $newStatus = $this->status;
 
-        $oldStatus = $pesanan->status;
-        $newStatus = $this->status;
-
-        if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
-            $this->reduceStock($pesanan);
-
-            if ($pesanan->member_id) {
-                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                $earnedPoints = floor($totalAfterDiscount / 10000);
-                $member = \App\Models\Member::find($pesanan->member_id);
-                if ($member) {
-                    $member->increment('points', $earnedPoints);
-                    $member->increment('total_pengeluaran', $totalAfterDiscount);
+                if (!auth()->user()->can('edit finished transaction') && $oldStatus === 'selesai') {
+                    abort(403, 'Anda tidak memiliki akses untuk mengubah transaksi yang sudah selesai.');
                 }
-            }
-        }
 
-        if ($oldStatus === 'selesai' && in_array($newStatus, ['diproses', 'dibatalkan'])) {
-            $this->restoreStock($pesanan);
-
-            if ($pesanan->member_id) {
-                $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                $earnedPoints = floor($totalAfterDiscount / 10000);
-                $member = \App\Models\Member::find($pesanan->member_id);
-                if ($member) {
-                    $member->decrement('points', $earnedPoints);
-                    $member->decrement('total_pengeluaran', $totalAfterDiscount);
+                if ($oldStatus !== 'diproses' || !in_array($newStatus, ['selesai', 'dibatalkan'], true) || $oldStatus === $newStatus) {
+                    $this->dispatch('close-modal', name: 'edit-status-order');
+                    $this->dispatch(
+                        'showToast',
+                        type: 'error',
+                        message: "Transisi status dari '{$oldStatus}' ke '{$newStatus}' tidak valid."
+                    );
+                    return;
                 }
-            }
+
+                if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
+                    $this->reduceStock($pesanan);
+
+                    if ($pesanan->member_id) {
+                        $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
+                        $earnedPoints = floor($totalAfterDiscount / 10000);
+                        $member = \App\Models\Member::find($pesanan->member_id);
+                        if ($member) {
+                            $member->increment('points', $earnedPoints);
+                            $member->increment('total_pengeluaran', $totalAfterDiscount);
+                        }
+                    }
+                }
+
+                if ($oldStatus === 'diproses' && $newStatus === 'dibatalkan') {
+                    if ($pesanan->discount_id && $pesanan->discount && $pesanan->discount->digunakan > 0) {
+                        $pesanan->discount->decrement('digunakan');
+                    }
+                }
+
+                $pesanan->update([
+                    'status' => $newStatus,
+                    'payment_method_id' => $this->metode_pembayaran ?: null,
+                ]);
+
+                $this->dispatch('close-modal', name: 'edit-status-order');
+                $this->dispatch(
+                    'showToast',
+                    type: 'success',
+                    message: 'Transaksi berhasil diperbarui'
+                );
+            });
+        } catch (\Exception $e) {
+            $this->dispatch('close-modal', name: 'edit-status-order');
+            $this->dispatch(
+                'showToast',
+                type: 'error',
+                message: 'Gagal memperbarui status transaksi: ' . $e->getMessage()
+            );
         }
-
-        $pesanan->update([
-            'status' => $newStatus,
-            'payment_method_id' => $this->metode_pembayaran ?: null,
-        ]);
-
-        if ($pesanan->status === 'dibatalkan' && $pesanan->discount_id) {
-            $pesanan->discount->decrement('digunakan');
-        }
-
-        $this->dispatch('close-modal', name: 'edit-status-order');
-        $this->dispatch(
-            'showToast',
-            type: 'success',
-            message: 'Transaksi berhasil diperbarui'
-        );
     }
 
     private function reduceStock(Pesanan $pesanan)

@@ -10,6 +10,10 @@ class Pesanan extends Model
 {
     use SoftDeletes, BelongsToBranch;
 
+    public const STATUS_DIPROSES = 'diproses';
+    public const STATUS_SELESAI = 'selesai';
+    public const STATUS_DIBATALKAN = 'dibatalkan';
+
     protected $fillable = [
         'kode',
         'nama',
@@ -28,6 +32,25 @@ class Pesanan extends Model
         'uang_tunai',
         'kembalian'
     ];
+
+    public function canTransitionTo(string $targetStatus): bool
+    {
+        if ($this->status === self::STATUS_DIPROSES) {
+            return in_array($targetStatus, [self::STATUS_SELESAI, self::STATUS_DIBATALKAN], true);
+        }
+
+        return false;
+    }
+
+    public function isEditable(): bool
+    {
+        return $this->status === self::STATUS_DIPROSES;
+    }
+
+    public function isFinal(): bool
+    {
+        return in_array($this->status, [self::STATUS_SELESAI, self::STATUS_DIBATALKAN], true);
+    }
 
     public function items()
     {
