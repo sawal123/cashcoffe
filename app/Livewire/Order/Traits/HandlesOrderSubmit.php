@@ -361,13 +361,15 @@ trait HandlesOrderSubmit
                         (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
+                        // Normalize NULL -> 0 after row lock
+                        $discCurrentUsage = (int) ($disc->digunakan ?? 0);
+
                         // Existing order using same discount may bypass limit check:
                         // the slot is already "occupied" by this order's previous usage.
-                        $isSameExistingDiscount = ($disc->id === $oldDiscountId);
+                        $isSameExistingDiscount = ((int) $disc->id === $oldDiscountId);
                         $limitBlocking = !$isSameExistingDiscount
                             && !is_null($disc->limit)
-                            && !is_null($disc->digunakan)
-                            && $disc->digunakan >= $disc->limit;
+                            && $discCurrentUsage >= (int) $disc->limit;
 
                         if ($limitBlocking) {
                             // limit habis & bukan discount yang sama → tolak
@@ -383,7 +385,7 @@ trait HandlesOrderSubmit
                                 $discountAmount = $disc->nilai_diskon;
                             }
                             if ($discountAmount > 0) {
-                                $newDiscountId = $disc->id;
+                                $newDiscountId = (int) $disc->id;
                             }
                         }
                     }
@@ -391,13 +393,14 @@ trait HandlesOrderSubmit
 
                 // Discount usage accounting: diff old vs new
                 if ($oldDiscountId !== $newDiscountId) {
-                    // Old applied global discount no longer active
-                    if ($oldDiscountId !== null && $oldDiscountModel && $oldDiscountModel->digunakan > 0) {
-                        $oldDiscountModel->decrement('digunakan');
+                    // Old applied global discount no longer active — decrement using numeric value
+                    if ($oldDiscountId !== null && $oldDiscountModel) {
+                        $oldUsage = (int) ($oldDiscountModel->digunakan ?? 0);
+                        $oldDiscountModel->update(['digunakan' => max(0, $oldUsage - 1)]);
                     }
                     // New applied global discount (fresh increment) — only when genuinely new
                     if ($newDiscountId !== null && $newDiscountId !== $oldDiscountId) {
-                        $disc->increment('digunakan');
+                        $disc->update(['digunakan' => $discCurrentUsage + 1]);
                     }
                 }
                 // If same discount remains applied: no change to counter
@@ -567,7 +570,10 @@ trait HandlesOrderSubmit
                         (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
-                        if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+                        // Normalize NULL -> 0 after row lock
+                        $discCurrentUsage = (int) ($disc->digunakan ?? 0);
+
+                        if (! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit) {
                             // Limit habis
                         } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
                             // Tidak memenuhi minimal transaksi
@@ -581,7 +587,7 @@ trait HandlesOrderSubmit
                                 $discountAmount = $disc->nilai_diskon;
                             }
                             if ($discountAmount > 0) {
-                                $disc->increment('digunakan');
+                                $disc->update(['digunakan' => $discCurrentUsage + 1]);
                             }
                         }
                     }

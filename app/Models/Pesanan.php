@@ -61,8 +61,11 @@ class Pesanan extends Model
     {
         if ($this->discount_id) {
             $discount = Discount::where('id', $this->discount_id)->lockForUpdate()->first();
-            if ($discount && $discount->scope === 'global' && $this->discount_value > 0 && $discount->digunakan > 0) {
-                $discount->decrement('digunakan');
+            if ($discount && $discount->scope === 'global' && $this->discount_value > 0) {
+                $currentUsage = (int) ($discount->digunakan ?? 0);
+                if ($currentUsage > 0) {
+                    $discount->update(['digunakan' => $currentUsage - 1]);
+                }
             }
         }
     }

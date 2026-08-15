@@ -67,7 +67,7 @@ class DiscountUsageConcurrencyTest extends TestCase
         ];
     }
 
-    private function makeGlobalDiscount(string $kode, int $digunakan = 0, ?int $limit = null, ?int $minimumTransaksi = null): Discount
+    private function makeGlobalDiscount(string $kode, ?int $digunakan = 0, ?int $limit = null, ?int $minimumTransaksi = null): Discount
     {
         return Discount::create([
             'nama_diskon' => $kode,
@@ -282,24 +282,37 @@ class DiscountUsageConcurrencyTest extends TestCase
         $this->assertGreaterThanOrEqual(0, $discount->fresh()->digunakan);
     }
 
-    /** 12. failure setelah counter update: transaction rollback counter */
+    /** 12. failure setelah counter update: transaction rollback counter via production flow */
     public function test_failure_after_counter_update_rolls_back_transaction()
     {
         $discount = $this->makeGlobalDiscount('ROLLBACK-TEST', 0, 5);
+        $usageBefore = (int) ($discount->fresh()->digunakan ?? 0);
 
-        // We simulate a transaction failure during order processing
-        try {
-            DB::transaction(function () use ($discount) {
-                $disc = Discount::where('id', $discount->id)->lockForUpdate()->first();
-                $disc->increment('digunakan');
+        // Hook: force Pesanan::updating to throw AFTER discount counter is already updated
+        // (saveOrder does Pesanan::create then updates it — updating fires on the final update)
+        $hookFired = false;
+        \App\Models\Pesanan::updating(function (\App\Models\Pesanan $pesanan) use (&$hookFired) {
+            if (!$hookFired) {
+                $hookFired = true;
+                throw new \RuntimeException('Simulated order persistence failure after counter update');
+            }
+        });
 
-                throw new \RuntimeException('Simulated order persistence failure');
-            });
-        } catch (\RuntimeException $e) {
-            // Expected exception
-        }
+        // Call saveOrder via Livewire directly — Livewire catches the exception internally
+        Livewire::actingAs($this->user)->test(CreateOrder::class)
+            ->set('nama_costumer', 'Tester')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->buildCartPayload())
+            ->set('discountId', $discount->id)
+            ->set('discount_id', $discount->id)
+            ->call('saveOrder');
 
-        $this->assertEquals(0, $discount->fresh()->digunakan);
+        // Flush the listener so it does not affect subsequent tests
+        \App\Models\Pesanan::flushEventListeners();
+
+        // Counter must be rolled back to value before the request
+        $this->assertEquals($usageBefore, $discount->fresh()->digunakan);
     }
 
     /** 13. concurrent final-slot invariant: limit tidak boleh terlewati */
@@ -345,4 +358,97 @@ class DiscountUsageConcurrencyTest extends TestCase
         $this->assertEquals(0, $highDisc->fresh()->digunakan);
         $this->assertEquals(1, $lowDisc->fresh()->digunakan);
     }
+
+    // ============================================================
+    // NULL digunakan regression tests
+    // ============================================================
+
+    /** NULL-1: discount dengan digunakan=NULL, limit=1 → order pertama applied, digunakan=1 */
+    public function test_null_digunakan_treated_as_zero_first_order_applied()
+    {
+        $discount = $this->makeGlobalDiscount('NULL-FIRST', null, 1);
+        // Explicitly set digunakan to NULL (makeGlobalDiscount sets it to $digunakan=null here)
+        \Illuminate\Support\Facades\DB::table('discounts')->where('id', $discount->id)->update(['digunakan' => null]);
+        $this->assertNull($discount->fresh()->digunakan);
+
+        $order = $this->doSaveOrder($discount);
+
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+        $this->assertEquals($discount->id, $order->fresh()->discount_id);
+        $this->assertGreaterThan(0, $order->fresh()->discount_value);
+    }
+
+    /** NULL-2: discount dengan digunakan=NULL, limit=1 → order kedua tidak applied, digunakan tetap 1 */
+    public function test_null_digunakan_second_order_blocked_after_first_claims_slot()
+    {
+        $discount = $this->makeGlobalDiscount('NULL-SECOND', null, 1);
+        \Illuminate\Support\Facades\DB::table('discounts')->where('id', $discount->id)->update(['digunakan' => null]);
+
+        $order1 = $this->doSaveOrder($discount);
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+
+        $order2 = $this->doSaveOrder($discount);
+
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+        $this->assertNull($order2->fresh()->discount_id);
+        $this->assertEquals(0, $order2->fresh()->discount_value);
+    }
+
+    /** NULL-3: update order dengan same discount dan digunakan=NULL → tidak double increment */
+    public function test_null_digunakan_update_same_discount_no_double_increment()
+    {
+        $discount = $this->makeGlobalDiscount('NULL-UPDATE-SAME', 0, 5);
+        $order = $this->doSaveOrder($discount);
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+
+        // Simulate production discount that has digunakan=NULL (existing data race)
+        \Illuminate\Support\Facades\DB::table('discounts')->where('id', $discount->id)->update(['digunakan' => null]);
+
+        $this->doUpdateOrder($order, $discount);
+
+        // Same-discount path: counter must NOT be incremented again.
+        // With NULL -> 0 normalization, usage becomes 0+1=1 only for NEW discount; same slot is retained without re-increment.
+        // The invariant is: counter must not be > 1 (no double increment).
+        $finalUsage = (int) ($discount->fresh()->digunakan ?? 0);
+        $this->assertLessThanOrEqual(1, $finalUsage);
+        $this->assertGreaterThanOrEqual(0, $finalUsage);
+        $this->assertEquals($discount->id, $order->fresh()->discount_id);
+    }
+
+    /** NULL-4: cancellation saat digunakan=NULL → tidak error, digunakan tetap 0 */
+    public function test_null_digunakan_cancellation_does_not_produce_negative_or_error()
+    {
+        $discount = $this->makeGlobalDiscount('NULL-CANCEL', 0, 5);
+        $order = $this->doSaveOrder($discount);
+
+        // Set to NULL to simulate production data
+        \Illuminate\Support\Facades\DB::table('discounts')->where('id', $discount->id)->update(['digunakan' => null]);
+        $this->assertNull($discount->fresh()->digunakan);
+
+        Livewire::actingAs($this->user)->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id);
+
+        $finalUsage = $discount->fresh()->digunakan;
+        $this->assertEquals(0, $finalUsage);
+        $this->assertGreaterThanOrEqual(0, $finalUsage);
+    }
+
+    /** NULL-5: remove discount dengan digunakan=NULL → counter menjadi 0 (numeric) setelah operasi */
+    public function test_null_digunakan_remove_discount_counter_becomes_numeric()
+    {
+        $discount = $this->makeGlobalDiscount('NULL-REMOVE', 0, 5);
+        $order = $this->doSaveOrder($discount);
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+
+        // Set to NULL to simulate production data race or missing fill
+        \Illuminate\Support\Facades\DB::table('discounts')->where('id', $discount->id)->update(['digunakan' => null]);
+
+        $this->doUpdateOrder($order, null); // remove discount
+
+        $finalUsage = $discount->fresh()->digunakan;
+        $this->assertNotNull($finalUsage);
+        $this->assertEquals(0, $finalUsage);
+        $this->assertGreaterThanOrEqual(0, $finalUsage);
+    }
 }
+
