@@ -86,53 +86,7 @@ class TableOrder extends Component
                     }
                 }
 
-                $stockChanges = [];
-
-                foreach ($pesanan->items as $item) {
-                    $komposisi = MenuIngredients::where('menu_id', $item->menus_id)->get();
-                    foreach ($komposisi as $k) {
-                        if (!isset($stockChanges[$k->ingredient_id])) {
-                            $stockChanges[$k->ingredient_id] = 0;
-                        }
-                        $stockChanges[$k->ingredient_id] += ($k->qty * $item->qty);
-                    }
-
-                    $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
-                    if (!empty($selectedVariantIds)) {
-                        $variantOptions = VariantOption::with('ingredients')
-                            ->whereIn('id', $selectedVariantIds)
-                            ->get();
-
-                        foreach ($variantOptions as $variant) {
-                            foreach ($variant->ingredients as $vIngredient) {
-                                if (!isset($stockChanges[$vIngredient->id])) {
-                                    $stockChanges[$vIngredient->id] = 0;
-                                }
-                                $stockChanges[$vIngredient->id] += ($vIngredient->pivot->qty * $item->qty);
-                            }
-                        }
-                    }
-                }
-
-                foreach ($stockChanges as $ingredientId => $totalQty) {
-                    $ingredient = Ingredients::find($ingredientId);
-                    if (!$ingredient) continue;
-
-                    $before = $ingredient->stok;
-                    $after = $before - $totalQty;
-
-                    $ingredient->update(['stok' => $after]);
-
-                    RiwayatStock::create([
-                        'ingredient_id' => $ingredient->id,
-                        'kode'          => strtoupper('OUT-' . Str::random(6)),
-                        'qty'           => $totalQty,
-                        'qty_before'    => $before,
-                        'qty_after'     => $after,
-                        'tipe'          => 'out',
-                        'keterangan'    => 'Akumulasi resep: pesanan ' . $pesanan->kode,
-                    ]);
-                }
+                $pesanan->processInventoryDeduction();
 
                 $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
             });
