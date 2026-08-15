@@ -59,9 +59,27 @@ class Pesanan extends Model
 
     public function decrementDiscountUsageOnCancellation(): void
     {
-        if ($this->discount_id && $this->discount) {
-            if ($this->discount->scope === 'global' && $this->discount_value > 0 && $this->discount->digunakan > 0) {
-                $this->discount->decrement('digunakan');
+        if ($this->discount_id && $this->discount_value > 0) {
+            $discount = \App\Models\Discount::where('id', $this->discount_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($discount && $discount->scope === 'global') {
+                // NULL-safe reconciliation: treat NULL as actual order count
+                $currentUsage = $discount->digunakan;
+                if (is_null($currentUsage)) {
+                    $currentUsage = self::where('discount_id', $discount->id)
+                        ->where('discount_value', '>', 0)
+                        ->whereNotIn('status', [self::STATUS_DIBATALKAN])
+                        ->whereNull('deleted_at')
+                        ->count();
+                } else {
+                    $currentUsage = (int) $currentUsage;
+                }
+
+                // Always persist numeric value (never leave NULL, never go negative)
+                $newUsage = max(0, $currentUsage - 1);
+                $discount->update(['digunakan' => $newUsage]);
             }
         }
     }

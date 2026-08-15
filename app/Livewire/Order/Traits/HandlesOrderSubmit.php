@@ -285,11 +285,31 @@ trait HandlesOrderSubmit
 
                 $disc = null;
                 if ($this->discount_id) {
-                    $disc = Discount::with('discountItems')->find($this->discount_id);
-                    if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
+                    // Lock discount rows in deterministic order to prevent deadlock
+                    $discountIdsToLock = array_filter([
+                        $this->discount_id,
+                        $oldDiscountId,
+                    ]);
+                    sort($discountIdsToLock);
+                    $lockedDiscounts = Discount::with('discountItems')
+                        ->whereIn('id', $discountIdsToLock)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get()
+                        ->keyBy('id');
+
+                    $disc = $lockedDiscounts->get($this->discount_id);
+                    if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discount_id = null;
                     }
+                    // Re-fetch locked oldDiscountModel if available
+                    if ($oldDiscountId && $lockedDiscounts->has($oldDiscountId)) {
+                        $oldDiscountModel = $lockedDiscounts->get($oldDiscountId);
+                    }
+                } elseif ($oldDiscountId) {
+                    // No new discount, but old one needs to be locked for decrement
+                    $oldDiscountModel = Discount::where('id', $oldDiscountId)->lockForUpdate()->first();
                 }
 
                 foreach ($itemsToProcess as $item) {
@@ -344,18 +364,33 @@ trait HandlesOrderSubmit
 
                 // Determine new applied global discount
                 $newDiscountId = null;
+                $isSameExistingDiscount = false;
+                $discCurrentUsage = 0;
                 if ($disc && $disc->is_active && $disc->scope === 'global') {
                     if (
                         (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
+                        // --- NULL-safe reconciliation ---
+                        // If digunakan is NULL (legacy), count actual active orders using this discount
+                        // as a one-time lazy read to get the true current usage before limit check.
+                        $discCurrentUsage = $disc->digunakan;
+                        if (is_null($discCurrentUsage)) {
+                            $discCurrentUsage = \App\Models\Pesanan::where('discount_id', $disc->id)
+                                ->where('discount_value', '>', 0)
+                                ->whereNotIn('status', [\App\Models\Pesanan::STATUS_DIBATALKAN])
+                                ->whereNull('deleted_at')
+                                ->count();
+                        } else {
+                            $discCurrentUsage = (int) $discCurrentUsage;
+                        }
+
                         // Existing order using same discount may bypass limit check:
                         // the slot is already "occupied" by this order's previous usage.
-                        $isSameExistingDiscount = ($disc->id === $oldDiscountId);
+                        $isSameExistingDiscount = ((int) $disc->id === (int) $oldDiscountId);
                         $limitBlocking = !$isSameExistingDiscount
                             && !is_null($disc->limit)
-                            && !is_null($disc->digunakan)
-                            && $disc->digunakan >= $disc->limit;
+                            && $discCurrentUsage >= (int) $disc->limit;
 
                         if ($limitBlocking) {
                             // limit habis & bukan discount yang sama → tolak
@@ -371,24 +406,38 @@ trait HandlesOrderSubmit
                                 $discountAmount = $disc->nilai_diskon;
                             }
                             if ($discountAmount > 0) {
-                                $newDiscountId = $disc->id;
+                                $newDiscountId = (int) $disc->id;
                             }
                         }
                     }
                 }
 
                 // Discount usage accounting: diff old vs new
-                if ($oldDiscountId !== $newDiscountId) {
-                    // Old applied global discount no longer active
-                    if ($oldDiscountId !== null && $oldDiscountModel && $oldDiscountModel->digunakan > 0) {
-                        $oldDiscountModel->decrement('digunakan');
+                if ((int) $oldDiscountId !== (int) $newDiscountId) {
+                    // Old applied global discount no longer active — decrement using numeric value
+                    if ($oldDiscountId !== null && $oldDiscountModel) {
+                        $oldUsage = $oldDiscountModel->digunakan;
+                        if (is_null($oldUsage)) {
+                            $oldUsage = \App\Models\Pesanan::where('discount_id', $oldDiscountModel->id)
+                                ->where('discount_value', '>', 0)
+                                ->whereNotIn('status', [\App\Models\Pesanan::STATUS_DIBATALKAN])
+                                ->whereNull('deleted_at')
+                                ->count();
+                        } else {
+                            $oldUsage = (int) $oldUsage;
+                        }
+                        $oldDiscountModel->update(['digunakan' => max(0, $oldUsage - 1)]);
                     }
                     // New applied global discount (fresh increment) — only when genuinely new
-                    if ($newDiscountId !== null && $newDiscountId !== $oldDiscountId) {
-                        $disc->increment('digunakan');
+                    if ($newDiscountId !== null) {
+                        $disc->update(['digunakan' => $discCurrentUsage + 1]);
+                    }
+                } elseif ($isSameExistingDiscount && $newDiscountId !== null) {
+                    // Same discount retained: ensure counter is numeric (≥1) — normalize NULL legacy
+                    if (is_null($disc->digunakan) || $discCurrentUsage < 1) {
+                        $disc->update(['digunakan' => max(1, $discCurrentUsage)]);
                     }
                 }
-                // If same discount remains applied: no change to counter
 
                 // For global disc: only persist to order if it was actually applied
                 // For non-global (item) disc: $disc is the applied disc regardless
@@ -490,8 +539,12 @@ trait HandlesOrderSubmit
 
                 $disc = null;
                 if ($this->discountId) {
-                    $disc = Discount::with('discountItems')->find($this->discountId);
-                    if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
+                    // Lock discount row before limit check
+                    $disc = Discount::with('discountItems')
+                        ->where('id', $this->discountId)
+                        ->lockForUpdate()
+                        ->first();
+                    if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discountId = null;
                     }
@@ -552,7 +605,19 @@ trait HandlesOrderSubmit
                         (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
-                        if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+                        // --- NULL-safe reconciliation ---
+                        $discCurrentUsage = $disc->digunakan;
+                        if (is_null($discCurrentUsage)) {
+                            $discCurrentUsage = \App\Models\Pesanan::where('discount_id', $disc->id)
+                                ->where('discount_value', '>', 0)
+                                ->whereNotIn('status', [\App\Models\Pesanan::STATUS_DIBATALKAN])
+                                ->whereNull('deleted_at')
+                                ->count();
+                        } else {
+                            $discCurrentUsage = (int) $discCurrentUsage;
+                        }
+
+                        if (! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit) {
                             // Limit habis
                         } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
                             // Tidak memenuhi minimal transaksi
@@ -565,22 +630,31 @@ trait HandlesOrderSubmit
                             } elseif ($disc->jenis_diskon === 'nominal') {
                                 $discountAmount = $disc->nilai_diskon;
                             }
-                            $disc->increment('digunakan');
+                            if ($discountAmount > 0) {
+                                $disc->update(['digunakan' => $discCurrentUsage + 1]);
+                            }
                         }
                     }
+                }
+
+                // For global disc: only persist discount_id if it was actually applied
+                if ($disc && $disc->scope === 'global') {
+                    $appliedDiscountId = ($discountAmount > 0) ? $disc->id : null;
+                } else {
+                    $appliedDiscountId = $disc?->id;
                 }
 
                 $totalAfterDiscount = max(0, $total - $discountAmount);
 
                 $pesanan->update([
-                    'discount_id' => $disc?->id,
-                    'nama' => $this->nama_costumer,
+                    'discount_id'  => $appliedDiscountId,
+                    'nama'         => $this->nama_costumer,
                     'discount_value' => $discountAmount,
                     'sales_channel_id' => $salesChannelId,
-                    'total' => $total,
+                    'total'        => $total,
                     'total_profit' => $totalProfit,
-                    'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
-                    'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
+                    'uang_tunai'   => $this->isCash ? $this->uang_tunai : 0,
+                    'kembalian'    => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
                 ]);
 
                 return $pesanan;
