@@ -71,12 +71,20 @@ class FinanceReportConsistencyTest extends TestCase
             'created_at' => now(),
         ];
 
-        $pesanan = Pesanan::create(array_merge($default, $attributes));
+        $merged = array_merge($default, $attributes);
+        $qty = $attributes['qty'] ?? 1;
+        unset($merged['qty']);
+
+        $pesanan = new Pesanan();
+        foreach ($merged as $key => $val) {
+            $pesanan->{$key} = $val;
+        }
+        $pesanan->save();
 
         PesananItem::create([
             'pesanans_id' => $pesanan->id,
             'menus_id' => $this->menu->id,
-            'qty' => 1,
+            'qty' => $qty,
             'harga_satuan' => $pesanan->total,
             'subtotal' => $pesanan->total,
             'profit' => $pesanan->total_profit,
@@ -242,30 +250,130 @@ class FinanceReportConsistencyTest extends TestCase
 
     public function test_branch_isolation()
     {
-        $this->actingAs($this->userBranchA);
-        $this->createPesanan([
+        // 1. Fixture Branch A
+        $orderA = $this->createPesanan([
+            'branch_id' => $this->branchA->id,
             'total' => 100000,
+            'discount_value' => 10000,
+            'total_profit' => 40000,
+            'qty' => 2,
         ]);
-        
-        $this->actingAs($this->userBranchB);
-        $this->createPesanan([
+
+        $komplemenA = $this->createPesanan([
+            'branch_id' => $this->branchA->id,
+            'payment_method_id' => $this->paymentKomplemen->id,
+            'total' => 50000,
+            'discount_value' => 0,
+            'total_profit' => 20000,
+            'qty' => 1,
+        ]);
+
+        $pengeluaranA = Pengeluaran::create([
+            'user_id' => $this->userBranchA->id,
+            'branch_id' => $this->branchA->id,
+            'title' => 'Pengeluaran Branch A',
+            'jumlah' => 1,
+            'total' => 10000,
+            'tanggal_pengeluaran' => now()->toDateString(),
+        ]);
+
+        // 2. Fixture Branch B
+        $orderB = $this->createPesanan([
+            'branch_id' => $this->branchB->id,
             'total' => 200000,
+            'discount_value' => 20000,
+            'total_profit' => 80000,
+            'qty' => 3,
         ]);
 
+        $komplemenB = $this->createPesanan([
+            'branch_id' => $this->branchB->id,
+            'payment_method_id' => $this->paymentKomplemen->id,
+            'total' => 70000,
+            'discount_value' => 0,
+            'total_profit' => 30000,
+            'qty' => 1,
+        ]);
+
+        $pengeluaranB = Pengeluaran::create([
+            'user_id' => $this->userBranchB->id,
+            'branch_id' => $this->branchB->id,
+            'title' => 'Pengeluaran Branch B',
+            'jumlah' => 1,
+            'total' => 15000,
+            'tanggal_pengeluaran' => now()->toDateString(),
+        ]);
+
+        // Verifikasi fixture benar-benar tersimpan dengan branch_id masing-masing
+        $this->assertEquals($this->branchA->id, $orderA->branch_id);
+        $this->assertEquals($this->branchB->id, $orderB->branch_id);
+        $this->assertEquals($this->branchA->id, $komplemenA->branch_id);
+        $this->assertEquals($this->branchB->id, $komplemenB->branch_id);
+        $this->assertEquals($this->branchA->id, $pengeluaranA->branch_id);
+        $this->assertEquals($this->branchB->id, $pengeluaranB->branch_id);
+
+        // 3. Verifikasi Branch A
         $this->actingAs($this->userBranchA);
-        Livewire::test(\App\Livewire\Omset\TableOmset::class)
-            ->call('setDateRange', now()->toDateString(), now()->toDateString())
-            ->assertViewHas('totalOmset', 100000);
+        $compA = Livewire::test(\App\Livewire\Omset\TableOmset::class)
+            ->call('setDateRange', now()->toDateString(), now()->toDateString());
 
+        $compA->assertViewHas('totalOmset', 90000)
+            ->assertViewHas('totalProfit', 30000)
+            ->assertViewHas('totalKomplemen', 50000)
+            ->assertViewHas('totalPengeluaran', 10000)
+            ->assertViewHas('netProfit', 20000);
+
+        $rowA = $compA->get('dataOmset')->first();
+        $this->assertEquals(1, $rowA->jumlah_pesanan);
+        $this->assertEquals(2, $rowA->jumlah_menu);
+        $this->assertEquals(50000, $rowA->total_komplemen);
+        $this->assertEquals(1, $rowA->jumlah_komplemen);
+        $this->assertEquals(90000, $rowA->total_omset);
+        $this->assertEquals(30000, $rowA->total_profit);
+        $this->assertEquals(10000, $rowA->total_pengeluaran);
+        $this->assertEquals(20000, $rowA->net_profit);
+
+        // 4. Verifikasi Branch B
         $this->actingAs($this->userBranchB);
-        Livewire::test(\App\Livewire\Omset\TableOmset::class)
-            ->call('setDateRange', now()->toDateString(), now()->toDateString())
-            ->assertViewHas('totalOmset', 200000);
+        $compB = Livewire::test(\App\Livewire\Omset\TableOmset::class)
+            ->call('setDateRange', now()->toDateString(), now()->toDateString());
 
+        $compB->assertViewHas('totalOmset', 180000)
+            ->assertViewHas('totalProfit', 60000)
+            ->assertViewHas('totalKomplemen', 70000)
+            ->assertViewHas('totalPengeluaran', 15000)
+            ->assertViewHas('netProfit', 45000);
+
+        $rowB = $compB->get('dataOmset')->first();
+        $this->assertEquals(1, $rowB->jumlah_pesanan);
+        $this->assertEquals(3, $rowB->jumlah_menu);
+        $this->assertEquals(70000, $rowB->total_komplemen);
+        $this->assertEquals(1, $rowB->jumlah_komplemen);
+        $this->assertEquals(180000, $rowB->total_omset);
+        $this->assertEquals(60000, $rowB->total_profit);
+        $this->assertEquals(15000, $rowB->total_pengeluaran);
+        $this->assertEquals(45000, $rowB->net_profit);
+
+        // 5. Verifikasi Superadmin (melihat seluruh agregasi Branch A + Branch B)
         $this->actingAs($this->superadmin);
-        Livewire::test(\App\Livewire\Omset\TableOmset::class)
-            ->call('setDateRange', now()->toDateString(), now()->toDateString())
-            ->assertViewHas('totalOmset', 300000);
+        $compSuper = Livewire::test(\App\Livewire\Omset\TableOmset::class)
+            ->call('setDateRange', now()->toDateString(), now()->toDateString());
+
+        $compSuper->assertViewHas('totalOmset', 90000 + 180000)
+            ->assertViewHas('totalProfit', 30000 + 60000)
+            ->assertViewHas('totalKomplemen', 50000 + 70000)
+            ->assertViewHas('totalPengeluaran', 10000 + 15000)
+            ->assertViewHas('netProfit', (30000 + 60000) - (10000 + 15000));
+
+        $rowSuper = $compSuper->get('dataOmset')->first();
+        $this->assertEquals(2, $rowSuper->jumlah_pesanan);
+        $this->assertEquals(5, $rowSuper->jumlah_menu);
+        $this->assertEquals(120000, $rowSuper->total_komplemen);
+        $this->assertEquals(2, $rowSuper->jumlah_komplemen);
+        $this->assertEquals(270000, $rowSuper->total_omset);
+        $this->assertEquals(90000, $rowSuper->total_profit);
+        $this->assertEquals(25000, $rowSuper->total_pengeluaran);
+        $this->assertEquals(65000, $rowSuper->net_profit);
     }
 
     public function test_omzet_tidak_boleh_negatif()
