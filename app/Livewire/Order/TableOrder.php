@@ -72,11 +72,11 @@ class TableOrder extends Component
                     return;
                 }
 
+                $pesanan->processInventoryDeduction();
+                $pesanan->applyMemberLoyaltyOnCompletion();
+
                 $pesanan->status = 'selesai';
                 $pesanan->save();
-
-                $pesanan->applyMemberLoyaltyOnCompletion();
-                $pesanan->processInventoryDeduction();
 
                 $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');
             });

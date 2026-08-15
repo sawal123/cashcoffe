@@ -92,15 +92,21 @@ class Pesanan extends Model
                 ->first();
 
             if ($member) {
-                $finalSpending = max(0, $this->total - $this->discount_value);
-                $earnedPoints = (int) floor($finalSpending / 10000);
+                $totalCents = (int) round(((float) $this->total) * 100);
+                $discCents  = (int) round(((float) $this->discount_value) * 100);
+                $finalCents = max(0, $totalCents - $discCents);
+
+                $earnedPoints = intdiv($finalCents, 1000000);
 
                 $currentPoints = (int) ($member->points ?? 0);
-                $currentSpending = (float) ($member->total_pengeluaran ?? 0);
+                $currentCents  = (int) round(((float) ($member->total_pengeluaran ?? 0)) * 100);
+
+                $newTotalCents = $currentCents + $finalCents;
+                $newTotalFormatted = number_format($newTotalCents / 100, 2, '.', '');
 
                 $member->update([
-                    'points' => $currentPoints + $earnedPoints,
-                    'total_pengeluaran' => $currentSpending + $finalSpending,
+                    'points'            => $currentPoints + $earnedPoints,
+                    'total_pengeluaran' => $newTotalFormatted,
                 ]);
             }
         }

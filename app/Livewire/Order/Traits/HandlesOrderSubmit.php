@@ -738,9 +738,9 @@ trait HandlesOrderSubmit
                 return null;
             }
 
-            $pesanan->update(['status' => 'selesai']);
-            $pesanan->applyMemberLoyaltyOnCompletion();
             $pesanan->processInventoryDeduction();
+            $pesanan->applyMemberLoyaltyOnCompletion();
+            $pesanan->update(['status' => 'selesai']);
 
             DB::commit();
 

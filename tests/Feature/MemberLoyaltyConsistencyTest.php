@@ -383,22 +383,37 @@ class MemberLoyaltyConsistencyTest extends TestCase
     }
 
     // ============================================================
-    // Decimal boundary regression tests
+    // Decimal boundary regression tests (exact integer cents precision)
     // ============================================================
 
-    /** Decimal-1: total = 10000.50, discount_value = 0.75 -> final spending = 9999.75, earned points = 0, total_pengeluaran = 9999.75 */
-    public function test_decimal_boundary_spending_just_below_10000_gives_zero_points()
+    /** Decimal-1: total = 10000.00, discount = 0.01 -> final = 9999.99, points = 0, total_pengeluaran = 9999.99 */
+    public function test_decimal_boundary_10000_minus_one_cent_gives_zero_points()
     {
-        $order = $this->createOrder(10000.50, 0.75);
+        $order = $this->createOrder(10000.00, 0.01);
 
         $order->applyMemberLoyaltyOnCompletion();
 
+        $dbTotal = DB::table('members')->where('id', $this->member->id)->value('total_pengeluaran');
+
         $this->assertEquals(0, $this->member->fresh()->points);
-        $this->assertEquals(9999.75, (float) $this->member->fresh()->total_pengeluaran);
+        $this->assertEquals('9999.99', number_format((float) $dbTotal, 2, '.', ''));
     }
 
-    /** Decimal-2: awal points=5, total_pengeluaran=50000.75, order total=10000.25 -> points=6, total_pengeluaran=60001.00 */
-    public function test_decimal_boundary_spending_accumulates_precision()
+    /** Decimal-2: total = 10000.10, discount = 0.10 -> final = 10000.00, points = 1 */
+    public function test_decimal_boundary_10000_10_minus_10_cents_gives_one_point()
+    {
+        $order = $this->createOrder(10000.10, 0.10);
+
+        $order->applyMemberLoyaltyOnCompletion();
+
+        $dbTotal = DB::table('members')->where('id', $this->member->id)->value('total_pengeluaran');
+
+        $this->assertEquals(1, $this->member->fresh()->points);
+        $this->assertEquals('10000.00', number_format((float) $dbTotal, 2, '.', ''));
+    }
+
+    /** Decimal-3: awal points=5, total_pengeluaran=50000.75, order total=10000.25 -> points=6, total_pengeluaran=60001.00 */
+    public function test_decimal_boundary_spending_accumulates_exact_db_precision()
     {
         $this->member->update([
             'points'            => 5,
@@ -409,18 +424,22 @@ class MemberLoyaltyConsistencyTest extends TestCase
 
         $order->applyMemberLoyaltyOnCompletion();
 
+        $dbTotal = DB::table('members')->where('id', $this->member->id)->value('total_pengeluaran');
+
         $this->assertEquals(6, $this->member->fresh()->points);
-        $this->assertEquals(60001.00, (float) $this->member->fresh()->total_pengeluaran);
+        $this->assertEquals('60001.00', number_format((float) $dbTotal, 2, '.', ''));
     }
 
-    /** Decimal-3: total = 20000.75, discount_value = 1.00 -> final = 19999.75 -> earned points = 1 (bukan 2) */
+    /** Decimal-4: total = 20000.75, discount_value = 1.00 -> final = 19999.75 -> earned points = 1 (bukan 2) */
     public function test_decimal_boundary_spending_just_below_20000_gives_one_point()
     {
         $order = $this->createOrder(20000.75, 1.00);
 
         $order->applyMemberLoyaltyOnCompletion();
 
+        $dbTotal = DB::table('members')->where('id', $this->member->id)->value('total_pengeluaran');
+
         $this->assertEquals(1, $this->member->fresh()->points);
-        $this->assertEquals(19999.75, (float) $this->member->fresh()->total_pengeluaran);
+        $this->assertEquals('19999.75', number_format((float) $dbTotal, 2, '.', ''));
     }
 }
