@@ -75,17 +75,7 @@ class TableOrder extends Component
                 $pesanan->status = 'selesai';
                 $pesanan->save();
 
-                if ($pesanan->member_id) {
-                    $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                    $earnedPoints = floor($totalAfterDiscount / 10000);
-
-                    $member = \App\Models\Member::find($pesanan->member_id);
-                    if ($member) {
-                        $member->increment('points', $earnedPoints);
-                        $member->increment('total_pengeluaran', $totalAfterDiscount);
-                    }
-                }
-
+                $pesanan->applyMemberLoyaltyOnCompletion();
                 $pesanan->processInventoryDeduction();
 
                 $this->dispatch('showToast', message: 'Pesanan Disajikan', type: 'success', title: 'Success');

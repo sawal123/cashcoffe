@@ -149,16 +149,7 @@ class Transaksi extends Component
 
                 if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
                     $pesanan->processInventoryDeduction();
-
-                    if ($pesanan->member_id) {
-                        $totalAfterDiscount = max(0, $pesanan->total - $pesanan->discount_value);
-                        $earnedPoints = floor($totalAfterDiscount / 10000);
-                        $member = \App\Models\Member::find($pesanan->member_id);
-                        if ($member) {
-                            $member->increment('points', $earnedPoints);
-                            $member->increment('total_pengeluaran', $totalAfterDiscount);
-                        }
-                    }
+                    $pesanan->applyMemberLoyaltyOnCompletion();
                 }
 
                 if ($oldStatus === 'diproses' && $newStatus === 'dibatalkan') {
