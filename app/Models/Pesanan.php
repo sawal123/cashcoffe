@@ -59,9 +59,10 @@ class Pesanan extends Model
 
     public function decrementDiscountUsageOnCancellation(): void
     {
-        if ($this->discount_id && $this->discount) {
-            if ($this->discount->scope === 'global' && $this->discount_value > 0 && $this->discount->digunakan > 0) {
-                $this->discount->decrement('digunakan');
+        if ($this->discount_id) {
+            $discount = Discount::where('id', $this->discount_id)->lockForUpdate()->first();
+            if ($discount && $discount->scope === 'global' && $this->discount_value > 0 && $discount->digunakan > 0) {
+                $discount->decrement('digunakan');
             }
         }
     }

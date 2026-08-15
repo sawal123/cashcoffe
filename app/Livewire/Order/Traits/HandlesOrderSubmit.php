@@ -246,10 +246,8 @@ trait HandlesOrderSubmit
 
                 // Capture old applied global discount before any changes
                 $oldDiscountId = null;
-                $oldDiscountModel = null;
                 if ($pesanan->discount_id && $pesanan->discount && $pesanan->discount->scope === 'global' && $pesanan->discount_value > 0) {
-                    $oldDiscountId = $pesanan->discount_id;
-                    $oldDiscountModel = $pesanan->discount;
+                    $oldDiscountId = (int) $pesanan->discount_id;
                 }
 
                 // 1. Verify Payment Method
@@ -283,13 +281,27 @@ trait HandlesOrderSubmit
                 $discountAmount = 0;
                 $memberId = $this->memberIdFromPhone($this->member);
 
-                $disc = null;
-                if ($this->discount_id) {
-                    $disc = Discount::with('discountItems')->find($this->discount_id);
-                    if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
-                        $disc = null;
-                        $this->discount_id = null;
-                    }
+                // Deterministic locking order (ascending by ID) for all involved discounts
+                $requestedDiscountId = $this->discount_id ? (int) $this->discount_id : null;
+                $discountIdsToLock = array_values(array_filter(array_unique(array_filter([$oldDiscountId, $requestedDiscountId]))));
+
+                $lockedDiscounts = collect();
+                if (!empty($discountIdsToLock)) {
+                    sort($discountIdsToLock);
+                    $lockedDiscounts = Discount::with('discountItems')
+                        ->whereIn('id', $discountIdsToLock)
+                        ->orderBy('id')
+                        ->lockForUpdate()
+                        ->get()
+                        ->keyBy('id');
+                }
+
+                $oldDiscountModel = $oldDiscountId ? $lockedDiscounts->get($oldDiscountId) : null;
+                $disc = $requestedDiscountId ? $lockedDiscounts->get($requestedDiscountId) : null;
+
+                if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
+                    $disc = null;
+                    $this->discount_id = null;
                 }
 
                 foreach ($itemsToProcess as $item) {
@@ -490,7 +502,10 @@ trait HandlesOrderSubmit
 
                 $disc = null;
                 if ($this->discountId) {
-                    $disc = Discount::with('discountItems')->find($this->discountId);
+                    $disc = Discount::with('discountItems')
+                        ->where('id', $this->discountId)
+                        ->lockForUpdate()
+                        ->first();
                     if ($disc && ! $disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discountId = null;
@@ -565,15 +580,25 @@ trait HandlesOrderSubmit
                             } elseif ($disc->jenis_diskon === 'nominal') {
                                 $discountAmount = $disc->nilai_diskon;
                             }
-                            $disc->increment('digunakan');
+                            if ($discountAmount > 0) {
+                                $disc->increment('digunakan');
+                            }
                         }
                     }
+                }
+
+                // For global disc: only persist to order if it was actually applied
+                // For non-global (item) disc: $disc is the applied disc regardless
+                if ($disc && $disc->scope === 'global') {
+                    $appliedDiscountId = ($discountAmount > 0) ? $disc->id : null;
+                } else {
+                    $appliedDiscountId = $disc?->id;
                 }
 
                 $totalAfterDiscount = max(0, $total - $discountAmount);
 
                 $pesanan->update([
-                    'discount_id' => $disc?->id,
+                    'discount_id' => $appliedDiscountId,
                     'nama' => $this->nama_costumer,
                     'discount_value' => $discountAmount,
                     'sales_channel_id' => $salesChannelId,
