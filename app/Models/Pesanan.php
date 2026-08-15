@@ -105,9 +105,9 @@ class Pesanan extends Model
 
         // 2. Lock Row sesuai ID berurutan (cegah deadlock)
         $ingredientIds = array_keys($stockChanges);
-        sort($ingredientIds);
 
         $lockedIngredients = Ingredients::whereIn('id', $ingredientIds)
+            ->orderBy('id')
             ->lockForUpdate()
             ->get()
             ->keyBy('id');
@@ -116,8 +116,8 @@ class Pesanan extends Model
         foreach ($stockChanges as $ingredientId => $neededQty) {
             $ingredient = $lockedIngredients->get($ingredientId);
             if (!$ingredient) {
-                // Fail-safe: abaikan jika bahan direferensikan tetapi tidak ditemukan di db
-                continue;
+                // Fail-safe: throw exception untuk trigger rollback
+                throw new \Exception("Bahan baku dengan ID {$ingredientId} tidak ditemukan.");
             }
 
             if ($ingredient->stok < $neededQty) {

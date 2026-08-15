@@ -337,11 +337,48 @@ class InventoryConsistencyTest extends TestCase
         
         $this->assertEquals(90, $this->ingredientDasar->fresh()->stok);
 
-        // 3. Path HandlesOrderSubmit (mocked via dummy class utilizing trait if needed, 
-        // but testing processInventoryDeduction directly since the trait just wraps it)
+        // 3. Path CreateOrder::completeLastOrder()
         Ingredients::where('id', $this->ingredientDasar->id)->update(['stok' => 100]);
         $order3 = $this->createTestOrder(1);
-        $order3->processInventoryDeduction();
+        Livewire::actingAs($this->user)->test(\App\Livewire\Order\CreateOrder::class)
+            ->set('lastPesananId', $order3->id)
+            ->call('completeLastOrder');
+        
         $this->assertEquals(90, $this->ingredientDasar->fresh()->stok);
+    }
+
+    public function test_missing_ingredient_rollback_dan_tidak_mengubah_point_pengeluaran()
+    {
+        $order = $this->createTestOrder(1, false); // Hanya butuh ingredientDasar
+
+        $this->ingredientDasar->update(['stok' => 100]);
+        
+        // Simulasikan missing ingredient dengan soft delete ingredientDasar.
+        // Karena ingredientDasar diambil via MenuIngredients yang tidak mengecek soft delete,
+        // stockChanges akan berisi ID ingredientDasar, namun query Ingredients::whereIn() akan mengabaikannya,
+        // sehingga memicu exception "Bahan baku dengan ID {id} tidak ditemukan."
+        $this->ingredientDasar->delete();
+
+        $startPoints = $this->member->points;
+        $startPengeluaran = $this->member->total_pengeluaran;
+
+        Livewire::actingAs($this->user)->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'selesai')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus');
+
+        // Completion gagal
+        $this->assertEquals('diproses', $order->fresh()->status);
+
+        // Stok Ingredient A tidak berubah (rollback)
+        $this->assertEquals(100, $this->ingredientDasar->fresh()->stok);
+
+        // Tidak ada RiwayatStock baru
+        $this->assertEquals(0, RiwayatStock::count());
+
+        // Member points tidak berubah
+        $this->assertEquals($startPoints, $this->member->fresh()->points);
+        $this->assertEquals($startPengeluaran, $this->member->fresh()->total_pengeluaran);
     }
 }
