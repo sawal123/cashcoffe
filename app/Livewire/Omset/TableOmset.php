@@ -72,8 +72,8 @@ class TableOmset extends Component
             ->select(
                 DB::raw('DATE(pesanans.created_at) as tanggal'),
                 DB::raw('COUNT(pesanans.id) as jumlah_pesanan'),
-                DB::raw('SUM(pesanans.total) as total_omset'),
-                DB::raw('SUM(pesanans.total_profit) as total_profit')
+                DB::raw('SUM(CASE WHEN pesanans.total - COALESCE(pesanans.discount_value, 0) < 0 THEN 0 ELSE pesanans.total - COALESCE(pesanans.discount_value, 0) END) as total_omset'),
+                DB::raw('SUM(pesanans.total_profit - COALESCE(pesanans.discount_value, 0)) as total_profit')
             )
             ->whereNull('pesanans.deleted_at')
             ->where('pesanans.status', 'selesai')
@@ -94,8 +94,8 @@ class TableOmset extends Component
             ->select(
                 DB::raw('DATE(pesanans.created_at) as tanggal'),
                 DB::raw('COUNT(pesanans.id) as jumlah_komplemen'),
-                DB::raw('SUM(pesanans.total) as total_komplemen'),
-                DB::raw('SUM(pesanans.total_profit) as total_profit_komplemen')
+                DB::raw('SUM(CASE WHEN pesanans.total - COALESCE(pesanans.discount_value, 0) < 0 THEN 0 ELSE pesanans.total - COALESCE(pesanans.discount_value, 0) END) as total_komplemen'),
+                DB::raw('SUM(pesanans.total_profit - COALESCE(pesanans.discount_value, 0)) as total_profit_komplemen')
             )
             ->whereNull('pesanans.deleted_at')
             ->where('pesanans.status', 'selesai')
@@ -110,12 +110,17 @@ class TableOmset extends Component
 
         $this->dataQty = DB::table('pesanan_items')
             ->join('pesanans', 'pesanans.id', '=', 'pesanan_items.pesanans_id')
+            ->leftJoin('payment_methods', 'pesanans.payment_method_id', '=', 'payment_methods.id')
             ->select(
                 DB::raw('DATE(pesanans.created_at) as tanggal'),
                 DB::raw('SUM(pesanan_items.qty) as jumlah_menu')
             )
             ->whereNull('pesanans.deleted_at')
             ->where('pesanans.status', 'selesai')
+            ->where(function ($q) {
+                $q->where('payment_methods.kode_metode', '!=', 'komplemen')
+                    ->orWhereNull('pesanans.payment_method_id');
+            })
             ->tap(fn ($q) => $this->applyDateRange($q, 'pesanans.created_at'))
             ->when($branchId, function ($q) use ($branchId) {
                 $q->where('pesanans.branch_id', $branchId);
