@@ -94,8 +94,8 @@ class TableOmset extends Component
             ->select(
                 DB::raw('DATE(pesanans.created_at) as tanggal'),
                 DB::raw('COUNT(pesanans.id) as jumlah_komplemen'),
-                DB::raw('SUM(CASE WHEN pesanans.total - COALESCE(pesanans.discount_value, 0) < 0 THEN 0 ELSE pesanans.total - COALESCE(pesanans.discount_value, 0) END) as total_komplemen'),
-                DB::raw('SUM(pesanans.total_profit - COALESCE(pesanans.discount_value, 0)) as total_profit_komplemen')
+                DB::raw('SUM(pesanans.total) as total_komplemen'),
+                DB::raw('SUM(pesanans.total_profit) as total_profit_komplemen')
             )
             ->whereNull('pesanans.deleted_at')
             ->where('pesanans.status', 'selesai')

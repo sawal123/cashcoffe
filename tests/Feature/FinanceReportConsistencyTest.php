@@ -9,6 +9,7 @@ use App\Models\Pesanan;
 use App\Models\PesananItem;
 use App\Models\User;
 use Carbon\Carbon;
+use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -29,6 +30,8 @@ class FinanceReportConsistencyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->seed(RbacSeeder::class);
 
         $this->branchA = Branch::create(['kode_cabang' => 'BR-A', 'nama_cabang' => 'Branch A']);
         $this->branchB = Branch::create(['kode_cabang' => 'BR-B', 'nama_cabang' => 'Branch B']);
@@ -292,5 +295,48 @@ class FinanceReportConsistencyTest extends TestCase
         Livewire::test(\App\Livewire\Omset\TableOmset::class)
             ->call('setDateRange', now()->toDateString(), now()->toDateString())
             ->assertViewHas('totalProfit', -10000);
+    }
+
+    public function test_komplemen_dengan_discount_tetap_hitung_komplemen_penuh_dan_tidak_masuk_penjualan()
+    {
+        $this->actingAs($this->userBranchA);
+
+        $this->createPesanan([
+            'payment_method_id' => $this->paymentKomplemen->id,
+            'total' => 100000,
+            'discount_value' => 10000,
+            'total_profit' => 40000,
+        ]);
+
+        $component = Livewire::test(\App\Livewire\Omset\TableOmset::class)
+            ->call('setDateRange', now()->toDateString(), now()->toDateString());
+
+        $dataOmset = $component->get('dataOmset');
+
+        $component->assertViewHas('totalOmset', 0);
+        $component->assertViewHas('totalProfit', 0);
+        $component->assertViewHas('totalKomplemen', 100000);
+
+        $first = $dataOmset->first();
+        $this->assertEquals(0, $first->jumlah_pesanan);
+        $this->assertEquals(0, $first->jumlah_menu);
+        $this->assertEquals(1, $first->jumlah_komplemen);
+        $this->assertEquals(100000, $first->total_komplemen);
+    }
+
+    public function test_item_level_discount_tercermin_pada_snapshot_total_dan_tidak_dipotong_ganda()
+    {
+        $this->actingAs($this->userBranchA);
+
+        $this->createPesanan([
+            'total' => 80000,
+            'total_profit' => 25000,
+            'discount_value' => 0,
+        ]);
+
+        Livewire::test(\App\Livewire\Omset\TableOmset::class)
+            ->call('setDateRange', now()->toDateString(), now()->toDateString())
+            ->assertViewHas('totalOmset', 80000)
+            ->assertViewHas('totalProfit', 25000);
     }
 }
