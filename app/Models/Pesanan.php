@@ -92,11 +92,11 @@ class Pesanan extends Model
                 ->first();
 
             if ($member) {
-                $finalSpending = max(0, (int) $this->total - (int) $this->discount_value);
+                $finalSpending = max(0, $this->total - $this->discount_value);
                 $earnedPoints = (int) floor($finalSpending / 10000);
 
                 $currentPoints = (int) ($member->points ?? 0);
-                $currentSpending = (int) ($member->total_pengeluaran ?? 0);
+                $currentSpending = (float) ($member->total_pengeluaran ?? 0);
 
                 $member->update([
                     'points' => $currentPoints + $earnedPoints,

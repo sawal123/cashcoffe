@@ -80,7 +80,7 @@ class MemberLoyaltyConsistencyTest extends TestCase
         ]);
     }
 
-    private function createOrder(int $total = 20000, int $discountValue = 0, ?int $memberId = null, string $status = 'diproses'): Pesanan
+    private function createOrder(float $total = 20000, float $discountValue = 0, ?int $memberId = null, string $status = 'diproses'): Pesanan
     {
         $pesanan = Pesanan::create([
             'kode'              => 'ORD-' . uniqid(),
@@ -380,5 +380,47 @@ class MemberLoyaltyConsistencyTest extends TestCase
         $order->applyMemberLoyaltyOnCompletion();
 
         $this->assertEquals('diproses', $order->status);
+    }
+
+    // ============================================================
+    // Decimal boundary regression tests
+    // ============================================================
+
+    /** Decimal-1: total = 10000.50, discount_value = 0.75 -> final spending = 9999.75, earned points = 0, total_pengeluaran = 9999.75 */
+    public function test_decimal_boundary_spending_just_below_10000_gives_zero_points()
+    {
+        $order = $this->createOrder(10000.50, 0.75);
+
+        $order->applyMemberLoyaltyOnCompletion();
+
+        $this->assertEquals(0, $this->member->fresh()->points);
+        $this->assertEquals(9999.75, (float) $this->member->fresh()->total_pengeluaran);
+    }
+
+    /** Decimal-2: awal points=5, total_pengeluaran=50000.75, order total=10000.25 -> points=6, total_pengeluaran=60001.00 */
+    public function test_decimal_boundary_spending_accumulates_precision()
+    {
+        $this->member->update([
+            'points'            => 5,
+            'total_pengeluaran' => 50000.75,
+        ]);
+
+        $order = $this->createOrder(10000.25, 0);
+
+        $order->applyMemberLoyaltyOnCompletion();
+
+        $this->assertEquals(6, $this->member->fresh()->points);
+        $this->assertEquals(60001.00, (float) $this->member->fresh()->total_pengeluaran);
+    }
+
+    /** Decimal-3: total = 20000.75, discount_value = 1.00 -> final = 19999.75 -> earned points = 1 (bukan 2) */
+    public function test_decimal_boundary_spending_just_below_20000_gives_one_point()
+    {
+        $order = $this->createOrder(20000.75, 1.00);
+
+        $order->applyMemberLoyaltyOnCompletion();
+
+        $this->assertEquals(1, $this->member->fresh()->points);
+        $this->assertEquals(19999.75, (float) $this->member->fresh()->total_pengeluaran);
     }
 }
