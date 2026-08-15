@@ -381,4 +381,34 @@ class InventoryConsistencyTest extends TestCase
         $this->assertEquals($startPoints, $this->member->fresh()->points);
         $this->assertEquals($startPengeluaran, $this->member->fresh()->total_pengeluaran);
     }
+
+    public function test_missing_ingredient_variant_rollback_dan_tidak_mengubah_point_pengeluaran()
+    {
+        $order = $this->createTestOrder(1, true); // Membutuhkan ingredientDasar & ingredientVarian
+
+        $this->ingredientDasar->update(['stok' => 100]);
+        
+        $this->ingredientVarian->delete();
+        
+        $pivotExists = \Illuminate\Support\Facades\DB::table('variant_option_ingredients')
+            ->where('variant_option_id', $this->variantOption->id)
+            ->where('ingredient_id', $this->ingredientVarian->id)
+            ->exists();
+        $this->assertTrue($pivotExists, 'Pivot reference should still exist after soft-delete');
+
+        $startPoints = $this->member->points;
+        $startPengeluaran = $this->member->total_pengeluaran;
+
+        Livewire::actingAs($this->user)->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'selesai')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus');
+
+        $this->assertEquals('diproses', $order->fresh()->status);
+        $this->assertEquals(100, $this->ingredientDasar->fresh()->stok);
+        $this->assertEquals(0, RiwayatStock::count());
+        $this->assertEquals($startPoints, $this->member->fresh()->points);
+        $this->assertEquals($startPengeluaran, $this->member->fresh()->total_pengeluaran);
+    }
 }

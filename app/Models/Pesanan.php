@@ -84,17 +84,15 @@ class Pesanan extends Model
             // Resep varian
             $selectedVariantIds = $item->variants()->pluck('variant_options.id')->toArray();
             if (!empty($selectedVariantIds)) {
-                $variantOptions = VariantOption::with('ingredients')
-                    ->whereIn('id', $selectedVariantIds)
+                $variantPivot = \Illuminate\Support\Facades\DB::table('variant_option_ingredients')
+                    ->whereIn('variant_option_id', $selectedVariantIds)
                     ->get();
 
-                foreach ($variantOptions as $variant) {
-                    foreach ($variant->ingredients as $vIngredient) {
-                        if (!isset($stockChanges[$vIngredient->id])) {
-                            $stockChanges[$vIngredient->id] = 0;
-                        }
-                        $stockChanges[$vIngredient->id] += ($vIngredient->pivot->qty * $item->qty);
+                foreach ($variantPivot as $pivot) {
+                    if (!isset($stockChanges[$pivot->ingredient_id])) {
+                        $stockChanges[$pivot->ingredient_id] = 0;
                     }
+                    $stockChanges[$pivot->ingredient_id] += ($pivot->qty * $item->qty);
                 }
             }
         }
