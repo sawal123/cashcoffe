@@ -84,6 +84,34 @@ class Pesanan extends Model
         }
     }
 
+    public function applyMemberLoyaltyOnCompletion(): void
+    {
+        if ($this->member_id) {
+            $member = \App\Models\Member::where('id', $this->member_id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($member) {
+                $totalCents = (int) round(((float) $this->total) * 100);
+                $discCents  = (int) round(((float) $this->discount_value) * 100);
+                $finalCents = max(0, $totalCents - $discCents);
+
+                $earnedPoints = intdiv($finalCents, 1000000);
+
+                $currentPoints = (int) ($member->points ?? 0);
+                $currentCents  = (int) round(((float) ($member->total_pengeluaran ?? 0)) * 100);
+
+                $newTotalCents = $currentCents + $finalCents;
+                $newTotalFormatted = number_format($newTotalCents / 100, 2, '.', '');
+
+                $member->update([
+                    'points'            => $currentPoints + $earnedPoints,
+                    'total_pengeluaran' => $newTotalFormatted,
+                ]);
+            }
+        }
+    }
+
     public function processInventoryDeduction(): void
     {
         $stockChanges = [];
