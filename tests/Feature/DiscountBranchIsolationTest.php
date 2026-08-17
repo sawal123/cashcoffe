@@ -659,6 +659,8 @@ class DiscountBranchIsolationTest extends TestCase
 
     public function test_check_approval_status_approval_milik_kasir_lain_tidak_verified()
     {
+        // Server-side validation: walaupun state di-inject langsung (simulasi korup/tampered),
+        // approval milik kasir lain tidak boleh memverifikasi.
         $shared = $this->makeDiscount('SHARED', null);
         $foreignApproval = DiscountApproval::create([
             'discount_id' => $shared->id,
@@ -668,13 +670,16 @@ class DiscountBranchIsolationTest extends TestCase
 
         $component = Livewire::actingAs($this->kasirA)
             ->test(CreateOrder::class)
-            ->set('discount', $shared->kode_diskon)
-            ->set('isWaitingApproval', true)
-            ->set('approvalRequestId', $foreignApproval->id);
+            ->set('discount', $shared->kode_diskon);
+
+        $instance = $component->instance();
+        $instance->isWaitingApproval = true;
+        $instance->approvalRequestId = $foreignApproval->id;
 
         $component->call('checkApprovalStatus');
 
         $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertNull($component->get('verifiedDiscountId'));
         $this->assertFalse($component->get('isWaitingApproval'));
         $this->assertNull($component->get('approvalRequestId'));
     }
@@ -691,35 +696,46 @@ class DiscountBranchIsolationTest extends TestCase
 
         $component = Livewire::actingAs($this->kasirA)
             ->test(CreateOrder::class)
-            ->set('discount', $shared->kode_diskon)
-            ->set('isWaitingApproval', true)
-            ->set('approvalRequestId', $mismatchApproval->id);
+            ->set('discount', $shared->kode_diskon);
+
+        $instance = $component->instance();
+        $instance->isWaitingApproval = true;
+        $instance->approvalRequestId = $mismatchApproval->id;
 
         $component->call('checkApprovalStatus');
 
         $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertNull($component->get('verifiedDiscountId'));
         $this->assertFalse($component->get('isWaitingApproval'));
         $this->assertNull($component->get('approvalRequestId'));
     }
 
     public function test_check_approval_status_valid_approval_membuat_verified()
     {
+        Http::fake();
+
         $shared = $this->makeDiscount('SHARED', null);
-        $approval = DiscountApproval::create([
-            'discount_id' => $shared->id,
-            'status'      => 'approved',
-            'kasir_id'    => $this->kasirA->id,
-        ]);
 
         $component = Livewire::actingAs($this->kasirA)
             ->test(CreateOrder::class)
-            ->set('discount', $shared->kode_diskon)
-            ->set('isWaitingApproval', true)
-            ->set('approvalRequestId', $approval->id);
+            ->set('discount', $shared->kode_diskon);
 
+        // 1. Request beneran lewat requestAdminApproval() (server membuat approval baru)
+        $component->call('requestAdminApproval');
+
+        // 2. Ambil approval BARU yang dibuat oleh server
+        $approval = DiscountApproval::latest('id')->firstOrFail();
+        $this->assertEquals('pending', $approval->status);
+
+        // 3. Simulasi approver: update row menjadi approved
+        $approval->update(['status' => 'approved']);
+
+        // 4. Poll status
         $component->call('checkApprovalStatus');
 
+        // 5. Verified terikat ke discount yang disetujui
         $this->assertTrue($component->get('isDiscountVerified'));
+        $this->assertEquals($shared->id, $component->get('verifiedDiscountId'));
         $this->assertFalse($component->get('isWaitingApproval'));
         $this->assertNull($component->get('approvalRequestId'));
     }
@@ -771,5 +787,127 @@ class DiscountBranchIsolationTest extends TestCase
             ->assertForbidden();
 
         $this->assertEquals('pending', $approval->fresh()->status);
+    }
+
+    // ============================================================
+    // 30-34. Private Discount Server-Authoritative Authorization
+    // & Approval Replay
+    // ============================================================
+
+    public function test_save_order_private_discount_tanpa_verifikasi_ditolak()
+    {
+        $this->setupPosInfra();
+        $priv = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+
+        $pesananBefore = Pesanan::count();
+        $itemBefore    = PesananItem::count();
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Tester')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->set('discountId', $priv->id);
+
+        $component->call('saveOrder')->assertDispatched('showToast');
+
+        $this->assertEquals($pesananBefore, Pesanan::count());
+        $this->assertEquals($itemBefore, PesananItem::count());
+        $this->assertEquals(0, $priv->fresh()->digunakan);
+    }
+
+    public function test_update_order_private_discount_tanpa_verifikasi_ditolak()
+    {
+        $this->setupPosInfra();
+        $priv = $this->makeDiscount('PRIV-B', $this->branchA->id, 'global', 'private');
+
+        $order = $this->saveOrderFor($this->kasirA, null);
+        $beforeTotal = $order->fresh()->total;
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('orderId', $order->id)
+            ->set('nama_costumer', 'Hacked')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->set('discount_id', $priv->id);
+
+        $component->call('updateOrder')->assertDispatched('showToast');
+
+        $fresh = $order->fresh();
+        $this->assertEquals($beforeTotal, $fresh->total);
+        $this->assertEquals('Tester', $fresh->nama);
+        $this->assertNull($fresh->discount_id);
+        $this->assertEquals(0, $priv->fresh()->digunakan);
+    }
+
+    public function test_verify_private_a_lalu_tamper_discount_id_b_ditolak_dan_binding_ke_a()
+    {
+        $this->setupPosInfra();
+        $privA = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+        $privB = $this->makeDiscount('PRIV-B', $this->branchA->id, 'global', 'private');
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $privA->kode_diskon)
+            ->set('adminPassword', 'password');
+
+        // Verifikasi lewat password superadmin (factory default 'password')
+        $component->call('verifyDiscount');
+
+        // D. Binding verifikasi: verifiedDiscountId harus A
+        $this->assertTrue($component->get('isDiscountVerified'));
+        $this->assertEquals($privA->id, $component->get('verifiedDiscountId'));
+
+        // C. Tamper: ganti discountId menjadi private B tanpa verifikasi
+        $component
+            ->set('discount', '')
+            ->set('discountId', $privB->id)
+            ->set('nama_costumer', 'Tester')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload());
+
+        $component->call('saveOrder')->assertDispatched('showToast');
+
+        // Discount B tidak boleh applied, tidak ada partial order
+        $this->assertEquals(0, Pesanan::count());
+        $this->assertEquals(0, $privB->fresh()->digunakan);
+        $this->assertEquals(0, $privA->fresh()->digunakan);
+    }
+
+    public function test_approval_lama_tidak_bisa_dipakai_ulang_dari_client()
+    {
+        $priv = $this->makeDiscount('PRIV-OLD', $this->branchA->id, 'global', 'private');
+
+        // Approval lama (approved) dari sesi sebelumnya
+        $oldApproval = DiscountApproval::create([
+            'discount_id' => $priv->id,
+            'status'      => 'approved',
+            'kasir_id'    => $this->kasirA->id,
+        ]);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $priv->kode_diskon);
+
+        // Client mencoba set approvalRequestId lama → properti Locked harus menolak/ignore
+        try {
+            $component->set('approvalRequestId', $oldApproval->id);
+            $this->assertNotEquals($oldApproval->id, $component->get('approvalRequestId'));
+        } catch (\Throwable $e) {
+            // Expected: CannotUpdateLockedPropertyException
+            $this->assertTrue(true);
+        }
+
+        // State verifikasi tetap tidak boleh berubah
+        $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertNull($component->get('verifiedDiscountId'));
+        $this->assertNull($component->get('approvalRequestId'));
+
+        // Approval lama tetap utuh (tidak dipakai/diubah oleh komponen)
+        $this->assertEquals('approved', $oldApproval->fresh()->status);
     }
 }

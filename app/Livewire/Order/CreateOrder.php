@@ -11,6 +11,7 @@ use App\Models\Member;
 use App\Models\Menu;
 use App\Support\PhoneNumber;
 // Import Trait yang baru kita buat
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -22,7 +23,13 @@ class CreateOrder extends Component
 
     public $adminPassword = ''; // Menyimpan inputan password admin di modal
 
+    // Server-trusted state: client TIDAK boleh mengubah langsung.
+    #[Locked]
     public $isDiscountVerified = false; // Status apakah diskon private sudah di-acc
+
+    // ID discount yang diverifikasi (binding verifikasi ke discount tertentu)
+    #[Locked]
+    public $verifiedDiscountId = null;
 
     public $url = 'order';
 
@@ -100,8 +107,10 @@ class CreateOrder extends Component
 
     public $total1;
 
+    #[Locked]
     public $isWaitingApproval = false; // Status apakah sedang menunggu ACC admin
 
+    #[Locked]
     public $approvalRequestId = null; // Menyimpan ID request yang dikirim ke tabel
 
     // Properti baru untuk Varian
@@ -333,6 +342,7 @@ class CreateOrder extends Component
                 $discMessage = 'Kode diskon tidak valid atau sudah tidak aktif.';
             }
             $this->isDiscountVerified = false; // Reset status verifikasi jika kode salah/dihapus
+            $this->verifiedDiscountId = null;
         }
 
         // ... sisa kode render ...

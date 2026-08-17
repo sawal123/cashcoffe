@@ -255,19 +255,47 @@ trait HandlesCartInput
             'adminPassword' => 'required'
         ]);
 
+        $user = Auth::user();
+
+        // Branch isolation: hanya boleh verifikasi discount yang ditemukan & accessible
+        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)
+            ->accessibleTo($user)
+            ->first();
+
+        if (!$disc) {
+            $this->addError('adminPassword', 'Kode diskon tidak ditemukan atau tidak tersedia.');
+            return;
+        }
+
         // Cari user admin atau superadmin (Menggunakan whereHas agar tidak error jika role tidak ada)
         $admins = User::whereHas('roles', function ($query) {
             $query->whereIn('name', ['superadmin', 'admin']);
         })->get();
         $isPasswordCorrect = false;
-        // Cek kecocokan password
+        // Cek kecocokan password.
+        // superadmin boleh verifikasi lintas branch;
+        // admin non-superadmin hanya boleh verifikasi kasir dari branch yang sama.
         foreach ($admins as $admin) {
-            if (Hash::check($this->adminPassword, $admin->password)) {
+            if (! Hash::check($this->adminPassword, $admin->password)) {
+                continue;
+            }
+
+            if ($admin->hasRole('superadmin')) {
                 $isPasswordCorrect = true;
-                break; // Jika ketemu satu yang cocok, hentikan pencarian
+                break;
+            }
+
+            if ($admin->branch_id !== null
+                && $user->branch_id !== null
+                && (int) $admin->branch_id === (int) $user->branch_id
+            ) {
+                $isPasswordCorrect = true;
+                break;
             }
         }
         if ($isPasswordCorrect) {
+            // Bind verifikasi ke discount ID spesifik (server-trusted state)
+            $this->verifiedDiscountId = $disc->id;
             $this->isDiscountVerified = true;
             $this->adminPassword = ''; // Kosongkan kembali demi keamanan
 
@@ -284,6 +312,7 @@ trait HandlesCartInput
         // Reset status verifikasi menjadi false. 
         // Jika kodenya private, kasir wajib masukin password lagi.
         $this->isDiscountVerified = false;
+        $this->verifiedDiscountId = null;
     }
 
     // Jangan lupa reset status verifikasi saat diskon dihapus
@@ -293,6 +322,7 @@ trait HandlesCartInput
         $this->discount_id = null;
         $this->discount_value = 0;
         $this->isDiscountVerified = false; // Reset status ini
+        $this->verifiedDiscountId = null;
     }
 
     // Fungsi untuk mengirim notif/request ke Admin
@@ -395,7 +425,8 @@ trait HandlesCartInput
         }
 
         if ($approval->status === 'approved') {
-            // JIKA DI-ACC ADMIN:
+            // JIKA DI-ACC ADMIN: bind verifikasi ke discount yang disetujui
+            $this->verifiedDiscountId = $approval->discount_id;
             $this->isDiscountVerified = true;
             $this->isWaitingApproval = false;
             $this->approvalRequestId = null;

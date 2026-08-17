@@ -38,8 +38,11 @@ trait HandlesOrderSubmit
         $this->member = $pesanan->member->phone ?? null;
 
         // Jika ada kode diskon dari DB, otomatis anggap sudah diverifikasi
+        // (order ini sudah menyimpan discount tersebut, jadi verifikasinya
+        // terikat ke discount_id yang tersimpan).
         if ($this->discount) {
             $this->isDiscountVerified = true;
+            $this->verifiedDiscountId = $pesanan->discount_id;
         }
 
         $this->pesanan = $pesanan->items->mapWithKeys(function ($item) {
@@ -309,6 +312,20 @@ trait HandlesOrderSubmit
                         $disc = null;
                         $this->discount_id = null;
                     }
+
+                    // SERVER-AUTHORITATIVE private discount check:
+                    // hanya boleh diterapkan jika member bypass valid ATAU
+                    // verifikasi server terikat ke discount ID ini.
+                    if ($disc && $disc->type === 'private') {
+                        $isPrivateAuthorized = ($memberId !== null)
+                            || ($this->isDiscountVerified === true
+                                && $this->verifiedDiscountId !== null
+                                && (int) $this->verifiedDiscountId === (int) $disc->id);
+
+                        if (! $isPrivateAuthorized) {
+                            throw new \InvalidArgumentException('Diskon private belum diverifikasi.');
+                        }
+                    }
                     // Re-fetch locked oldDiscountModel if available
                     if ($oldDiscountId && $lockedDiscounts->has($oldDiscountId)) {
                         $oldDiscountModel = $lockedDiscounts->get($oldDiscountId);
@@ -561,6 +578,20 @@ trait HandlesOrderSubmit
                     if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discountId = null;
+                    }
+
+                    // SERVER-AUTHORITATIVE private discount check:
+                    // hanya boleh diterapkan jika member bypass valid ATAU
+                    // verifikasi server terikat ke discount ID ini.
+                    if ($disc && $disc->type === 'private') {
+                        $isPrivateAuthorized = ($memberId !== null)
+                            || ($this->isDiscountVerified === true
+                                && $this->verifiedDiscountId !== null
+                                && (int) $this->verifiedDiscountId === (int) $disc->id);
+
+                        if (! $isPrivateAuthorized) {
+                            throw new \InvalidArgumentException('Diskon private belum diverifikasi.');
+                        }
                     }
                 }
 
