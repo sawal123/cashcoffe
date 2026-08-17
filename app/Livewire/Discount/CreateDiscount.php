@@ -108,6 +108,13 @@ class CreateDiscount extends Component
         // Branch isolation: non-superadmin branch_id WAJIB dipaksa ke branch user.
         // Tidak percaya branch_id dari Livewire property/request.
         $user = auth()->user();
+
+        // Non-superadmin tanpa branch tidak boleh membuat discount
+        // (karena akan terpaksa menjadi shared discount).
+        if (! $user->hasRole('superadmin') && ! $user->branch_id) {
+            abort(403, 'Anda tidak memiliki cabang, tidak dapat membuat diskon.');
+        }
+
         $branchId = $user->hasRole('superadmin')
             ? ($this->branch_id ?: null)
             : $user->branch_id;

@@ -39,8 +39,11 @@ class TableDiscount extends Component
         $discounts = Discount::query()
             ->manageableBy(auth()->user())
             ->when($this->search, function ($query) {
-                $query->where('nama_diskon', 'like', '%' . $this->search . '%')
-                    ->orWhere('jenis_diskon', 'like', '%' . $this->search . '%');
+                // OR wajib digroup agar tidak menembus filter manageableBy
+                $query->where(function ($q) {
+                    $q->where('nama_diskon', 'like', '%' . $this->search . '%')
+                        ->orWhere('jenis_diskon', 'like', '%' . $this->search . '%');
+                });
             })
             ->orderBy('created_at', 'desc')
             ->paginate($this->perPage);

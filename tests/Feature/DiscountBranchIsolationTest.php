@@ -19,6 +19,7 @@ use App\Models\SalesChannel;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -569,5 +570,206 @@ class DiscountBranchIsolationTest extends TestCase
             ->assertDispatched('close-modal');
 
         $this->assertEquals('approved', $approval->fresh()->status);
+    }
+
+    // ============================================================
+    // 21-29. Blocker Tambahan: search leak, approval tampering,
+    // malformed/legacy data, non-superadmin tanpa branch
+    // ============================================================
+
+    public function test_search_table_discount_tidak_menembus_branch_filter_karena_or_where()
+    {
+        // Keduanya jenis_diskon = nominal; manager A search 'nominal' hanya lihat branch A
+        $discA = $this->makeDiscount('DISC-A', $this->branchA->id);
+        $discB = $this->makeDiscount('DISC-B', $this->branchB->id);
+
+        $component = Livewire::actingAs($this->managerA)
+            ->test(TableDiscount::class)
+            ->set('search', 'nominal');
+
+        $ids = $component->viewData('discounts')->getCollection()->pluck('id')->all();
+
+        $this->assertContains($discA->id, $ids);
+        $this->assertNotContains($discB->id, $ids);
+    }
+
+    public function test_kasir_a_request_admin_approval_discount_branch_b_tidak_membuat_approval()
+    {
+        Http::fake();
+
+        $discB = $this->makeDiscount('DISC-B', $this->branchB->id);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $discB->kode_diskon);
+
+        $component->call('requestAdminApproval');
+
+        $this->assertEquals(0, DiscountApproval::count());
+        $this->assertNull($component->get('approvalRequestId'));
+        $this->assertFalse($component->get('isWaitingApproval'));
+    }
+
+    public function test_kasir_a_request_admin_approval_shared_discount_boleh()
+    {
+        Http::fake();
+
+        $shared = $this->makeDiscount('SHARED', null);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $shared->kode_diskon);
+
+        $component->call('requestAdminApproval');
+
+        $approval = DiscountApproval::latest('id')->first();
+        $this->assertNotNull($approval);
+        $this->assertEquals($shared->id, $approval->discount_id);
+        $this->assertEquals($this->kasirA->id, $approval->kasir_id);
+        $this->assertEquals($approval->id, $component->get('approvalRequestId'));
+        $this->assertTrue($component->get('isWaitingApproval'));
+    }
+
+    public function test_approval_kasir_branch_a_tapi_discount_branch_b_tidak_terlihat_dan_ditolak()
+    {
+        // Data malformed/legacy: requester = kasir A, tapi discount = branch B
+        $discB = $this->makeDiscount('DISC-B', $this->branchB->id);
+        $approval = DiscountApproval::create([
+            'discount_id' => $discB->id,
+            'status'      => 'pending',
+            'kasir_id'    => $this->kasirA->id,
+        ]);
+
+        // Manager A tidak melihat
+        $component = Livewire::actingAs($this->managerA)->test(ApprovalList::class);
+        $ids = $component->viewData('approvals')->getCollection()->pluck('id')->all();
+        $this->assertNotContains($approval->id, $ids);
+
+        // Direct submitAction => 403
+        Livewire::actingAs($this->managerA)
+            ->test(ApprovalList::class)
+            ->set('selectedApprovalId', $approval->id)
+            ->set('actionType', 'approve')
+            ->set('keterangan', 'ok')
+            ->call('submitAction')
+            ->assertForbidden();
+
+        $this->assertEquals('pending', $approval->fresh()->status);
+    }
+
+    public function test_check_approval_status_approval_milik_kasir_lain_tidak_verified()
+    {
+        $shared = $this->makeDiscount('SHARED', null);
+        $foreignApproval = DiscountApproval::create([
+            'discount_id' => $shared->id,
+            'status'      => 'approved',
+            'kasir_id'    => $this->managerB->id, // milik user branch B
+        ]);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $shared->kode_diskon)
+            ->set('isWaitingApproval', true)
+            ->set('approvalRequestId', $foreignApproval->id);
+
+        $component->call('checkApprovalStatus');
+
+        $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertFalse($component->get('isWaitingApproval'));
+        $this->assertNull($component->get('approvalRequestId'));
+    }
+
+    public function test_check_approval_status_approval_discount_berbeda_tidak_verified()
+    {
+        $shared  = $this->makeDiscount('SHARED', null);
+        $otherDisc = $this->makeDiscount('OTHER', $this->branchA->id);
+        $mismatchApproval = DiscountApproval::create([
+            'discount_id' => $otherDisc->id,
+            'status'      => 'approved',
+            'kasir_id'    => $this->kasirA->id, // kasir sendiri tapi discount berbeda
+        ]);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $shared->kode_diskon)
+            ->set('isWaitingApproval', true)
+            ->set('approvalRequestId', $mismatchApproval->id);
+
+        $component->call('checkApprovalStatus');
+
+        $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertFalse($component->get('isWaitingApproval'));
+        $this->assertNull($component->get('approvalRequestId'));
+    }
+
+    public function test_check_approval_status_valid_approval_membuat_verified()
+    {
+        $shared = $this->makeDiscount('SHARED', null);
+        $approval = DiscountApproval::create([
+            'discount_id' => $shared->id,
+            'status'      => 'approved',
+            'kasir_id'    => $this->kasirA->id,
+        ]);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $shared->kode_diskon)
+            ->set('isWaitingApproval', true)
+            ->set('approvalRequestId', $approval->id);
+
+        $component->call('checkApprovalStatus');
+
+        $this->assertTrue($component->get('isDiscountVerified'));
+        $this->assertFalse($component->get('isWaitingApproval'));
+        $this->assertNull($component->get('approvalRequestId'));
+    }
+
+    public function test_non_superadmin_tanpa_branch_tidak_bisa_buat_discount()
+    {
+        $managerNoBranch = User::factory()->create();
+        $managerNoBranch->assignRole('manager');
+
+        Livewire::actingAs($managerNoBranch)
+            ->test(CreateDiscount::class)
+            ->set('nama_diskon', 'Shared Hack')
+            ->set('jenis_diskon', 'nominal')
+            ->set('nilai_diskon', 500)
+            ->set('is_active', 1)
+            ->set('member_only', false)
+            ->set('scope', 'global')
+            ->set('branch_id', null)
+            ->call('simpan')
+            ->assertForbidden();
+
+        $this->assertDatabaseMissing('discounts', ['nama_diskon' => 'Shared Hack']);
+        $this->assertEquals(0, Discount::count());
+    }
+
+    public function test_non_superadmin_tanpa_branch_approval_list_kosong_dan_action_403()
+    {
+        $managerNoBranch = User::factory()->create();
+        $managerNoBranch->assignRole('manager');
+
+        $shared = $this->makeDiscount('SHARED', null);
+        $approval = DiscountApproval::create([
+            'discount_id' => $shared->id,
+            'status'      => 'pending',
+            'kasir_id'    => $this->kasirA->id,
+        ]);
+
+        // List kosong (fail closed)
+        $component = Livewire::actingAs($managerNoBranch)->test(ApprovalList::class);
+        $this->assertEmpty($component->viewData('approvals')->getCollection());
+
+        // Direct action => 403
+        Livewire::actingAs($managerNoBranch)
+            ->test(ApprovalList::class)
+            ->set('selectedApprovalId', $approval->id)
+            ->set('actionType', 'approve')
+            ->set('keterangan', 'ok')
+            ->call('submitAction')
+            ->assertForbidden();
+
+        $this->assertEquals('pending', $approval->fresh()->status);
     }
 }

@@ -298,8 +298,12 @@ trait HandlesCartInput
     // Fungsi untuk mengirim notif/request ke Admin
     public function requestAdminApproval()
     {
-        // Cari ID diskon berdasarkan kode yang diketik kasir
-        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)->first();
+        // Cari ID diskon berdasarkan kode yang diketik kasir.
+        // WAJIB filter branch accessibility: kasir branch A tidak boleh membuat
+        // approval untuk discount branch B (tampered Livewire call).
+        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)
+            ->accessibleTo(Auth::user())
+            ->first();
 
         if (!$disc) {
             $this->addError('adminPassword', 'Kode diskon tidak ditemukan.');
@@ -363,11 +367,34 @@ trait HandlesCartInput
     {
         if (!$this->isWaitingApproval || !$this->approvalRequestId) return;
 
-        // Cek ke database apakah admin sudah klik "YA" (status menjadi 'approved')
+        $user = Auth::user();
 
-        $approval = DiscountApproval::find($this->approvalRequestId);
+        // Discount yang sedang diminta (berdasarkan kode saat ini, tetap accessible untuk user)
+        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)
+            ->accessibleTo($user)
+            ->first();
 
-        if ($approval && $approval->status === 'approved') {
+        // Approval WAJIB: id cocok + milik kasir ini + discount sama dengan yang diminta.
+        // Tidak boleh mengambil approval kasir lain / branch lain / discount lain.
+        $approval = DiscountApproval::query()
+            ->where('id', $this->approvalRequestId)
+            ->where('kasir_id', $user->id)
+            ->when($disc, function ($q) use ($disc) {
+                $q->where('discount_id', $disc->id);
+            }, function ($q) {
+                $q->whereRaw('1 = 0');
+            })
+            ->first();
+
+        // Tampered / tidak cocok: jangan set verified, jangan ubah discount,
+        // reset waiting state dengan aman.
+        if (!$approval) {
+            $this->isWaitingApproval = false;
+            $this->approvalRequestId = null;
+            return;
+        }
+
+        if ($approval->status === 'approved') {
             // JIKA DI-ACC ADMIN:
             $this->isDiscountVerified = true;
             $this->isWaitingApproval = false;
@@ -375,7 +402,7 @@ trait HandlesCartInput
 
             $this->dispatch('close-modal', name: 'verify-discount-modal');
             $this->dispatch('showToast', message: 'Diskon Disetujui Admin!', type: 'success');
-        } elseif ($approval && $approval->status === 'rejected') {
+        } elseif ($approval->status === 'rejected') {
             // JIKA DITOLAK ADMIN:
             $this->isWaitingApproval = false;
             $this->approvalRequestId = null;
