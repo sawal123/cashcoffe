@@ -59,29 +59,34 @@ class Pesanan extends Model
 
     public function decrementDiscountUsageOnCancellation(): void
     {
-        if ($this->discount_id && $this->discount_value > 0) {
-            $discount = \App\Models\Discount::where('id', $this->discount_id)
-                ->lockForUpdate()
-                ->first();
-
-            if ($discount && $discount->scope === 'global') {
-                // NULL-safe reconciliation: treat NULL as actual order count
-                $currentUsage = $discount->digunakan;
-                if (is_null($currentUsage)) {
-                    $currentUsage = self::where('discount_id', $discount->id)
-                        ->where('discount_value', '>', 0)
-                        ->whereNotIn('status', [self::STATUS_DIBATALKAN])
-                        ->whereNull('deleted_at')
-                        ->count();
-                } else {
-                    $currentUsage = (int) $currentUsage;
-                }
-
-                // Always persist numeric value (never leave NULL, never go negative)
-                $newUsage = max(0, $currentUsage - 1);
-                $discount->update(['digunakan' => $newUsage]);
-            }
+        if (! $this->discount_id || $this->discount_value <= 0) {
+            return;
         }
+
+        $discount = \App\Models\Discount::where('id', $this->discount_id)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $discount || $discount->scope !== 'global') {
+            return;
+        }
+
+        // Legacy/malformed foreign-branch reference:
+        // pembatalan order tetap berjalan, tetapi counter discount
+        // cabang lain TIDAK boleh disentuh.
+        $ownedByOrderBranch = $discount->branch_id === null
+            || ($this->branch_id !== null
+                && (int) $discount->branch_id === (int) $this->branch_id);
+
+        if (! $ownedByOrderBranch) {
+            return;
+        }
+
+        // NULL-safe reconciliation lintas branch (shared discount = global).
+        $currentUsage = $discount->reconciledUsage();
+
+        // Always persist numeric value (never leave NULL, never go negative)
+        $discount->update(['digunakan' => max(0, $currentUsage - 1)]);
     }
 
     public function applyMemberLoyaltyOnCompletion(): void

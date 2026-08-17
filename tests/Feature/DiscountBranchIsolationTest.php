@@ -20,6 +20,7 @@ use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -140,6 +141,26 @@ class DiscountBranchIsolationTest extends TestCase
         $component->call('saveOrder');
 
         return Pesanan::latest('id')->firstOrFail();
+    }
+
+    /**
+     * Buat pesanan langsung ke DB (simulasi historical/legacy data) dengan
+     * branch_id eksplisit — branch_id tidak ada di $fillable Pesanan.
+     */
+    private function createPesananForBranch(?Discount $discount, ?int $branchId, string $status = 'diproses'): Pesanan
+    {
+        $pesanan = new Pesanan([
+            'kode'           => 'LEG-' . strtoupper(Str::random(6)),
+            'discount_id'    => $discount?->id,
+            'discount_value' => $discount ? 5000 : 0,
+            'status'         => $status,
+            'total'          => 20000,
+            'total_profit'   => 12000,
+        ]);
+        $pesanan->branch_id = $branchId;
+        $pesanan->save();
+
+        return $pesanan;
     }
 
     // ============================================================
@@ -861,21 +882,32 @@ class DiscountBranchIsolationTest extends TestCase
         $this->assertTrue($component->get('isDiscountVerified'));
         $this->assertEquals($privA->id, $component->get('verifiedDiscountId'));
 
-        // C. Tamper: ganti discountId menjadi private B tanpa verifikasi
-        $component
-            ->set('discount', '')
-            ->set('discountId', $privB->id)
-            ->set('nama_costumer', 'Tester')
-            ->set('metode_pembayaran', $this->paymentMethod->id)
-            ->set('sales_channel_id', $this->salesChannel->id)
-            ->set('pesanan', $this->cartPayload());
-
-        $component->call('saveOrder')->assertDispatched('showToast');
+        // C. Tamper dalam SATU request: set discountId = private B + saveOrder
+        // TANPA mengubah `discount`. (set('discount', ...) memicu updatedDiscount()
+        // dan me-reset verification — test tidak boleh PASS hanya karena
+        // verification sudah false; juga tidak boleh di-render ulang karena
+        // render() merekomputasi discountId dari kode `discount`.)
+        $component->update(
+            calls: [
+                ['method' => 'saveOrder', 'params' => [], 'path' => ''],
+            ],
+            updates: [
+                'discountId'         => $privB->id,
+                'nama_costumer'      => 'Tester',
+                'metode_pembayaran'  => $this->paymentMethod->id,
+                'sales_channel_id'   => $this->salesChannel->id,
+                'pesanan'            => $this->cartPayload(),
+            ],
+        );
 
         // Discount B tidak boleh applied, tidak ada partial order
         $this->assertEquals(0, Pesanan::count());
         $this->assertEquals(0, $privB->fresh()->digunakan);
         $this->assertEquals(0, $privA->fresh()->digunakan);
+
+        // Verification tetap terikat ke A (gagal = TIDAK reset authorization)
+        $this->assertTrue($component->get('isDiscountVerified'));
+        $this->assertEquals($privA->id, $component->get('verifiedDiscountId'));
     }
 
     public function test_approval_lama_tidak_bisa_dipakai_ulang_dari_client()
@@ -909,5 +941,380 @@ class DiscountBranchIsolationTest extends TestCase
 
         // Approval lama tetap utuh (tidak dipakai/diubah oleh komponen)
         $this->assertEquals('approved', $oldApproval->fresh()->status);
+    }
+
+    // ============================================================
+    // 35-47. Blocker Final: single-use private authorization,
+    // shared usage lintas branch, legacy foreign reference,
+    // password admin lintas branch
+    // ============================================================
+
+    public function test_verify_private_lalu_save_sukses_dan_state_verifikasi_reset()
+    {
+        $this->setupPosInfra();
+        $priv = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $priv->kode_diskon)
+            ->set('adminPassword', 'password');
+
+        $component->call('verifyDiscount');
+        $this->assertTrue($component->get('isDiscountVerified'));
+        $this->assertEquals($priv->id, $component->get('verifiedDiscountId'));
+
+        $component
+            ->set('discountId', $priv->id)
+            ->set('nama_costumer', 'Tester')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload());
+
+        $component->call('saveOrder')->assertDispatched('showToast');
+
+        $order = Pesanan::latest('id')->firstOrFail();
+        $this->assertEquals($priv->id, $order->discount_id);
+        $this->assertEquals(5000, (int) $order->discount_value);
+        $this->assertEquals(1, $priv->fresh()->digunakan);
+
+        // Authorization single-use: reset setelah transaksi BERHASIL
+        $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertNull($component->get('verifiedDiscountId'));
+        $this->assertFalse($component->get('isWaitingApproval'));
+        $this->assertNull($component->get('approvalRequestId'));
+    }
+
+    public function test_private_single_use_order_kedua_tanpa_verify_ulang_ditolak()
+    {
+        $this->setupPosInfra();
+        $priv = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+
+        // Order 1: verify lalu save sukses
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $priv->kode_diskon)
+            ->set('adminPassword', 'password');
+        $component->call('verifyDiscount');
+        $component
+            ->set('discountId', $priv->id)
+            ->set('nama_costumer', 'Tester')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload());
+        $component->call('saveOrder');
+
+        $this->assertEquals(1, Pesanan::count());
+        $this->assertEquals(1, $priv->fresh()->digunakan);
+
+        // Order 2: komponen baru, TANPA verify ulang → ditolak.
+        // Kirim discountId private A + saveOrder dalam SATU request (tamper).
+        $pesananBefore = Pesanan::count();
+        $itemBefore    = PesananItem::count();
+
+        $component2 = Livewire::actingAs($this->kasirA)->test(CreateOrder::class);
+
+        $component2->update(
+            calls: [
+                ['method' => 'saveOrder', 'params' => [], 'path' => ''],
+            ],
+            updates: [
+                'discountId'         => $priv->id,
+                'nama_costumer'      => 'Tester 2',
+                'metode_pembayaran'  => $this->paymentMethod->id,
+                'sales_channel_id'   => $this->salesChannel->id,
+                'pesanan'            => $this->cartPayload(),
+            ],
+        );
+
+        $this->assertEquals($pesananBefore, Pesanan::count());
+        $this->assertEquals($itemBefore, PesananItem::count());
+        $this->assertEquals(1, $priv->fresh()->digunakan);
+    }
+
+    public function test_edit_existing_private_tidak_membuat_reusable_verification_state()
+    {
+        $this->setupPosInfra();
+        $priv = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+        $order = $this->createPesananForBranch($priv, $this->branchA->id);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class, ['orderId' => base64_encode($order->id)]);
+
+        // Kode discount accessible boleh tampil...
+        $this->assertEquals($priv->kode_diskon, $component->get('discount'));
+
+        // ...tetapi TIDAK boleh ada verification state yang reusable
+        $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertNull($component->get('verifiedDiscountId'));
+    }
+
+    public function test_update_existing_private_a_dengan_a_boleh_tanpa_pin_ulang()
+    {
+        $this->setupPosInfra();
+        $priv = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+        $order = $this->createPesananForBranch($priv, $this->branchA->id);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('orderId', $order->id)
+            ->set('nama_costumer', 'Updated')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->set('discount_id', $priv->id);
+
+        $component->call('updateOrder')->assertDispatched('showToast');
+
+        $fresh = $order->fresh();
+        $this->assertEquals('Updated', $fresh->nama);
+        $this->assertEquals($priv->id, $fresh->discount_id);
+        $this->assertEquals(5000, (int) $fresh->discount_value);
+        $this->assertEquals(1, $priv->fresh()->digunakan);
+    }
+
+    public function test_update_existing_private_a_ke_private_b_tanpa_verifikasi_b_ditolak()
+    {
+        $this->setupPosInfra();
+        $privA = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+        $privB = $this->makeDiscount('PRIV-B', $this->branchA->id, 'global', 'private');
+        $order = $this->createPesananForBranch($privA, $this->branchA->id);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('orderId', $order->id)
+            ->set('nama_costumer', 'Hacked')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->set('discount_id', $privB->id);
+
+        $component->call('updateOrder')->assertDispatched('showToast');
+
+        $fresh = $order->fresh();
+        $this->assertEquals($privA->id, $fresh->discount_id);
+        $this->assertEquals(0, $privB->fresh()->digunakan);
+    }
+
+    public function test_load_edit_private_lalu_save_order_baru_tidak_boleh_pakai_authorization()
+    {
+        $this->setupPosInfra();
+        $priv = $this->makeDiscount('PRIV-A', $this->branchA->id, 'global', 'private');
+        $order = $this->createPesananForBranch($priv, $this->branchA->id);
+
+        $pesananBefore = Pesanan::count();
+        $itemBefore    = PesananItem::count();
+
+        // Load edit existing order (editOrder dipanggil lewat mount)
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class, ['orderId' => base64_encode($order->id)]);
+
+        // Coba saveOrder() sebagai NEW order dalam SATU request dengan
+        // discountId persisted → exemption existing order tidak berlaku.
+        $component->update(
+            calls: [
+                ['method' => 'saveOrder', 'params' => [], 'path' => ''],
+            ],
+            updates: [
+                'discountId'         => $priv->id,
+                'nama_costumer'      => 'New Order',
+                'metode_pembayaran'  => $this->paymentMethod->id,
+                'sales_channel_id'   => $this->salesChannel->id,
+                'pesanan'            => $this->cartPayload(),
+            ],
+        );
+
+        $this->assertEquals($pesananBefore, Pesanan::count());
+        $this->assertEquals($itemBefore, PesananItem::count());
+        $this->assertEquals(0, $priv->fresh()->digunakan);
+    }
+
+    public function test_shared_discount_limit_global_tidak_terlewati_lintas_branch()
+    {
+        $this->setupPosInfra();
+        $shared = $this->makeDiscount('SHARED', null, 'global', 'general');
+        $shared->update(['limit' => 1, 'digunakan' => null]);
+
+        // Sudah ada order branch B aktif memakai shared discount (legacy, digunakan NULL)
+        $this->createPesananForBranch($shared, $this->branchB->id);
+
+        // Branch A mencoba memakai discount yang sama
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discountId', $shared->id)
+            ->set('nama_costumer', 'Tester')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload());
+
+        $component->call('saveOrder')->assertDispatched('showToast');
+
+        $orderA = Pesanan::where('branch_id', $this->branchA->id)->latest('id')->firstOrFail();
+        $this->assertNull($orderA->discount_id);
+        $this->assertEquals(0, (int) $orderA->discount_value);
+        // Limit global tidak terlewati & counter tidak disentuh
+        $this->assertNull($shared->fresh()->digunakan);
+    }
+
+    public function test_cancel_order_a_shared_digunakan_null_menjadi_1_karena_b_masih_aktif()
+    {
+        $this->setupPosInfra();
+        $shared = $this->makeDiscount('SHARED', null, 'global', 'general');
+        $shared->update(['digunakan' => null]);
+
+        $orderA = $this->createPesananForBranch($shared, $this->branchA->id);
+        $orderB = $this->createPesananForBranch($shared, $this->branchB->id);
+
+        Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $orderA->id)
+            ->assertDispatched('showToast');
+
+        $this->assertEquals('dibatalkan', $orderA->fresh()->status);
+        $this->assertEquals('diproses', $orderB->fresh()->status);
+        // Order B masih aktif → digunakan harus 1, TIDAK boleh 0
+        $this->assertEquals(1, $shared->fresh()->digunakan);
+    }
+
+    public function test_update_order_a_hapus_shared_discount_reconciliation_menjadi_1()
+    {
+        $this->setupPosInfra();
+        $shared = $this->makeDiscount('SHARED', null, 'global', 'general');
+        $shared->update(['digunakan' => null]);
+
+        $orderA = $this->createPesananForBranch($shared, $this->branchA->id);
+        $orderB = $this->createPesananForBranch($shared, $this->branchB->id);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('orderId', $orderA->id)
+            ->set('nama_costumer', 'Fixed')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->set('discount', '')
+            ->set('discount_id', null);
+
+        $component->call('updateOrder')->assertDispatched('showToast');
+
+        $fresh = $orderA->fresh();
+        $this->assertNull($fresh->discount_id);
+        $this->assertEquals(0, (int) $fresh->discount_value);
+        // Reconciliation lintas branch: order B masih aktif
+        $this->assertEquals(1, $shared->fresh()->digunakan);
+    }
+
+    public function test_edit_order_legacy_foreign_discount_tidak_diekspos_dan_db_tidak_berubah()
+    {
+        $discB = $this->makeDiscount('DISC-B', $this->branchB->id);
+        $order = $this->createPesananForBranch($discB, $this->branchA->id);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class, ['orderId' => base64_encode($order->id)]);
+
+        // Kode discount B TIDAK terekspos ke user branch A
+        $this->assertNull($component->get('discount'));
+        $this->assertNull($component->get('discountId'));
+        $this->assertNull($component->get('discount_id'));
+        $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertNull($component->get('verifiedDiscountId'));
+
+        // Historical DB tidak diubah hanya karena membuka halaman
+        $this->assertEquals($discB->id, $order->fresh()->discount_id);
+    }
+
+    public function test_update_malformed_order_foreign_discount_diperbaiki_counter_tidak_berubah()
+    {
+        $this->setupPosInfra();
+        $discB = $this->makeDiscount('DISC-B', $this->branchB->id);
+        $discB->update(['digunakan' => 7]);
+        $order = $this->createPesananForBranch($discB, $this->branchA->id);
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('orderId', $order->id)
+            ->set('nama_costumer', 'Fixed')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->set('discount', '')
+            ->set('discount_id', null);
+
+        $component->call('updateOrder')->assertDispatched('showToast');
+
+        $fresh = $order->fresh();
+        $this->assertEquals('Fixed', $fresh->nama);
+        $this->assertNull($fresh->discount_id);
+        $this->assertEquals(0, (int) $fresh->discount_value);
+        // Counter discount B BUKAN milik branch A → tidak boleh berubah
+        $this->assertEquals(7, $discB->fresh()->digunakan);
+    }
+
+    public function test_cancel_malformed_order_foreign_discount_counter_tidak_berubah()
+    {
+        $discB = $this->makeDiscount('DISC-B', $this->branchB->id);
+        $discB->update(['digunakan' => 7]);
+        $order = $this->createPesananForBranch($discB, $this->branchA->id);
+
+        Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->call('batalkanPesanan', $order->id)
+            ->assertDispatched('showToast');
+
+        $this->assertEquals('dibatalkan', $order->fresh()->status);
+        // Counter discount B tidak disentuh walaupun data historical malformed
+        $this->assertEquals(7, $discB->fresh()->digunakan);
+    }
+
+    public function test_password_admin_branch_b_tidak_bisa_verify_discount_kasir_branch_a()
+    {
+        $priv = $this->makeDiscount('PRIV-X', $this->branchA->id, 'global', 'private');
+
+        // Role 'admin' TIDAK ada di RbacSeeder → buat hanya di fixture test
+        $adminRole = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'admin']);
+
+        $adminA = User::factory()->create([
+            'branch_id' => $this->branchA->id,
+            'password'  => bcrypt('secretA'),
+        ]);
+        $adminA->assignRole($adminRole);
+
+        $adminB = User::factory()->create([
+            'branch_id' => $this->branchB->id,
+            'password'  => bcrypt('secretB'),
+        ]);
+        $adminB->assignRole($adminRole);
+
+        // Password admin B (cabang lain) → TIDAK boleh verify
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $priv->kode_diskon)
+            ->set('adminPassword', 'secretB');
+
+        $component->call('verifyDiscount');
+
+        $this->assertFalse($component->get('isDiscountVerified'));
+        $this->assertNull($component->get('verifiedDiscountId'));
+
+        // Password admin A (cabang sama) → boleh
+        $component->set('adminPassword', 'secretA');
+        $component->call('verifyDiscount');
+
+        $this->assertTrue($component->get('isDiscountVerified'));
+        $this->assertEquals($priv->id, $component->get('verifiedDiscountId'));
+    }
+
+    public function test_password_superadmin_tetap_bisa_verify_lintas_branch()
+    {
+        $priv = $this->makeDiscount('PRIV-S', $this->branchA->id, 'global', 'private');
+
+        $component = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('discount', $priv->kode_diskon)
+            ->set('adminPassword', 'password');
+
+        $component->call('verifyDiscount');
+
+        $this->assertTrue($component->get('isDiscountVerified'));
+        $this->assertEquals($priv->id, $component->get('verifiedDiscountId'));
     }
 }

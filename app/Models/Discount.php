@@ -112,6 +112,33 @@ class Discount extends Model
         return ! $this->isMemberOnly() || $memberId !== null;
     }
 
+    /**
+     * Single source of truth untuk actual usage reconciliation.
+     * Jika `digunakan` NULL (legacy), hitung active orders TANPA branch_filter
+     * (internal accounting lintas branch), lalu terapkan ownership discount:
+     * - branch_id NULL  => count pesanan dari SEMUA branch
+     * - branch_id X     => count hanya pesanan branch_id = X
+     */
+    public function reconciledUsage(): int
+    {
+        $current = $this->digunakan;
+
+        if (! is_null($current)) {
+            return (int) $current;
+        }
+
+        return (int) Pesanan::query()
+            ->withoutGlobalScope('branch_filter')
+            ->where('discount_id', $this->id)
+            ->where('discount_value', '>', 0)
+            ->whereNotIn('status', [Pesanan::STATUS_DIBATALKAN])
+            ->whereNull('deleted_at')
+            ->when($this->branch_id !== null, function (Builder $query) {
+                $query->where('branch_id', $this->branch_id);
+            })
+            ->count();
+    }
+
     public function pesanan()
     {
         return $this->hasMany(Pesanan::class, 'discount_id');
