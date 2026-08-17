@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 class ApprovalList extends Component
 {
     use WithPagination;
-    
+
     protected $paginationTheme = 'tailwind';
 
     public $keterangan = '';
@@ -43,8 +43,18 @@ class ApprovalList extends Component
             abort(403, 'Anda tidak memiliki akses untuk memproses persetujuan diskon.');
         }
 
-        $approval = DiscountApproval::with('discount')->find($this->selectedApprovalId);
+        $approval = DiscountApproval::with(['discount', 'kasir'])->find($this->selectedApprovalId);
         if ($approval && $approval->status === 'pending') {
+            // Branch isolation server-side: non-superadmin hanya boleh memproses
+            // approval dari kasir dengan branch yang sama. Permission `approve all
+            // discount` adalah tipe diskon, BUKAN akses semua cabang.
+            if (! $user->hasRole('superadmin')) {
+                $requester = $approval->kasir;
+                if (! $requester || (int) $requester->branch_id !== (int) $user->branch_id) {
+                    abort(403, 'Anda tidak dapat memproses persetujuan diskon dari cabang lain.');
+                }
+            }
+
             if (!$approval->discount) {
                 abort(403, 'Data diskon tidak ditemukan atau sudah tidak tersedia.');
             }
@@ -79,13 +89,21 @@ class ApprovalList extends Component
         $query = DiscountApproval::with(['kasir', 'discount', 'approver'])
             ->where('status', $this->statusFilter);
 
-        if ($user && $user->can('approve all discount')) {
-            // Can see all approvals
-        } elseif ($user && $user->can('approve general discount')) {
-            // Can only see general discount approvals
-            $query->whereHas('discount', function ($q) {
-                $q->where('type', 'general');
+        if ($user && $user->hasRole('superadmin')) {
+            // Superadmin: dapat melihat approval seluruh branch
+        } elseif ($user && ($user->can('approve all discount') || $user->can('approve general discount'))) {
+            // Branch isolation: hanya approval dari kasir branch yang sama.
+            // Permission `approve all discount` BUKAN akses semua cabang.
+            $query->whereHas('kasir', function ($q) use ($user) {
+                $q->where('branch_id', $user->branch_id);
             });
+
+            // Can only see general discount approvals (jika tidak punya approve all)
+            if (! $user->can('approve all discount')) {
+                $query->whereHas('discount', function ($q) {
+                    $q->where('type', 'general');
+                });
+            }
         } else {
             // No approval permission at all
             $query->whereRaw('1 = 0');

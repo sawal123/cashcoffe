@@ -23,8 +23,12 @@ class TableDiscount extends Component
 
     public function delete($id)
     {
-        
         $diskon = Discount::findOrFail(base64_decode($id));
+
+        // Branch isolation: non-superadmin hanya boleh hapus discount branch sendiri.
+        // Shared (branch_id NULL) & branch lain ditolak 403.
+        abort_unless($diskon->isManageableBy(auth()->user()), 403, 'Anda tidak memiliki akses untuk menghapus diskon ini.');
+
         $diskon->delete();
 
         $this->dispatch('showToast', message: 'Discount Berhasil Dihapus', type: 'success', title: 'Success');
@@ -33,6 +37,7 @@ class TableDiscount extends Component
     public function render()
     {
         $discounts = Discount::query()
+            ->manageableBy(auth()->user())
             ->when($this->search, function ($query) {
                 $query->where('nama_diskon', 'like', '%' . $this->search . '%')
                     ->orWhere('jenis_diskon', 'like', '%' . $this->search . '%');

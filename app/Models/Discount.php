@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -18,6 +19,84 @@ class Discount extends Model
         'tanggal_akhir' => 'date',
     ];
 
+    /*
+    |--------------------------------------------------------------------------
+    | Branch Accessibility (multi-tenant)
+    |--------------------------------------------------------------------------
+    | Semantics:
+    | - branch_id = NULL  => shared discount, dapat DIGUNAKAN semua branch
+    | - branch_id = X     => discount hanya milik branch X
+    | Field `scope` (global/category/item) HANYA menentukan jenis penerapan
+    | discount dan TIDAK menentukan branch access.
+    */
+
+    /**
+     * Discount yang boleh DIGUNAKAN oleh user.
+     * - superadmin: semua
+     * - non-superadmin dengan branch_id: branch NULL ATAU branch sendiri
+     * - non-superadmin tanpa branch_id: hanya branch NULL
+     */
+    public function scopeAccessibleTo(Builder $query, ?User $user): Builder
+    {
+        if ($user && $user->hasRole('superadmin')) {
+            return $query;
+        }
+
+        if ($user && $user->branch_id) {
+            return $query->where(function (Builder $q) use ($user) {
+                $q->whereNull('branch_id')
+                    ->orWhere('branch_id', $user->branch_id);
+            });
+        }
+
+        return $query->whereNull('branch_id');
+    }
+
+    /**
+     * Discount yang boleh DIKELOLA (lihat/edit/delete) oleh user.
+     * - superadmin: semua (termasuk shared)
+     * - non-superadmin dengan branch_id: hanya branch sendiri
+     * - non-superadmin tanpa branch_id: tidak ada
+     * Shared discount (branch_id = NULL) hanya dikelola superadmin.
+     */
+    public function scopeManageableBy(Builder $query, ?User $user): Builder
+    {
+        if ($user && $user->hasRole('superadmin')) {
+            return $query;
+        }
+
+        if ($user && $user->branch_id) {
+            return $query->where('branch_id', $user->branch_id);
+        }
+
+        return $query->whereRaw('1 = 0');
+    }
+
+    public function isAccessibleTo(?User $user): bool
+    {
+        if ($user && $user->hasRole('superadmin')) {
+            return true;
+        }
+
+        if ($user && $user->branch_id) {
+            return $this->branch_id === null
+                || (int) $this->branch_id === (int) $user->branch_id;
+        }
+
+        return $this->branch_id === null;
+    }
+
+    public function isManageableBy(?User $user): bool
+    {
+        if ($user && $user->hasRole('superadmin')) {
+            return true;
+        }
+
+        return (bool) $user
+            && $user->branch_id !== null
+            && (int) $this->branch_id === (int) $user->branch_id;
+    }
+
     public function isMemberOnly(): bool
     {
         return (bool) $this->member_only;
@@ -33,22 +112,23 @@ class Discount extends Model
         return ! $this->isMemberOnly() || $memberId !== null;
     }
 
-     public function pesanan(){
+    public function pesanan()
+    {
         return $this->hasMany(Pesanan::class, 'discount_id');
-     }
+    }
 
-     public function branch()
-     {
-         return $this->belongsTo(Branch::class);
-     }
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
-     public function priceTier()
-     {
-         return $this->belongsTo(PriceTier::class);
-     }
+    public function priceTier()
+    {
+        return $this->belongsTo(PriceTier::class);
+    }
 
-     public function discountItems()
-     {
-         return $this->hasMany(DiscountItem::class);
-     }
+    public function discountItems()
+    {
+        return $this->hasMany(DiscountItem::class);
+    }
 }

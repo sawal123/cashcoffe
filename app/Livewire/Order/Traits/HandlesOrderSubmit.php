@@ -45,7 +45,7 @@ trait HandlesOrderSubmit
         $this->pesanan = $pesanan->items->mapWithKeys(function ($item) {
             $optionIds = $item->variants->pluck('id')->toArray();
             sort($optionIds);
-            
+
             // Generate Key yang konsisten dengan sistem cartKey di HandlesCartInput
             $optionSlug = count($optionIds) > 0 ? '_' . md5(json_encode($optionIds)) : '';
             $cartKey = $item->menus_id . $optionSlug;
@@ -299,6 +299,12 @@ trait HandlesOrderSubmit
                         ->keyBy('id');
 
                     $disc = $lockedDiscounts->get($this->discount_id);
+
+                    // SERVER-AUTHORITATIVE branch check: tolak discount cabang lain
+                    if ($disc && ! $disc->isAccessibleTo($user)) {
+                        throw new \InvalidArgumentException('Diskon tidak valid atau tidak tersedia untuk cabang Anda.');
+                    }
+
                     if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discount_id = null;
@@ -326,10 +332,12 @@ trait HandlesOrderSubmit
                         $isEligible = false;
                         foreach ($disc->discountItems as $di) {
                             if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                             if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                         }
                         if ($isEligible) {
@@ -339,7 +347,7 @@ trait HandlesOrderSubmit
                                     $itemDiscountValue = $disc->maksimum_diskon;
                                 }
                             } elseif ($disc->jenis_diskon === 'nominal') {
-                                $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                                $itemDiscountValue = $disc->nilai_diskon * $qty;
                             }
                         }
                     }
@@ -544,6 +552,12 @@ trait HandlesOrderSubmit
                         ->where('id', $this->discountId)
                         ->lockForUpdate()
                         ->first();
+
+                    // SERVER-AUTHORITATIVE branch check: tolak discount cabang lain
+                    if ($disc && ! $disc->isAccessibleTo($user)) {
+                        throw new \InvalidArgumentException('Diskon tidak valid atau tidak tersedia untuk cabang Anda.');
+                    }
+
                     if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discountId = null;
@@ -564,10 +578,12 @@ trait HandlesOrderSubmit
                         $isEligible = false;
                         foreach ($disc->discountItems as $di) {
                             if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                             if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                         }
                         if ($isEligible) {
@@ -577,7 +593,7 @@ trait HandlesOrderSubmit
                                     $itemDiscountValue = $disc->maksimum_diskon;
                                 }
                             } elseif ($disc->jenis_diskon === 'nominal') {
-                                $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                                $itemDiscountValue = $disc->nilai_diskon * $qty;
                             }
                         }
                     }
@@ -786,7 +802,7 @@ trait HandlesOrderSubmit
             ];
         })->values()->all();
     }
-    
+
 
 
     private function restoreStock(Pesanan $pesanan)

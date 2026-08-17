@@ -212,10 +212,11 @@ class CreateOrder extends Component
         $cekMember = $this->findMemberByPhone($this->member);
 
         // Hitung total awal
-        $total = collect($this->pesanan)->sum(fn ($p) => $p['harga'] * $p['qty']);
+        $total = collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
 
-        // Ambil data diskon berdasarkan kode
+        // Ambil data diskon berdasarkan kode (WAJIB sesuai branch access user)
         $disc = Discount::where('kode_diskon', $this->discount)
+            ->accessibleTo(auth()->user())
             ->where('is_active', true)
             ->whereDate('tanggal_mulai', '<=', now())
             ->whereDate('tanggal_akhir', '>=', now())
@@ -304,7 +305,7 @@ class CreateOrder extends Component
                     } else {
                         // Scope Global
                         if ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
-                            $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp '.number_format($disc->minimum_transaksi, 0, ',', '.');
+                            $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp ' . number_format($disc->minimum_transaksi, 0, ',', '.');
                         } else {
                             if ($disc->jenis_diskon === 'persentase') {
                                 $discountValue = round($total * ($disc->nilai_diskon / 100));
@@ -338,7 +339,7 @@ class CreateOrder extends Component
 
         $memberFavorites = collect();
         if ($cekMember) {
-            $memMessage = 'Member Tersedia ('.($cekMember->user->name ?? $cekMember->phone).')';
+            $memMessage = 'Member Tersedia (' . ($cekMember->user->name ?? $cekMember->phone) . ')';
             // $this->dispatch('showToast', message: $memMessage, type: 'success', title: 'Success');
 
             // Get favorite items
@@ -351,7 +352,6 @@ class CreateOrder extends Component
                 ->limit(3)
                 ->with('menu')
                 ->get();
-
         } else {
             $memMessage = $this->member ? 'Member Tidak Tersedia ' : '';
         }
@@ -364,7 +364,7 @@ class CreateOrder extends Component
 
         $categories = Category::whereHas('menus', function ($q) use ($priceTierId) {
             $q->where('is_active', true)
-                ->where('nama_menu', 'like', '%'.$this->search.'%')
+                ->where('nama_menu', 'like', '%' . $this->search . '%')
                 ->whereHas('menuPrices', function ($p) use ($priceTierId) {
                     $p->where('price_tier_id', $priceTierId)
                         ->where('sales_channel_id', $this->sales_channel_id);
@@ -372,7 +372,7 @@ class CreateOrder extends Component
         })->with([
             'menus' => function ($query) use ($priceTierId, $user) {
                 $query->where('is_active', true)
-                    ->where('nama_menu', 'like', '%'.$this->search.'%')
+                    ->where('nama_menu', 'like', '%' . $this->search . '%')
                     ->whereHas('menuPrices', function ($q) use ($priceTierId) {
                         $q->where('price_tier_id', $priceTierId)
                             ->where('sales_channel_id', $this->sales_channel_id);
@@ -398,10 +398,7 @@ class CreateOrder extends Component
         $availableDiscounts = Discount::where('is_active', true)
             ->whereDate('tanggal_mulai', '<=', now())
             ->whereDate('tanggal_akhir', '>=', now())
-            ->where(function ($q) use ($user) {
-                $q->where('scope', 'global')
-                    ->orWhere('branch_id', $user->branch_id);
-            })
+            ->accessibleTo($user)
             ->when(! $cekMember, function ($q) {
                 $q->where('member_only', false);
             })
