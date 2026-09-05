@@ -1,9 +1,11 @@
 <div x-data="{ showCartMobile: false }"
-    x-effect="document.documentElement.classList.toggle('overflow-hidden', showCartMobile); document.body.classList.toggle('overflow-hidden', showCartMobile)"
-    class=" md:w-80 lg:w-[380px] shrink-0 order-2 md:order-2 md:sticky md:top-24 z-10 h-fit">
+    x-effect="const shouldLock = window.innerWidth < 1024 && showCartMobile; document.documentElement.classList.toggle('overflow-hidden', shouldLock); document.body.classList.toggle('overflow-hidden', shouldLock)"
+    @resize.window="if (window.innerWidth >= 1024) showCartMobile = false"
+    @keydown.escape.window="showCartMobile = false"
+    class="z-10 w-full min-w-0 lg:w-[380px] lg:shrink-0 lg:self-start lg:sticky lg:top-24">
 
     <style>
-        @media (max-width: 639px) {
+        @media (max-width: 1023px) {
             .mobile-hide-cart {
                 display: none !important;
             }
@@ -20,10 +22,11 @@
                 padding-bottom: 90px !important;
                 margin: 0 !important;
                 border-radius: 0 !important;
-                max-width: none !important;
+                max-width: 100% !important;
                 display: block !important;
                 background-color: #ffffff !important;
                 box-sizing: border-box !important;
+                overscroll-behavior: contain !important;
             }
 
             .dark .mobile-fullscreen-cart {
@@ -31,7 +34,7 @@
             }
         }
 
-        @media (min-width: 640px) {
+        @media (min-width: 1024px) {
 
             .mobile-fullscreen-cart,
             .mobile-hide-cart {
@@ -63,19 +66,19 @@
 
     @if ($status !== 'selesai' && $status !== 'dibatalkan')
         {{-- Mobile Bottom Bar --}}
-        <div class="sm:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl border-t border-neutral-200 dark:border-neutral-800 z-40"
+        <div class="fixed inset-x-0 bottom-0 z-40 w-full max-w-full border-t border-neutral-200 bg-white/80 p-4 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80 lg:hidden"
             x-show="!showCartMobile" x-transition:enter="transition ease-out duration-300 transform"
             x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
-            <div class="flex justify-between items-center max-w-lg mx-auto gap-4">
-                <div class="flex flex-col">
+            <div class="mx-auto flex w-full max-w-screen-sm items-center justify-between gap-3">
+                <div class="min-w-0 flex-1">
                     <span class="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">Total
                         Pembayaran</span>
-                    <span class="text-lg font-black text-blue-600 dark:text-blue-400">Rp
+                    <span class="block truncate text-lg font-black text-blue-600 dark:text-blue-400">Rp
                         {{ number_format($totalAfterDiscount, 0, ',', '.') }}</span>
                 </div>
 
                 <button type="button" @click="showCartMobile = true"
-                    class="flex-1 bg-blue-600 text-white font-bold h-12 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 transition-all active:scale-95">
+                    class="flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition-all active:scale-95 min-[390px]:px-5">
                     <iconify-icon icon="mingcute:shopping-cart-2-line" class="text-xl"></iconify-icon>
                     <span class="text-sm">Keranjang</span>
                     @if (count($pesanan) > 0)
@@ -87,15 +90,15 @@
         </div>
     @endif
 
-    <div x-show="showCartMobile" x-transition.opacity class="sm:hidden fixed inset-0 z-[9998] bg-white dark:bg-neutral-900"
+    <div x-show="showCartMobile" x-transition.opacity class="fixed inset-0 z-[9998] bg-white dark:bg-neutral-900 lg:hidden"
         style="display: none;"></div>
 
     <div id="pesan"
-        class="bg-white dark:bg-neutral-800 border border-neutral-100 dark:border-neutral-700 rounded-2xl p-6 h-fit max-h-[calc(100vh-2rem)] lg:max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar transition-all duration-300 relative"
+        class="relative h-fit w-full min-w-0 max-w-full overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-4 custom-scrollbar transition-all duration-300 dark:border-neutral-700 dark:bg-neutral-800 sm:p-5 lg:max-h-[calc(100vh-8rem)] lg:p-6"
         :class="showCartMobile ? 'mobile-fullscreen-cart' : 'mobile-hide-cart'">
 
         <div x-show="showCartMobile" style="display: none;"
-            class="sm:hidden sticky top-0 z-20 -mx-6 -mt-6 mb-6 flex items-center justify-between border-b border-neutral-100 bg-white/95 px-6 py-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95">
+            class="sticky top-0 z-20 -mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-neutral-100 bg-white/95 px-4 py-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95 sm:-mx-5 sm:-mt-5 sm:px-5 lg:hidden">
             <div>
                 <span class="block text-[10px] font-black uppercase tracking-widest text-neutral-400">Keranjang</span>
                 <span class="block text-sm font-black text-neutral-900 dark:text-neutral-100">{{ count($pesanan) }} item terpilih</span>
@@ -108,7 +111,7 @@
         </div>
 
         {{-- Header Cart --}}
-        <div class="flex items-center justify-between mb-6 pb-4 border-b border-neutral-50 dark:border-neutral-700">
+        <div class="mb-5 flex items-center justify-between border-b border-neutral-50 pb-4 dark:border-neutral-700 lg:mb-6">
             <div>
                 <h2 class="font-black text-xl text-neutral-900 dark:text-white leading-tight">Detail Pesanan</h2>
                 <div class="flex items-center gap-2 mt-1">
@@ -117,7 +120,7 @@
                 </div>
             </div>
             <button x-show="showCartMobile" type="button" @click="showCartMobile = false"
-                class="w-10 h-10 flex items-center justify-center bg-neutral-100 dark:bg-neutral-700 rounded-full text-neutral-500 dark:text-neutral-300 hover:bg-neutral-200 transition">
+                class="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 lg:hidden">
                 <iconify-icon icon="mingcute:close-line" class="text-2xl"></iconify-icon>
             </button>
         </div>
@@ -135,7 +138,7 @@
                 <h3 class="text-xs font-black text-neutral-400 uppercase tracking-widest">Daftar Belanja</h3>
             </div>
 
-            <ul class="space-y-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+            <ul class="max-h-[300px] space-y-3 overflow-y-auto pr-1 custom-scrollbar lg:max-h-[300px]">
                 @forelse ($pesanan as $index => $p)
                     <li
                         class="group flex items-center gap-4 bg-neutral-50/50 dark:bg-neutral-900/50 rounded-3xl p-3 border border-neutral-100/50 dark:border-neutral-700/50 hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
@@ -540,7 +543,7 @@
                 @endif
 
                 <button x-show="showCartMobile" style="display: none;" type="button" @click="showCartMobile = false"
-                    class="sm:hidden w-full py-4 rounded-2xl border border-neutral-200 bg-white text-neutral-600 font-bold uppercase tracking-widest text-[10px] transition-all hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+                    class="w-full rounded-2xl border border-neutral-200 bg-white py-4 text-[10px] font-bold uppercase tracking-widest text-neutral-600 transition-all hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 lg:hidden">
                     Tutup Keranjang
                 </button>
             </div>
