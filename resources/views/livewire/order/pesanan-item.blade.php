@@ -2,7 +2,7 @@
     x-effect="const shouldLock = window.innerWidth < 1024 && showCartMobile; document.documentElement.classList.toggle('overflow-hidden', shouldLock); document.body.classList.toggle('overflow-hidden', shouldLock)"
     @resize.window="if (window.innerWidth >= 1024) showCartMobile = false"
     @keydown.escape.window="showCartMobile = false"
-    class="z-10 w-full min-w-0 lg:w-[380px] lg:shrink-0 lg:self-start lg:sticky lg:top-24">
+    class="w-full lg:w-[380px] lg:shrink-0 lg:self-start lg:sticky lg:top-24 z-10">
 
     <style>
         @media (max-width: 1023px) {
@@ -94,7 +94,7 @@
         style="display: none;"></div>
 
     <div id="pesan"
-        class="relative h-fit w-full min-w-0 max-w-full overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-4 custom-scrollbar transition-all duration-300 dark:border-neutral-700 dark:bg-neutral-800 sm:p-5 lg:max-h-[calc(100vh-8rem)] lg:p-6"
+        class="relative h-fit w-full overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-4 custom-scrollbar transition-all duration-300 dark:border-neutral-700 dark:bg-neutral-800 sm:p-5 lg:max-h-[calc(100vh-8rem)] lg:p-6"
         :class="showCartMobile ? 'mobile-fullscreen-cart' : 'mobile-hide-cart'">
 
         <div x-show="showCartMobile" style="display: none;"

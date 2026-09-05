@@ -1,24 +1,21 @@
-<div class="flex w-full min-w-0 max-w-full flex-col gap-5 lg:gap-6">
-    <div class="mb-4 flex w-full min-w-0 max-w-full flex-col items-start justify-between gap-3 sm:flex-row sm:items-center lg:mb-6">
-        <div class="flex min-w-0 items-center gap-3">
+<div class="flex flex-col gap-6 w-full">
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex items-center gap-3">
             <a href="{{ $backUrl }}" wire:navigate class="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-primary-600 transition-all shadow-sm">
                 <iconify-icon icon="lucide:arrow-left" class="text-xl"></iconify-icon>
             </a>
-            <h6 class="mb-0 text-xl font-bold text-neutral-800 dark:text-neutral-100 lg:hidden">Buat Pesanan Baru</h6>
-            <h6 class="mb-0 hidden text-2xl font-bold text-neutral-800 dark:text-neutral-100 lg:block">{{ $title ?? 'Order' }}</h6>
+            <h6 class="text-2xl font-bold mb-0 text-neutral-800 dark:text-neutral-100">{{ $title ?? 'Order' }}</h6>
         </div>
-        <div class="hidden lg:block">
-            <x-breadcrumb :title="$title ?? 'Order'" />
-        </div>
+        <x-breadcrumb :title="$title ?? 'Order'" />
     </div>
 
-    <div class="flex w-full min-w-0 max-w-full flex-col items-start gap-4 lg:flex-row lg:gap-6">
+    <div class="flex flex-col lg:flex-row items-start gap-4 lg:gap-6 w-full">
     <x-toast />
 
     {{-- Kiri: Produk --}}
-    <div class="w-full min-w-0 max-w-full flex-1 pb-28 lg:pb-0" id="menu">
+    <div class="flex-1 min-w-0 pb-28 lg:pb-0" id="menu">
         {{-- Sales Channel Selection --}}
-        <div class="mb-4 flex w-full max-w-full gap-2 overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:mb-6">
+        <div class="flex gap-2 mb-4 lg:mb-6 overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             @foreach($salesChannels as $channel)
                 <button wire:click="$set('sales_channel_id', {{ $channel->id }})" 
                     class="shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-bold transition-all {{ $sales_channel_id == $channel->id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700' }}">
@@ -28,14 +25,14 @@
         </div>
 
         {{-- Search & Category Filter --}}
-        <div class="relative z-10 mb-5 flex w-full min-w-0 max-w-full flex-col gap-3 lg:mb-6 lg:flex-row lg:items-center">
-            <div class="flex w-full min-w-0 flex-1">
+        <div class="flex flex-col lg:flex-row lg:items-center gap-3 mb-5 lg:mb-6 relative z-10">
+            <div class="w-full lg:flex-1">
                 <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari menu favorit..."
                     class="w-full !bg-white border border-neutral-200 dark:!bg-neutral-900 dark:border-neutral-700"
                     prefix='<iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>' />
             </div>
 
-            <div class="hidden lg:flex lg:shrink-0 lg:justify-end">
+            <div class="hidden lg:block lg:shrink-0">
                 <x-ui.select-modern model="selectedCategoryId" :options="$categories" :activeValue="$selectedCategoryId"
                     placeholder="Semua Menu" />
             </div>
@@ -58,13 +55,13 @@
             $filteredCategories = $selectedCategoryId ? $categories->where('id', $selectedCategoryId) : $categories;
         @endphp
 
-        <div class="space-y-6 lg:space-y-8">
+        <div class="space-y-8">
             @foreach ($filteredCategories as $category)
                 @if ($category->menus->count() > 0)
-                    <div class="min-w-0">
-                        <div class="mb-3 flex min-w-0 items-center gap-3 lg:mb-4">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
                             <div class="w-1 h-6 bg-blue-600 rounded-full"></div>
-                            <h2 class="min-w-0 text-lg font-black tracking-tight text-neutral-800 dark:text-white lg:text-xl">
+                            <h2 class="text-xl font-black text-neutral-800 dark:text-white tracking-tight">
                                 {{ $category->nama }}
                             </h2>
                             <span
@@ -72,7 +69,7 @@
                                 Items</span>
                         </div>
 
-                        <div class="grid w-full min-w-0 grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
                             @foreach ($category->menus as $item)
                                 @php
                                     $tieredPrice = $item->menuPrices->first();
@@ -83,7 +80,7 @@
                                     $isPromo = $tieredPrice ? ($tieredPrice->h_promo > 0) : ($item->h_promo > 0);
                                 @endphp
                                 <article wire:click="addPesanan({{ $item->id }})"
-                                    class="group relative flex min-w-0 max-w-full cursor-pointer flex-col overflow-hidden rounded-2xl border border-neutral-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+                                    class="group relative flex flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden dark:border-neutral-700 dark:bg-neutral-800">
 
                                     <div class="aspect-[16/11] overflow-hidden relative">
                                         <img src="{{ asset('storage/' . $item->gambar) }}"
@@ -109,19 +106,19 @@
                                         @endif
                                     </div>
 
-                                    <div class="flex min-w-0 flex-1 flex-col justify-between p-3">
-                                        <div class="min-w-0">
+                                    <div class="p-3 flex-1 flex flex-col justify-between">
+                                        <div>
                                             <h3
                                                 class="text-xs font-bold text-neutral-800 dark:text-neutral-100 mb-1 leading-snug group-hover:text-blue-600 transition-colors line-clamp-2">
                                                 {{ $item->nama_menu }}
                                             </h3>
                                         </div>
-                                        <div class="mt-2 flex items-center justify-between gap-2">
-                                            <p class="min-w-0 text-sm font-black text-blue-700 dark:text-blue-400">
+                                        <div class="flex items-center justify-between mt-2">
+                                            <p class="text-sm font-black text-blue-700 dark:text-blue-400">
                                                 Rp {{ number_format($harga, 0, ',', '.') }}
                                             </p>
                                             <div
-                                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-50 text-neutral-400 shadow-sm transition-all group-hover:bg-blue-600 group-hover:text-white dark:bg-neutral-700">
+                                                class="w-7 h-7 rounded-lg bg-neutral-50 dark:bg-neutral-700 flex items-center justify-center text-neutral-400 group-hover:bg-blue-600 group-hover:text-white transition-all shadow-sm">
                                                 <iconify-icon icon="mingcute:add-line" class="text-base"></iconify-icon>
                                             </div>
                                         </div>
