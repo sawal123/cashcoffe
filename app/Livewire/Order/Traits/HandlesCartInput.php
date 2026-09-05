@@ -255,19 +255,47 @@ trait HandlesCartInput
             'adminPassword' => 'required'
         ]);
 
+        $user = Auth::user();
+
+        // Branch isolation: hanya boleh verifikasi discount yang ditemukan & accessible
+        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)
+            ->accessibleTo($user)
+            ->first();
+
+        if (!$disc) {
+            $this->addError('adminPassword', 'Kode diskon tidak ditemukan atau tidak tersedia.');
+            return;
+        }
+
         // Cari user admin atau superadmin (Menggunakan whereHas agar tidak error jika role tidak ada)
         $admins = User::whereHas('roles', function ($query) {
             $query->whereIn('name', ['superadmin', 'admin']);
         })->get();
         $isPasswordCorrect = false;
-        // Cek kecocokan password
+        // Cek kecocokan password.
+        // superadmin boleh verifikasi lintas branch;
+        // admin non-superadmin hanya boleh verifikasi kasir dari branch yang sama.
         foreach ($admins as $admin) {
-            if (Hash::check($this->adminPassword, $admin->password)) {
+            if (! Hash::check($this->adminPassword, $admin->password)) {
+                continue;
+            }
+
+            if ($admin->hasRole('superadmin')) {
                 $isPasswordCorrect = true;
-                break; // Jika ketemu satu yang cocok, hentikan pencarian
+                break;
+            }
+
+            if ($admin->branch_id !== null
+                && $user->branch_id !== null
+                && (int) $admin->branch_id === (int) $user->branch_id
+            ) {
+                $isPasswordCorrect = true;
+                break;
             }
         }
         if ($isPasswordCorrect) {
+            // Bind verifikasi ke discount ID spesifik (server-trusted state)
+            $this->verifiedDiscountId = $disc->id;
             $this->isDiscountVerified = true;
             $this->adminPassword = ''; // Kosongkan kembali demi keamanan
 
@@ -284,6 +312,7 @@ trait HandlesCartInput
         // Reset status verifikasi menjadi false. 
         // Jika kodenya private, kasir wajib masukin password lagi.
         $this->isDiscountVerified = false;
+        $this->verifiedDiscountId = null;
     }
 
     // Jangan lupa reset status verifikasi saat diskon dihapus
@@ -293,13 +322,18 @@ trait HandlesCartInput
         $this->discount_id = null;
         $this->discount_value = 0;
         $this->isDiscountVerified = false; // Reset status ini
+        $this->verifiedDiscountId = null;
     }
 
     // Fungsi untuk mengirim notif/request ke Admin
     public function requestAdminApproval()
     {
-        // Cari ID diskon berdasarkan kode yang diketik kasir
-        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)->first();
+        // Cari ID diskon berdasarkan kode yang diketik kasir.
+        // WAJIB filter branch accessibility: kasir branch A tidak boleh membuat
+        // approval untuk discount branch B (tampered Livewire call).
+        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)
+            ->accessibleTo(Auth::user())
+            ->first();
 
         if (!$disc) {
             $this->addError('adminPassword', 'Kode diskon tidak ditemukan.');
@@ -363,19 +397,43 @@ trait HandlesCartInput
     {
         if (!$this->isWaitingApproval || !$this->approvalRequestId) return;
 
-        // Cek ke database apakah admin sudah klik "YA" (status menjadi 'approved')
+        $user = Auth::user();
 
-        $approval = DiscountApproval::find($this->approvalRequestId);
+        // Discount yang sedang diminta (berdasarkan kode saat ini, tetap accessible untuk user)
+        $disc = \App\Models\Discount::where('kode_diskon', $this->discount)
+            ->accessibleTo($user)
+            ->first();
 
-        if ($approval && $approval->status === 'approved') {
-            // JIKA DI-ACC ADMIN:
+        // Approval WAJIB: id cocok + milik kasir ini + discount sama dengan yang diminta.
+        // Tidak boleh mengambil approval kasir lain / branch lain / discount lain.
+        $approval = DiscountApproval::query()
+            ->where('id', $this->approvalRequestId)
+            ->where('kasir_id', $user->id)
+            ->when($disc, function ($q) use ($disc) {
+                $q->where('discount_id', $disc->id);
+            }, function ($q) {
+                $q->whereRaw('1 = 0');
+            })
+            ->first();
+
+        // Tampered / tidak cocok: jangan set verified, jangan ubah discount,
+        // reset waiting state dengan aman.
+        if (!$approval) {
+            $this->isWaitingApproval = false;
+            $this->approvalRequestId = null;
+            return;
+        }
+
+        if ($approval->status === 'approved') {
+            // JIKA DI-ACC ADMIN: bind verifikasi ke discount yang disetujui
+            $this->verifiedDiscountId = $approval->discount_id;
             $this->isDiscountVerified = true;
             $this->isWaitingApproval = false;
             $this->approvalRequestId = null;
 
             $this->dispatch('close-modal', name: 'verify-discount-modal');
             $this->dispatch('showToast', message: 'Diskon Disetujui Admin!', type: 'success');
-        } elseif ($approval && $approval->status === 'rejected') {
+        } elseif ($approval->status === 'rejected') {
             // JIKA DITOLAK ADMIN:
             $this->isWaitingApproval = false;
             $this->approvalRequestId = null;

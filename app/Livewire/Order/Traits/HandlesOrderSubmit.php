@@ -30,22 +30,39 @@ trait HandlesOrderSubmit
         $this->sales_channel_id = $pesanan->sales_channel_id;
         $this->status = $pesanan->status;
 
-        $this->discountId = $pesanan->discount_id;
         $this->nama_costumer = $pesanan->nama;
         $this->uang_tunai = $pesanan->uang_tunai;
         $this->kembalian = $pesanan->kembalian;
-        $this->discount = $pesanan->discount->kode_diskon ?? null;
         $this->member = $pesanan->member->phone ?? null;
 
-        // Jika ada kode diskon dari DB, otomatis anggap sudah diverifikasi
-        if ($this->discount) {
-            $this->isDiscountVerified = true;
+        // Legacy/malformed foreign-branch reference: discount yang TIDAK
+        // accessible untuk current user tidak boleh diekspos ke UI dan tidak
+        // boleh membuat reusable verification state. DB historical tidak diubah.
+        $persistedDiscount = $pesanan->discount;
+        $isLegacyForeign = $persistedDiscount !== null
+            && ! $persistedDiscount->isAccessibleTo(auth()->user());
+
+        if ($persistedDiscount && ! $isLegacyForeign) {
+            $this->discountId = $pesanan->discount_id;
+            $this->discount_id = $pesanan->discount_id;
+            $this->discount = $persistedDiscount->kode_diskon;
+        } else {
+            $this->discountId = null;
+            $this->discount_id = null;
+            $this->discount = null;
         }
+
+        // Authorization private bersifat single-use: membuka existing order
+        // TIDAK boleh menghasilkan verification state yang reusable oleh saveOrder().
+        $this->isDiscountVerified = false;
+        $this->verifiedDiscountId = null;
+        $this->isWaitingApproval = false;
+        $this->approvalRequestId = null;
 
         $this->pesanan = $pesanan->items->mapWithKeys(function ($item) {
             $optionIds = $item->variants->pluck('id')->toArray();
             sort($optionIds);
-            
+
             // Generate Key yang konsisten dengan sistem cartKey di HandlesCartInput
             $optionSlug = count($optionIds) > 0 ? '_' . md5(json_encode($optionIds)) : '';
             $cartKey = $item->menus_id . $optionSlug;
@@ -244,12 +261,16 @@ trait HandlesOrderSubmit
                     throw new \InvalidArgumentException('Pesanan dengan status ' . $pesanan->status . ' tidak dapat diubah.');
                 }
 
-                // Capture old applied global discount before any changes
-                $oldDiscountId = null;
-                $oldDiscountModel = null;
+                // Persisted discount_id APA PUN scope/typenya (item/category/global).
+                // Dipakai untuk authorization private "same persisted discount".
+                $existingPersistedDiscountId = $pesanan->discount_id;
+
+                // Old applied GLOBAL discount (khusus accounting decrement).
+                $oldGlobalDiscountId = null;
+                $oldGlobalDiscountModel = null;
                 if ($pesanan->discount_id && $pesanan->discount && $pesanan->discount->scope === 'global' && $pesanan->discount_value > 0) {
-                    $oldDiscountId = $pesanan->discount_id;
-                    $oldDiscountModel = $pesanan->discount;
+                    $oldGlobalDiscountId = $pesanan->discount_id;
+                    $oldGlobalDiscountModel = $pesanan->discount;
                 }
 
                 // 1. Verify Payment Method
@@ -288,7 +309,7 @@ trait HandlesOrderSubmit
                     // Lock discount rows in deterministic order to prevent deadlock
                     $discountIdsToLock = array_filter([
                         $this->discount_id,
-                        $oldDiscountId,
+                        $oldGlobalDiscountId,
                     ]);
                     sort($discountIdsToLock);
                     $lockedDiscounts = Discount::with('discountItems')
@@ -299,17 +320,40 @@ trait HandlesOrderSubmit
                         ->keyBy('id');
 
                     $disc = $lockedDiscounts->get($this->discount_id);
+
+                    // SERVER-AUTHORITATIVE branch check: tolak discount cabang lain
+                    if ($disc && ! $disc->isAccessibleTo($user)) {
+                        throw new \InvalidArgumentException('Diskon tidak valid atau tidak tersedia untuk cabang Anda.');
+                    }
+
                     if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discount_id = null;
                     }
-                    // Re-fetch locked oldDiscountModel if available
-                    if ($oldDiscountId && $lockedDiscounts->has($oldDiscountId)) {
-                        $oldDiscountModel = $lockedDiscounts->get($oldDiscountId);
+
+                    // SERVER-AUTHORITATIVE private discount check:
+                    // valid jika member bypass, ATAU discount yang sama dengan
+                    // persisted discount existing, ATAU verifikasi server terikat
+                    // ke discount ID ini (fresh).
+                    if ($disc && $disc->type === 'private') {
+                        $isPrivateAuthorized = ($memberId !== null)
+                            || ($existingPersistedDiscountId !== null
+                                && (int) $existingPersistedDiscountId === (int) $disc->id)
+                            || ($this->isDiscountVerified === true
+                                && $this->verifiedDiscountId !== null
+                                && (int) $this->verifiedDiscountId === (int) $disc->id);
+
+                        if (! $isPrivateAuthorized) {
+                            throw new \InvalidArgumentException('Diskon private belum diverifikasi.');
+                        }
                     }
-                } elseif ($oldDiscountId) {
+                    // Re-fetch locked oldGlobalDiscountModel if available
+                    if ($oldGlobalDiscountId && $lockedDiscounts->has($oldGlobalDiscountId)) {
+                        $oldGlobalDiscountModel = $lockedDiscounts->get($oldGlobalDiscountId);
+                    }
+                } elseif ($oldGlobalDiscountId) {
                     // No new discount, but old one needs to be locked for decrement
-                    $oldDiscountModel = Discount::where('id', $oldDiscountId)->lockForUpdate()->first();
+                    $oldGlobalDiscountModel = Discount::where('id', $oldGlobalDiscountId)->lockForUpdate()->first();
                 }
 
                 foreach ($itemsToProcess as $item) {
@@ -326,10 +370,12 @@ trait HandlesOrderSubmit
                         $isEligible = false;
                         foreach ($disc->discountItems as $di) {
                             if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                             if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                         }
                         if ($isEligible) {
@@ -339,7 +385,7 @@ trait HandlesOrderSubmit
                                     $itemDiscountValue = $disc->maksimum_diskon;
                                 }
                             } elseif ($disc->jenis_diskon === 'nominal') {
-                                $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                                $itemDiscountValue = $disc->nilai_diskon * $qty;
                             }
                         }
                     }
@@ -371,23 +417,14 @@ trait HandlesOrderSubmit
                         (!$disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (!$disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
-                        // --- NULL-safe reconciliation ---
-                        // If digunakan is NULL (legacy), count actual active orders using this discount
-                        // as a one-time lazy read to get the true current usage before limit check.
-                        $discCurrentUsage = $disc->digunakan;
-                        if (is_null($discCurrentUsage)) {
-                            $discCurrentUsage = \App\Models\Pesanan::where('discount_id', $disc->id)
-                                ->where('discount_value', '>', 0)
-                                ->whereNotIn('status', [\App\Models\Pesanan::STATUS_DIBATALKAN])
-                                ->whereNull('deleted_at')
-                                ->count();
-                        } else {
-                            $discCurrentUsage = (int) $discCurrentUsage;
-                        }
+                        // --- NULL-safe reconciliation (single source of truth) ---
+                        // Jika digunakan NULL (legacy), hitung active orders
+                        // TANPA branch_filter, dengan ownership branch discount.
+                        $discCurrentUsage = $disc->reconciledUsage();
 
                         // Existing order using same discount may bypass limit check:
                         // the slot is already "occupied" by this order's previous usage.
-                        $isSameExistingDiscount = ((int) $disc->id === (int) $oldDiscountId);
+                        $isSameExistingDiscount = ((int) $disc->id === (int) $oldGlobalDiscountId);
                         $limitBlocking = !$isSameExistingDiscount
                             && !is_null($disc->limit)
                             && $discCurrentUsage >= (int) $disc->limit;
@@ -413,20 +450,18 @@ trait HandlesOrderSubmit
                 }
 
                 // Discount usage accounting: diff old vs new
-                if ((int) $oldDiscountId !== (int) $newDiscountId) {
-                    // Old applied global discount no longer active — decrement using numeric value
-                    if ($oldDiscountId !== null && $oldDiscountModel) {
-                        $oldUsage = $oldDiscountModel->digunakan;
-                        if (is_null($oldUsage)) {
-                            $oldUsage = \App\Models\Pesanan::where('discount_id', $oldDiscountModel->id)
-                                ->where('discount_value', '>', 0)
-                                ->whereNotIn('status', [\App\Models\Pesanan::STATUS_DIBATALKAN])
-                                ->whereNull('deleted_at')
-                                ->count();
-                        } else {
-                            $oldUsage = (int) $oldUsage;
+                if ((int) $oldGlobalDiscountId !== (int) $newDiscountId) {
+                    // Old applied global discount no longer active — decrement using numeric value.
+                    // Foreign/legacy discount (branch lain) TIDAK boleh didecrement:
+                    // counter tersebut bukan milik branch order ini.
+                    if ($oldGlobalDiscountId !== null && $oldGlobalDiscountModel) {
+                        $oldOwnedByOrderBranch = $oldGlobalDiscountModel->branch_id === null
+                            || ((int) $oldGlobalDiscountModel->branch_id === (int) $pesanan->branch_id);
+
+                        if ($oldOwnedByOrderBranch) {
+                            $oldUsage = $oldGlobalDiscountModel->reconciledUsage();
+                            $oldGlobalDiscountModel->update(['digunakan' => max(0, $oldUsage - 1)]);
                         }
-                        $oldDiscountModel->update(['digunakan' => max(0, $oldUsage - 1)]);
                     }
                     // New applied global discount (fresh increment) — only when genuinely new
                     if ($newDiscountId !== null) {
@@ -465,6 +500,9 @@ trait HandlesOrderSubmit
             });
 
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
+
+            // Authorization private single-use: reset HANYA setelah transaksi berhasil.
+            $this->resetDiscountAuthorization();
         } catch (\Exception $e) {
             $this->dispatch('showToast', type: 'error', message: 'Gagal update pesanan: ' . $e->getMessage());
         }
@@ -544,9 +582,29 @@ trait HandlesOrderSubmit
                         ->where('id', $this->discountId)
                         ->lockForUpdate()
                         ->first();
+
+                    // SERVER-AUTHORITATIVE branch check: tolak discount cabang lain
+                    if ($disc && ! $disc->isAccessibleTo($user)) {
+                        throw new \InvalidArgumentException('Diskon tidak valid atau tidak tersedia untuk cabang Anda.');
+                    }
+
                     if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
                         $disc = null;
                         $this->discountId = null;
+                    }
+
+                    // SERVER-AUTHORITATIVE private discount check:
+                    // hanya boleh diterapkan jika member bypass valid ATAU
+                    // verifikasi server terikat ke discount ID ini.
+                    if ($disc && $disc->type === 'private') {
+                        $isPrivateAuthorized = ($memberId !== null)
+                            || ($this->isDiscountVerified === true
+                                && $this->verifiedDiscountId !== null
+                                && (int) $this->verifiedDiscountId === (int) $disc->id);
+
+                        if (! $isPrivateAuthorized) {
+                            throw new \InvalidArgumentException('Diskon private belum diverifikasi.');
+                        }
                     }
                 }
 
@@ -564,10 +622,12 @@ trait HandlesOrderSubmit
                         $isEligible = false;
                         foreach ($disc->discountItems as $di) {
                             if ($di->model_type === 'App\Models\Menu' && $di->model_id == $menu->id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                             if ($di->model_type === 'App\Models\Category' && $di->model_id == $menu->categories_id) {
-                                $isEligible = true; break;
+                                $isEligible = true;
+                                break;
                             }
                         }
                         if ($isEligible) {
@@ -577,7 +637,7 @@ trait HandlesOrderSubmit
                                     $itemDiscountValue = $disc->maksimum_diskon;
                                 }
                             } elseif ($disc->jenis_diskon === 'nominal') {
-                                $itemDiscountValue = $disc->nilai_diskon * $qty; 
+                                $itemDiscountValue = $disc->nilai_diskon * $qty;
                             }
                         }
                     }
@@ -605,17 +665,10 @@ trait HandlesOrderSubmit
                         (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
                         (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
                     ) {
-                        // --- NULL-safe reconciliation ---
-                        $discCurrentUsage = $disc->digunakan;
-                        if (is_null($discCurrentUsage)) {
-                            $discCurrentUsage = \App\Models\Pesanan::where('discount_id', $disc->id)
-                                ->where('discount_value', '>', 0)
-                                ->whereNotIn('status', [\App\Models\Pesanan::STATUS_DIBATALKAN])
-                                ->whereNull('deleted_at')
-                                ->count();
-                        } else {
-                            $discCurrentUsage = (int) $discCurrentUsage;
-                        }
+                        // --- NULL-safe reconciliation (single source of truth) ---
+                        // Jika digunakan NULL (legacy), hitung active orders
+                        // TANPA branch_filter, dengan ownership branch discount.
+                        $discCurrentUsage = $disc->reconciledUsage();
 
                         if (! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit) {
                             // Limit habis
@@ -672,12 +725,29 @@ trait HandlesOrderSubmit
             ]));
 
             $this->dispatch('showToast', message: 'Pesanan berhasil disimpan.', type: 'success', title: 'Success');
+
+            // Authorization private single-use: reset HANYA setelah transaksi berhasil.
+            $this->resetDiscountAuthorization();
+
             if ($this->metode_pembayaran) {
                 $this->dispatch('open-modal', name: 'order-success');
             }
         } catch (\Exception $e) {
             $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Reset authorization private discount. Dipanggil HANYA setelah
+     * transaksi berhasil — jika gagal, verification tetap tersedia
+     * untuk retry request yang sama.
+     */
+    private function resetDiscountAuthorization(): void
+    {
+        $this->isDiscountVerified = false;
+        $this->verifiedDiscountId = null;
+        $this->isWaitingApproval = false;
+        $this->approvalRequestId = null;
     }
 
     public function completeLastOrder()
@@ -786,7 +856,7 @@ trait HandlesOrderSubmit
             ];
         })->values()->all();
     }
-    
+
 
 
     private function restoreStock(Pesanan $pesanan)

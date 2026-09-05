@@ -47,9 +47,12 @@ class CreateDiscount extends Component
     {
         $this->menus = \App\Models\Menu::where('is_active', 1)->get();
         $this->categories = \App\Models\Category::all();
-        $this->branches = \App\Models\Branch::all();
+        // Branch isolation: non-superadmin hanya melihat branch sendiri
+        $this->branches = auth()->user()->hasRole('superadmin')
+            ? \App\Models\Branch::all()
+            : collect([auth()->user()->branch])->filter();
         $this->priceTiers = \App\Models\PriceTier::all();
-        
+
         if ($id) {
             $this->discountId = $id;
             $this->button = "Update";
@@ -61,6 +64,11 @@ class CreateDiscount extends Component
     public function loadData()
     {
         $diskon = Discount::findOrFail(base64_decode($this->discountId));
+
+        // Branch isolation: non-superadmin tidak boleh membuka discount
+        // branch lain atau shared (branch_id NULL).
+        abort_unless($diskon->isManageableBy(auth()->user()), 403, 'Anda tidak memiliki akses untuk mengedit diskon ini.');
+
         $this->discountId = $diskon->id;
         $this->nama_diskon = $diskon->nama_diskon;
         $this->jenis_diskon = $diskon->jenis_diskon;
@@ -77,7 +85,7 @@ class CreateDiscount extends Component
         $this->scope = $diskon->scope;
         $this->branch_id = $diskon->branch_id;
         $this->price_tier_id = $diskon->price_tier_id;
-        
+
         if ($diskon->scope !== 'global') {
             $this->selectedItems = $diskon->discountItems->map(fn($item) => $item->model_id)->toArray();
         }
@@ -97,6 +105,20 @@ class CreateDiscount extends Component
         }
         $this->validate();
 
+        // Branch isolation: non-superadmin branch_id WAJIB dipaksa ke branch user.
+        // Tidak percaya branch_id dari Livewire property/request.
+        $user = auth()->user();
+
+        // Non-superadmin tanpa branch tidak boleh membuat discount
+        // (karena akan terpaksa menjadi shared discount).
+        if (! $user->hasRole('superadmin') && ! $user->branch_id) {
+            abort(403, 'Anda tidak memiliki cabang, tidak dapat membuat diskon.');
+        }
+
+        $branchId = $user->hasRole('superadmin')
+            ? ($this->branch_id ?: null)
+            : $user->branch_id;
+
         $discount = Discount::create([
 
             'nama_diskon' => $this->nama_diskon,
@@ -112,7 +134,7 @@ class CreateDiscount extends Component
             'member_only' => $this->member_only,
             'type' => $this->type,
             'scope' => $this->scope,
-            'branch_id' => $this->branch_id ?: null,
+            'branch_id' => $branchId,
             'price_tier_id' => $this->price_tier_id ?: null,
         ]);
 
@@ -128,7 +150,7 @@ class CreateDiscount extends Component
         }
 
         $this->resetForm();
-         $this->dispatch('showToast', message: 'Discount Berhasil Ditambah', type: 'success', title: 'Success');
+        $this->dispatch('showToast', message: 'Discount Berhasil Ditambah', type: 'success', title: 'Success');
     }
 
     public function update($id)
@@ -139,6 +161,15 @@ class CreateDiscount extends Component
         // $this->validate();
 
         $diskon = Discount::findOrFail($id);
+
+        // Branch isolation: non-superadmin tidak boleh update discount
+        // branch lain atau shared (branch_id NULL).
+        abort_unless($diskon->isManageableBy(auth()->user()), 403, 'Anda tidak memiliki akses untuk mengedit diskon ini.');
+
+        // Non-superadmin tidak boleh mengubah branch_id: paksa tetap branch user.
+        $branchId = auth()->user()->hasRole('superadmin')
+            ? ($this->branch_id ?: null)
+            : $diskon->branch_id;
 
         $diskon->update([
             'nama_diskon' => $this->nama_diskon,
@@ -154,7 +185,7 @@ class CreateDiscount extends Component
             'member_only' => $this->member_only,
             'type' => $this->type,
             'scope' => $this->scope,
-            'branch_id' => $this->branch_id ?: null,
+            'branch_id' => $branchId,
             'price_tier_id' => $this->price_tier_id ?: null,
         ]);
 
@@ -170,7 +201,7 @@ class CreateDiscount extends Component
             }
         }
 
-       $this->dispatch('showToast', message: 'Discount Berhasil Diupdate', type: 'success', title: 'Success');
+        $this->dispatch('showToast', message: 'Discount Berhasil Diupdate', type: 'success', title: 'Success');
     }
 
 

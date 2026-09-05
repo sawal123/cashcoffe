@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\User;
+use App\Models\Branch;
 use App\Models\Discount;
 use App\Models\DiscountApproval;
 use App\Models\Pesanan;
@@ -17,23 +18,29 @@ class PosRbacTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected Branch $branch;
+
     protected function setUp(): void
     {
         parent::setUp();
         
         $this->seed(RbacSeeder::class);
+
+        // Branch isolation: kasir/manager WAJIB punya branch (non-superadmin
+        // tanpa branch tidak bisa mengelola/memproses diskon).
+        $this->branch = Branch::create(['nama_cabang' => 'Branch POS', 'kode_cabang' => 'POS']);
     }
 
     private function createKasir()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['branch_id' => $this->branch->id]);
         $user->assignRole('kasir');
         return $user;
     }
 
     private function createManager()
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['branch_id' => $this->branch->id]);
         $user->assignRole('manager');
         return $user;
     }
@@ -281,14 +288,17 @@ class PosRbacTest extends TestCase
     {
         $kasir = $this->createKasir();
         
-        $pesanan = Pesanan::create([
+        $pesanan = new Pesanan([
             'kode' => 'TRX-001',
             'nama' => 'Test',
             'status' => 'selesai',
             'total' => 10000,
             'pajak' => 0,
-            'subtotal' => 10000
+            'subtotal' => 10000,
         ]);
+        // branch_id di-set lewat trait BelongsToBranch saat auth; set manual di test
+        $pesanan->branch_id = $this->branch->id;
+        $pesanan->save();
 
         Livewire::actingAs($kasir)
             ->test(\App\Livewire\Transaksi\Transaksi::class)
