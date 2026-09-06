@@ -2,7 +2,7 @@
     x-effect="const shouldLock = window.innerWidth < 1024 && showCartMobile; document.documentElement.classList.toggle('overflow-hidden', shouldLock); document.body.classList.toggle('overflow-hidden', shouldLock)"
     @resize.window="if (window.innerWidth >= 1024) showCartMobile = false"
     @keydown.escape.window="showCartMobile = false"
-    class="w-full lg:w-[380px] lg:shrink-0 lg:self-start lg:sticky lg:top-24 z-10">
+    class="w-full z-10">
 
     <style>
         @media (max-width: 1023px) {
@@ -66,7 +66,7 @@
 
     @if ($status !== 'selesai' && $status !== 'dibatalkan')
         {{-- Mobile Bottom Bar --}}
-        <div class="fixed inset-x-0 bottom-0 z-40 w-full max-w-full border-t border-neutral-200 bg-white/80 p-4 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80 lg:hidden"
+        <div class="order-bottom-cart fixed inset-x-0 bottom-0 z-40 w-full max-w-full border-t border-neutral-200 bg-white/80 p-4 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80 lg:hidden"
             x-show="!showCartMobile" x-transition:enter="transition ease-out duration-300 transform"
             x-transition:enter-start="translate-y-full" x-transition:enter-end="translate-y-0">
             <div class="mx-auto flex w-full max-w-screen-sm items-center justify-between gap-3">
@@ -90,7 +90,7 @@
         </div>
     @endif
 
-    <div x-show="showCartMobile" x-transition.opacity class="fixed inset-0 z-[9998] bg-white dark:bg-neutral-900 lg:hidden"
+    <div x-show="showCartMobile" x-transition.opacity class="order-mobile-overlay fixed inset-0 z-[9998] bg-white dark:bg-neutral-900 lg:hidden"
         style="display: none;"></div>
 
     <div id="pesan"
@@ -98,7 +98,7 @@
         :class="showCartMobile ? 'mobile-fullscreen-cart' : 'mobile-hide-cart'">
 
         <div x-show="showCartMobile" style="display: none;"
-            class="sticky top-0 z-20 -mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-neutral-100 bg-white/95 px-4 py-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95 sm:-mx-5 sm:-mt-5 sm:px-5 lg:hidden">
+            class="order-cart-mobile-header sticky top-0 z-20 -mx-4 -mt-4 mb-5 flex items-center justify-between border-b border-neutral-100 bg-white/95 px-4 py-4 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/95 sm:-mx-5 sm:-mt-5 sm:px-5 lg:hidden">
             <div>
                 <span class="block text-[10px] font-black uppercase tracking-widest text-neutral-400">Keranjang</span>
                 <span class="block text-sm font-black text-neutral-900 dark:text-neutral-100">{{ count($pesanan) }} item terpilih</span>
@@ -120,7 +120,7 @@
                 </div>
             </div>
             <button x-show="showCartMobile" type="button" @click="showCartMobile = false"
-                class="flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 lg:hidden">
+                class="order-cart-mobile-close flex h-10 w-10 items-center justify-center rounded-full bg-neutral-100 text-neutral-500 transition hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-300 lg:hidden">
                 <iconify-icon icon="mingcute:close-line" class="text-2xl"></iconify-icon>
             </button>
         </div>
