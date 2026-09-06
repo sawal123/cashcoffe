@@ -1,4 +1,166 @@
-<div class="flex flex-col gap-6 w-full">
+<div class="order-create-page flex flex-col gap-6 w-full">
+    <style>
+        .order-create-page {
+            width: 100%;
+            min-width: 0;
+        }
+
+        /* Mobile/tablet only: ancestor .dashboard-main is a column flex with flex-wrap that sizes the
+           order layout to its max-content (~1312px from chip rows / product cards), so document
+           overflowed the viewport. Diagnosed live: min-width:0 + width:100% on the flex ancestor
+           collapses it to the viewport and lets chips scroll locally. This <style> only renders on
+           /order/create, so no other page is affected; desktop (>= 1024px) is untouched. */
+        @media (max-width: 1023.98px) {
+            .dashboard-main-body {
+                min-width: 0;
+                width: 100%;
+            }
+        }
+
+        /* ===== STRUCTURAL RESPONSIVE LAYOUT (scoped) ===== */
+        .order-create-page .order-create-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+            min-width: 0;
+            align-items: stretch;
+        }
+
+        .order-create-page .order-menu-pane {
+            width: 100%;
+            min-width: 0;
+            flex: 0 0 auto;
+        }
+
+        .order-create-page .order-cart-pane {
+            width: 100%;
+            min-width: 0;
+            flex: 0 0 auto;
+        }
+
+        /* Mobile-only / desktop-only visibility */
+        .order-create-page .order-desktop-only {
+            display: none;
+        }
+
+        /* Local horizontal scroll containers */
+        .order-create-page .order-channel-scroll,
+        .order-create-page .order-category-scroll {
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        /* Search row: single column on mobile */
+        .order-create-page .order-search-row {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .order-create-page .order-search-input {
+            width: 100%;
+            min-width: 0;
+        }
+
+        /* Product grid: 2 columns on small mobile */
+        .order-create-page .order-product-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            width: 100%;
+            min-width: 0;
+        }
+
+        /* Bottom spacing so last product not hidden behind bottom cart */
+        .order-create-page .order-menu-pane {
+            padding-bottom: 7rem;
+        }
+
+        @media (min-width: 640px) {
+            .order-create-page .order-product-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .order-create-page .order-create-layout {
+                flex-direction: row;
+                align-items: flex-start;
+                gap: 1.5rem;
+            }
+
+            .order-create-page .order-menu-pane {
+                flex: 1 1 0%;
+                min-width: 0;
+                padding-bottom: 0;
+            }
+
+            .order-create-page .order-cart-pane {
+                flex: 0 0 380px;
+                width: 380px;
+                max-width: 380px;
+                min-width: 380px;
+                position: sticky;
+                top: 6rem;
+                align-self: flex-start;
+            }
+
+            .order-create-page .order-mobile-only {
+                display: none;
+            }
+
+            .order-create-page .order-desktop-only {
+                display: block;
+            }
+
+            .order-create-page .order-bottom-cart,
+            .order-create-page .order-mobile-overlay {
+                display: none !important;
+            }
+
+            /* Mobile-only elements inside cart hidden on desktop */
+            .order-create-page .order-cart-mobile-header,
+            .order-create-page .order-cart-mobile-close {
+                display: none !important;
+            }
+
+            .order-create-page .order-cart-pane #pesan {
+                max-height: calc(100vh - 8rem);
+                overflow-y: auto;
+            }
+
+            .order-create-page .order-search-row {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .order-create-page .order-search-input {
+                flex: 0 0 auto;
+                width: auto;
+            }
+
+            .order-create-page .order-category-dropdown {
+                flex: 0 0 auto;
+            }
+
+            .order-create-page .order-product-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1280px) {
+            .order-create-page .order-product-grid {
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+            }
+        }
+
+        @media (min-width: 1536px) {
+            .order-create-page .order-product-grid {
+                grid-template-columns: repeat(5, minmax(0, 1fr));
+            }
+        }
+    </style>
+
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div class="flex items-center gap-3">
             <a href="{{ $backUrl }}" wire:navigate class="w-10 h-10 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-400 hover:text-primary-600 transition-all shadow-sm">
@@ -9,33 +171,47 @@
         <x-breadcrumb :title="$title ?? 'Order'" />
     </div>
 
-    <div class="flex flex-col-3 md:flex-row items-start gap-4 lg:gap-6 w-full">
     <x-toast />
 
+    <div class="order-create-layout">
+
     {{-- Kiri: Produk --}}
-    <div class="flex-1 min-w-0" id="menu">
+    <div class="order-menu-pane" id="menu">
         {{-- Sales Channel Selection --}}
-        <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div class="order-channel-scroll flex gap-2 mb-4 overflow-x-auto overscroll-x-contain pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             @foreach($salesChannels as $channel)
                 <button wire:click="$set('sales_channel_id', {{ $channel->id }})" 
-                    class="px-6 py-2.5 rounded-full font-bold text-sm transition-all whitespace-nowrap {{ $sales_channel_id == $channel->id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 border border-neutral-200 dark:border-neutral-700' }}">
+                    class="shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-bold transition-all {{ $sales_channel_id == $channel->id ? 'bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'border border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700' }}">
                     {{ $channel->nama_channel }}
                 </button>
             @endforeach
         </div>
 
         {{-- Search & Category Filter --}}
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2 mb-6 relative z-10">
-            <div class="shrink-0">
+        <div class="order-search-row gap-3 mb-5 relative z-10">
+            <div class="order-search-input">
                 <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Cari menu favorit..."
-                    class="!bg-white dark:!bg-neutral-900 border border-neutral-200 dark:border-neutral-700"
+                    class="w-full !bg-white border border-neutral-200 dark:!bg-neutral-900 dark:border-neutral-700"
                     prefix='<iconify-icon icon="lucide:search" class="text-xl"></iconify-icon>' />
             </div>
 
-            <div class="flex justify-end">
+            <div class="order-desktop-only order-category-dropdown">
                 <x-ui.select-modern model="selectedCategoryId" :options="$categories" :activeValue="$selectedCategoryId"
                     placeholder="Semua Menu" />
             </div>
+        </div>
+
+        <div class="order-mobile-only order-category-scroll mb-5 flex gap-2 overflow-x-auto px-1 pb-2 whitespace-nowrap overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <button type="button" wire:click="$set('selectedCategoryId', null)"
+                class="shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition-all {{ blank($selectedCategoryId) ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700' }}">
+                Semua
+            </button>
+            @foreach ($categories as $categoryOption)
+                <button type="button" wire:click="$set('selectedCategoryId', {{ $categoryOption->id }})"
+                    class="shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition-all {{ (string) $selectedCategoryId === (string) $categoryOption->id ? 'border-blue-600 bg-blue-600 text-white shadow-md shadow-blue-500/30' : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700' }}">
+                    {{ $categoryOption->nama }}
+                </button>
+            @endforeach
         </div>
 
         @php
@@ -56,7 +232,7 @@
                                 Items</span>
                         </div>
 
-                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3">
+                        <div class="order-product-grid gap-3">
                             @foreach ($category->menus as $item)
                                 @php
                                     $tieredPrice = $item->menuPrices->first();
@@ -119,9 +295,11 @@
         </div>
     </div>
 
-
     {{-- Kanan: Pesanan --}}
-    @include('livewire.order.pesanan-item')
+    <div class="order-cart-pane">
+        @include('livewire.order.pesanan-item')
+    </div>
+</div>
 
     {{-- MODAL VARIAN --}}
     <x-mdal name="variant-modal">
@@ -268,5 +446,4 @@
             </div>
         @endif
     </x-mdal>
-</div>
 </div>
