@@ -251,9 +251,14 @@ class InventoryConsistencyTest extends TestCase
         $this->assertEquals(1, RiwayatStock::count());
     }
 
-    public function test_stok_ingredient_tidak_cukup_order_tetap_diproses()
+    public function test_stok_ingredient_dasar_kurang_tetap_selesai_dan_stok_menjadi_negatif()
     {
-        $this->ingredientDasar->update(['stok' => 5]); // need 10
+        // stok = 2, order membutuhkan 5
+        $this->ingredientDasar->update(['stok' => 2]);
+        MenuIngredients::where('menu_id', $this->menu->id)
+            ->where('ingredient_id', $this->ingredientDasar->id)
+            ->update(['qty' => 5]);
+
         $order = $this->createTestOrder(1);
 
         Livewire::actingAs($this->user)->test(Transaksi::class)
@@ -262,13 +267,21 @@ class InventoryConsistencyTest extends TestCase
             ->set('metode_pembayaran', $this->paymentMethod->id)
             ->call('updateStatus');
 
-        $this->assertEquals('diproses', $order->fresh()->status);
+        $this->assertEquals('selesai', $order->fresh()->status);
+        $this->assertEquals(-3, $this->ingredientDasar->fresh()->stok);
+
+        $riwayat = RiwayatStock::where('ingredient_id', $this->ingredientDasar->id)->first();
+        $this->assertNotNull($riwayat);
+        $this->assertEquals(2, $riwayat->qty_before);
+        $this->assertEquals(5, $riwayat->qty);
+        $this->assertEquals(-3, $riwayat->qty_after);
+        $this->assertEquals('out', $riwayat->tipe);
     }
 
-    public function test_stok_tidak_cukup_tidak_ada_ingredient_lain_yang_dipotong()
+    public function test_variant_ingredient_kurang_tetap_selesai_dan_stok_menjadi_negatif()
     {
-        $this->ingredientDasar->update(['stok' => 5]); // need 10 (insufficient)
-        $this->ingredientVarian->update(['stok' => 50]); // need 5 (sufficient)
+        // Variant membutuhkan 5, stok diset ke 1 -> hasil akhir -4
+        $this->ingredientVarian->update(['stok' => 1]);
         $order = $this->createTestOrder(1, true);
 
         Livewire::actingAs($this->user)->test(Transaksi::class)
@@ -277,40 +290,112 @@ class InventoryConsistencyTest extends TestCase
             ->set('metode_pembayaran', $this->paymentMethod->id)
             ->call('updateStatus');
 
-        $this->assertEquals(5, $this->ingredientDasar->fresh()->stok);
-        $this->assertEquals(50, $this->ingredientVarian->fresh()->stok); // Not deducted
+        $this->assertEquals('selesai', $order->fresh()->status);
+        $this->assertEquals(-4, $this->ingredientVarian->fresh()->stok);
+
+        $riwayat = RiwayatStock::where('ingredient_id', $this->ingredientVarian->id)->first();
+        $this->assertNotNull($riwayat);
+        $this->assertEquals(1, $riwayat->qty_before);
+        $this->assertEquals(5, $riwayat->qty);
+        $this->assertEquals(-4, $riwayat->qty_after);
     }
 
-    public function test_stok_tidak_cukup_tidak_ada_riwayat_stock()
+    public function test_kedua_completion_path_mengizinkan_negative_stock()
     {
-        $this->ingredientDasar->update(['stok' => 5]);
-        $order = $this->createTestOrder(1);
+        RiwayatStock::truncate();
 
-        Livewire::actingAs($this->user)->test(Transaksi::class)
-            ->set('selectedOrder', $order)
-            ->set('status', 'selesai')
-            ->set('metode_pembayaran', $this->paymentMethod->id)
-            ->call('updateStatus');
+        // 1. Path TableOrder::saji
+        $this->ingredientDasar->update(['stok' => 2]);
+        MenuIngredients::where('menu_id', $this->menu->id)
+            ->where('ingredient_id', $this->ingredientDasar->id)
+            ->update(['qty' => 5]);
 
-        $this->assertEquals(0, RiwayatStock::count());
+        $order1 = $this->createTestOrder(1);
+        Livewire::actingAs($this->user)->test(TableOrder::class)
+            ->call('saji', base64_encode($order1->id));
+
+        $this->assertEquals('selesai', $order1->fresh()->status);
+        $this->assertEquals(-3, $this->ingredientDasar->fresh()->stok);
+
+        // 2. Path CreateOrder::completeLastOrder()
+        Ingredients::where('id', $this->ingredientDasar->id)->update(['stok' => 2]);
+        $order2 = $this->createTestOrder(1);
+        Livewire::actingAs($this->user)->test(\App\Livewire\Order\CreateOrder::class)
+            ->set('lastPesananId', $order2->id)
+            ->call('completeLastOrder');
+
+        $this->assertEquals('selesai', $order2->fresh()->status);
+        $this->assertEquals(-3, $this->ingredientDasar->fresh()->stok);
     }
 
-    public function test_stok_tidak_cukup_member_point_total_pengeluaran_tidak_berubah()
+    public function test_penyelesaian_order_dua_kali_pada_table_order_dan_create_order_tidak_double_potong()
     {
-        $this->ingredientDasar->update(['stok' => 5]);
+        RiwayatStock::truncate();
+        Ingredients::where('id', $this->ingredientDasar->id)->update(['stok' => 100]);
+        MenuIngredients::where('menu_id', $this->menu->id)
+            ->where('ingredient_id', $this->ingredientDasar->id)
+            ->update(['qty' => 10]);
+
         $order = $this->createTestOrder(1);
-        
-        $startPoints = $this->member->points;
-        $startPengeluaran = $this->member->total_pengeluaran;
 
-        Livewire::actingAs($this->user)->test(Transaksi::class)
-            ->set('selectedOrder', $order)
-            ->set('status', 'selesai')
-            ->set('metode_pembayaran', $this->paymentMethod->id)
-            ->call('updateStatus');
+        // Call saji pertama kali
+        $comp = Livewire::actingAs($this->user)->test(TableOrder::class)
+            ->call('saji', base64_encode($order->id));
+        $this->assertEquals(90, $this->ingredientDasar->fresh()->stok);
+        $this->assertEquals(1, RiwayatStock::count());
 
-        $this->assertEquals($startPoints, $this->member->fresh()->points);
-        $this->assertEquals($startPengeluaran, $this->member->fresh()->total_pengeluaran);
+        // Call saji kedua kali
+        $comp->call('saji', base64_encode($order->id));
+        $this->assertEquals(90, $this->ingredientDasar->fresh()->stok);
+        $this->assertEquals(1, RiwayatStock::count());
+
+        // Call completeLastOrder pada order yang sama
+        Livewire::actingAs($this->user)->test(\App\Livewire\Order\CreateOrder::class)
+            ->set('lastPesananId', $order->id)
+            ->call('completeLastOrder');
+        $this->assertEquals(90, $this->ingredientDasar->fresh()->stok);
+        $this->assertEquals(1, RiwayatStock::count());
+    }
+
+    public function test_role_admin_dapat_melihat_dan_menjalankan_aksi_order()
+    {
+        $roleAdmin = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'admin']);
+        $admin = User::factory()->create();
+        $admin->assignRole('admin');
+
+        $orderDiproses = $this->createTestOrder(1);
+
+        $orderSelesai = $this->createTestOrder(1);
+        $orderSelesai->update(['status' => 'selesai']);
+
+        // Test rendering view untuk role admin
+        $testComponent = Livewire::actingAs($admin)->test(TableOrder::class);
+
+        // Order diproses: Wajib ada Tandai Selesai, Print Struk, Edit Pesanan, dan TIDAK ada tombol Hapus
+        $testComponent->assertSeeHtml("saji('" . base64_encode($orderDiproses->id) . "')")
+            ->assertSeeHtml('title="Tandai Selesai"')
+            ->assertSeeHtml(route('struk.print', base64_encode($orderDiproses->id)))
+            ->assertSeeHtml('title="Print Struk"')
+            ->assertSeeHtml("/order/" . base64_encode($orderDiproses->id) . "/edit")
+            ->assertSeeHtml('title="Edit Pesanan"')
+            ->assertDontSeeHtml('title="Hapus Pesanan"');
+
+        // Order selesai: Wajib ada Lihat Detail, Print Struk, dan Edit Pesanan
+        $testComponent->assertSeeHtml("showDetail('" . base64_encode($orderSelesai->id) . "')")
+            ->assertSeeHtml('title="Lihat Detail"')
+            ->assertSeeHtml(route('struk.print', base64_encode($orderSelesai->id)))
+            ->assertSeeHtml("/order/" . base64_encode($orderSelesai->id) . "/edit");
+
+        // Order dibatalkan: Wajib ada Edit Pesanan
+        $orderBatal = $this->createTestOrder(1);
+        $orderBatal->update(['status' => 'dibatalkan']);
+        $testComponentBatal = Livewire::actingAs($admin)->test(TableOrder::class);
+        $testComponentBatal->assertSeeHtml("/order/" . base64_encode($orderBatal->id) . "/edit")
+            ->assertDontSeeHtml('title="Hapus Pesanan"');
+
+        // Test action saji berfungsi untuk role admin
+        $testComponent->call('saji', base64_encode($orderDiproses->id));
+        $this->assertEquals('selesai', $orderDiproses->fresh()->status);
     }
 
     public function test_ketiga_completion_path_menghasilkan_perubahan_stok_dan_history_yang_sama()

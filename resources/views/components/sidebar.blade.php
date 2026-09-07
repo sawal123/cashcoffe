@@ -1,4 +1,5 @@
-<aside class="sidebar">
+<aside class="sidebar transition-all duration-300"
+    :class="{ 'blur-sm pointer-events-none select-none': modalActive }">
     @php
         $siteLogo = $webSetting->logo ?? 'logo/logow.png';
     @endphp

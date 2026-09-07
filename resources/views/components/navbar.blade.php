@@ -1,4 +1,5 @@
-<div class="navbar-header border-b border-neutral-200 dark:border-neutral-600">
+<div class="navbar-header border-b border-neutral-200 dark:border-neutral-600 transition-all duration-300"
+    :class="{ 'blur-sm pointer-events-none select-none': modalActive }">
     <div class="flex items-center justify-between">
         <div class="col-auto">
             <div class="flex flex-wrap items-center gap-[16px]">
