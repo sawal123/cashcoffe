@@ -161,16 +161,12 @@ class Pesanan extends Model
             ->get()
             ->keyBy('id');
 
-        // 3. Validasi Stok (Cegah stok negatif)
+        // 3. Validasi Keberadaan Bahan Baku
         foreach ($stockChanges as $ingredientId => $neededQty) {
             $ingredient = $lockedIngredients->get($ingredientId);
             if (!$ingredient) {
                 // Fail-safe: throw exception untuk trigger rollback
                 throw new \Exception("Bahan baku dengan ID {$ingredientId} tidak ditemukan.");
-            }
-
-            if ($ingredient->stok < $neededQty) {
-                throw new \Exception("Stok tidak mencukupi untuk bahan: {$ingredient->nama_bahan}");
             }
         }
 

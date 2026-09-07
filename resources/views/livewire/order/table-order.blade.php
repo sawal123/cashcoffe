@@ -91,8 +91,8 @@
                 <td data-label="Waktu" class="px-4 sm:px-6 py-4 text-xs text-neutral-500">
                     {{ $item->created_at->format('d/m/y H:i') }}
                 </td>
-                <td data-label="Aksi" class="px-4 sm:px-6 py-4 text-center">
-                    <div class="flex justify-center gap-1.5">
+                <td data-label="Aksi" class="px-4 sm:px-6 py-4 text-center whitespace-nowrap">
+                    <div class="flex items-center justify-center gap-1.5 flex-nowrap">
 
                         {{-- ======================= --}}
                         {{-- STATUS: DIPROSES --}}
@@ -102,21 +102,21 @@
                             <button wire:click="saji('{{ base64_encode($item->id) }}')"
                                 wire:loading.attr="disabled" wire:target="saji('{{ base64_encode($item->id) }}')"
                                 title="Tandai Selesai"
-                                class="w-8 h-8 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all">
+                                class="shrink-0 w-8 h-8 rounded-xl bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 flex items-center justify-center hover:bg-green-600 hover:text-white transition-all">
                                 <iconify-icon icon="mingcute:check-line" class="text-sm"></iconify-icon>
                             </button>
 
                             {{-- Semua role bisa: Print --}}
                             <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
                                 title="Print Struk"
-                                class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                                class="shrink-0 w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
                                 <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
                             </a>
 
                             {{-- Semua role bisa: Edit --}}
                             <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
                                 title="Edit Pesanan"
-                                class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
+                                class="shrink-0 w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
                                 <iconify-icon icon="mingcute:edit-line" class="text-sm"></iconify-icon>
                             </a>
 
@@ -125,7 +125,7 @@
                                 <button
                                     @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })"
                                     title="Hapus Pesanan"
-                                    class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all">
+                                    class="shrink-0 w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all">
                                     <iconify-icon icon="mingcute:delete-2-line" class="text-sm"></iconify-icon>
                                 </button>
                             @endhasrole
@@ -137,25 +137,25 @@
                             {{-- Semua role bisa: Detail --}}
                             <button wire:click="showDetail('{{ base64_encode($item->id) }}')"
                                 title="Lihat Detail"
-                                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
+                                class="shrink-0 w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
                                 <iconify-icon icon="mingcute:eye-line" class="text-sm"></iconify-icon>
                             </button>
 
                             {{-- Semua role bisa: Print --}}
                             <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
                                 title="Print Struk"
-                                class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                                class="shrink-0 w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
                                 <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
                             </a>
 
-                            {{-- Hanya Superadmin: Edit --}}
-                            @hasrole('superadmin')
+                            {{-- Superadmin & Admin: Edit --}}
+                            @hasanyrole('superadmin|admin')
                                 <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
                                     title="Edit Pesanan"
-                                    class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
+                                    class="shrink-0 w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
                                     <iconify-icon icon="mingcute:edit-line" class="text-sm"></iconify-icon>
                                 </a>
-                            @endhasrole
+                            @endhasanyrole
 
                         {{-- ======================= --}}
                         {{-- STATUS: DIBATALKAN --}}
@@ -164,26 +164,30 @@
                             {{-- Semua role bisa: Detail --}}
                             <button wire:click="showDetail('{{ base64_encode($item->id) }}')"
                                 title="Lihat Detail"
-                                class="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
+                                class="shrink-0 w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-all">
                                 <iconify-icon icon="mingcute:eye-line" class="text-sm"></iconify-icon>
                             </button>
 
-                            {{-- Hanya Superadmin: Edit, Delete, Print --}}
-                            @hasrole('superadmin')
+                            {{-- Hanya Superadmin & Admin: Edit --}}
+                            @hasanyrole('superadmin|admin')
                                 <a href="/order/{{ base64_encode($item->id) }}/edit" wire:navigate
                                     title="Edit Pesanan"
-                                    class="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
+                                    class="shrink-0 w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center hover:bg-amber-600 hover:text-white transition-all">
                                     <iconify-icon icon="mingcute:edit-line" class="text-sm"></iconify-icon>
                                 </a>
+                            @endhasanyrole
+
+                            {{-- Hanya Superadmin: Delete, Print --}}
+                            @hasrole('superadmin')
                                 <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
                                     title="Print Struk"
-                                    class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                                    class="shrink-0 w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
                                     <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
                                 </a>
                                 <button
                                     @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })"
                                     title="Hapus Pesanan"
-                                    class="w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all">
+                                    class="shrink-0 w-8 h-8 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center hover:bg-rose-600 hover:text-white transition-all">
                                     <iconify-icon icon="mingcute:delete-2-line" class="text-sm"></iconify-icon>
                                 </button>
                             @endhasrole

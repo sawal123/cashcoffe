@@ -52,7 +52,7 @@ Route::prefix('absen')
         Route::get('/password', App\Livewire\Profile\Password::class)->name('password');
     });
 
-Route::middleware(['auth', 'role:kasir|manager|superadmin'])->group(function () {
+Route::middleware(['auth', 'role:kasir|manager|admin|superadmin'])->group(function () {
 
     Route::get('/dashboard', App\Livewire\Dashboard\Index::class)->name('dashboard.index');
 

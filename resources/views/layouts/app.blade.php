@@ -5,40 +5,41 @@
 
 <x-head />
 
-<body class="dark:bg-neutral-800 bg-neutral-100 dark:text-white">
+<body class="dark:bg-neutral-800 bg-neutral-100 dark:text-white"
+    x-data="{ modalActive: false }"
+    @toggle-blur.window="modalActive = !!$event.detail">
 
-    <!-- ..::  header area start ::.. -->
-    @persist('sidebar')
-    <x-sidebar />
-    @endpersist
-    <!-- ..::  header area end ::.. -->
+    <div :class="{ 'blur-sm pointer-events-none select-none': modalActive }" class="transition duration-300 ease-in-out min-h-screen">
 
-    <main class="dashboard-main">
-
-        <!-- ..::  navbar start ::.. -->
-        @persist('navbar')
-        <x-navbar />
+        <!-- ..::  header area start ::.. -->
+        @persist('sidebar')
+        <x-sidebar />
         @endpersist
-        <!-- ..::  navbar end ::.. -->
-        <div class="dashboard-main-body">
+        <!-- ..::  header area end ::.. -->
 
-            {{-- Page Header (Title & Breadcrumb) will be handled by each page --}}
-            <div x-data="{ modalActive: false }">
-                <div :class="{ 'blur-sm scale-[0.99]': modalActive }" class="transition duration-300 ease-in-out">
-                    {{-- Semua konten halaman --}}
-                    {{ $slot }}
-                </div>
+        <main class="dashboard-main">
+
+            <!-- ..::  navbar start ::.. -->
+            @persist('navbar')
+            <x-navbar />
+            @endpersist
+            <!-- ..::  navbar end ::.. -->
+            <div class="dashboard-main-body">
+
+                {{-- Page Header (Title & Breadcrumb) will be handled by each page --}}
+                {{-- Semua konten halaman --}}
+                {{ $slot }}
+
             </div>
+            <!-- ..::  footer  start ::.. -->
+            @persist('footer')
+            <x-footer />
+            @endpersist
+            <!-- ..::  footer area end ::.. -->
 
+        </main>
 
-        </div>
-        <!-- ..::  footer  start ::.. -->
-        @persist('footer')
-        <x-footer />
-        @endpersist
-        <!-- ..::  footer area end ::.. -->
-
-    </main>
+    </div>
 
     <x-script :script="$script ?? ''" />
 
