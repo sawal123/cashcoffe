@@ -184,14 +184,28 @@ class AiDatabaseQueryService
         $itemName = trim((string) ($payload['item_name'] ?? ''));
         $queryLower = mb_strtolower($userQuery);
 
+        // Normalize stop-words in itemName so they are not treated as ingredient names
+        if (preg_match('/^(apa|apa saja|semua|yang minus|minus|habis|menipis|kosong|dapur|stok|stock|bahan|none|apa saja yang minus|apa yang minus|apa saja yang habis|apa yang habis|apa saja yang menipis|apa yang menipis)$/i', $itemName)) {
+            $itemName = '';
+        }
+
         $query = Ingredients::query()->with(['satuan', 'branch']);
 
         if (str_contains($queryLower, 'habis') || str_contains($queryLower, 'kosong')) {
             $query->where('stok', '<=', 0);
+            if ($itemName !== '') {
+                $query->where('nama_bahan', 'like', '%'.$itemName.'%');
+            }
         } elseif (str_contains($queryLower, 'minus') || str_contains($queryLower, 'negatif')) {
             $query->where('stok', '<', 0);
+            if ($itemName !== '') {
+                $query->where('nama_bahan', 'like', '%'.$itemName.'%');
+            }
         } elseif (str_contains($queryLower, 'sedikit') || str_contains($queryLower, 'menipis') || str_contains($queryLower, 'hampir habis') || str_contains($queryLower, 'rendah')) {
             $query->where('stok', '>', 0)->where('stok', '<=', 5);
+            if ($itemName !== '') {
+                $query->where('nama_bahan', 'like', '%'.$itemName.'%');
+            }
         } elseif ($itemName !== '') {
             $query->where('nama_bahan', 'like', '%'.$itemName.'%');
         }
@@ -472,17 +486,49 @@ class AiDatabaseQueryService
     {
         $queryLower = mb_strtolower($userQuery);
 
-        $isListAll = str_contains($queryLower, 'semua member')
-            || str_contains($queryLower, 'daftar member')
+        $isCountOnly = str_contains($queryLower, 'ada berapa member')
+            || str_contains($queryLower, 'berapa member')
+            || str_contains($queryLower, 'berapa jumlah member')
             || str_contains($queryLower, 'jumlah member')
-            || str_contains($queryLower, 'banyak member')
+            || str_contains($queryLower, 'total member')
+            || str_contains($queryLower, 'berapa banyak member')
+            || str_contains($queryLower, 'member ada berapa')
+            || str_contains($queryLower, 'member yang terdaftar')
+            || str_contains($queryLower, 'berapa orang member')
+            || str_contains($queryLower, 'hitung member');
+
+        $isListAll = $isCountOnly
+            || str_contains($queryLower, 'semua member')
+            || str_contains($queryLower, 'daftar member')
+            || str_contains($queryLower, 'lihat semua member')
+            || str_contains($queryLower, 'lihat member')
             || str_contains($queryLower, 'pengeluaran terbesar')
             || str_contains($queryLower, 'belanja terbanyak')
-            || str_contains($queryLower, 'top member');
+            || str_contains($queryLower, 'top member')
+            || str_contains($queryLower, '10 member');
 
         $memberName = trim((string) ($payload['member_name'] ?? ''));
         $memberPhone = trim((string) ($payload['member_phone'] ?? ''));
         $memberEmail = trim((string) ($payload['member_email'] ?? ''));
+
+        // If aggregate or list intent, completely ignore any filter from AI payload!
+        if ($isListAll) {
+            $memberName = '';
+            $memberPhone = '';
+            $memberEmail = '';
+        } else {
+            // Also sanitize stop-words if AI hallucinates them in member_name
+            if (preg_match('/^(ada berapa|berapa|jumlah|total|cari|informasi|info|detail|semua|daftar|none)$/i', $memberName)) {
+                $memberName = '';
+            }
+        }
+
+        if ($isCountOnly) {
+            $totalMembers = Member::count();
+            $formatted = number_format($totalMembers, 0, ',', '.');
+
+            return "Total member terdaftar: {$formatted}\nLink: /member";
+        }
 
         if (! $isListAll && $memberName === '' && $memberPhone === '' && $memberEmail === '') {
             if (preg_match('/(08\d{8,12}|\+62\d{8,12})/', $userQuery, $m)) {

@@ -1693,4 +1693,378 @@ class AiCommandCenterTest extends TestCase
             ->assertSee('IN 5 Kg')
             ->assertSee('Penerimaan bahan baru');
     }
+
+    public function test_adversarial_member_count_with_corrupted_member_name()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $user = User::factory()->create(['name' => 'Member Test']);
+        Member::create([
+            'user_id' => $user->id,
+            'phone' => '081299990001',
+            'points' => 50,
+            'total_pengeluaran' => 100000,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'MEMBER',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Cek member...',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'member_info',
+                                'member_name' => 'ada berapa',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'ada berapa member?')
+            ->call('executeCommand')
+            ->assertSee('Total member terdaftar:')
+            ->assertDontSee("Member 'ada berapa' tidak ditemukan.");
+    }
+
+    public function test_adversarial_member_count_with_report_type_none()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $user = User::factory()->create(['name' => 'Member Count User']);
+        Member::create([
+            'user_id' => $user->id,
+            'phone' => '081299990002',
+            'points' => 10,
+            'total_pengeluaran' => 50000,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'GENERAL_CHAT',
+                            'action_type' => 'none',
+                            'ai_response' => 'Saya tidak tahu data member.',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'none',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'berapa member?')
+            ->call('executeCommand')
+            ->assertSee('Total member terdaftar:');
+    }
+
+    public function test_adversarial_stock_minus_with_ai_redirect()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $susu = Ingredients::create([
+            'nama_bahan' => 'Susu Minus Test',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => -5,
+            'hpp' => 4000,
+            'branch_id' => $this->branchMedan->id,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => true,
+                            'target_module' => 'INVENTORY',
+                            'action_type' => 'REDIRECT',
+                            'redirect_url' => '/stock-dapur',
+                            'report_type' => 'none',
+                            'ai_response' => 'Silakan buka halaman Stock Dapur',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'none',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        $comp = Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'stock apa saja yang minus')
+            ->call('executeCommand');
+
+        $comp->assertSee('Susu Minus Test')
+            ->assertSee('-5')
+            ->assertSee('minus');
+    }
+
+    public function test_adversarial_stock_minus_with_wrong_payload_item_name()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $susu = Ingredients::create([
+            'nama_bahan' => 'Susu Minus Hal',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => -8,
+            'hpp' => 4000,
+            'branch_id' => $this->branchMedan->id,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'INVENTORY',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Berikut data stok:',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'inventory_stock',
+                                'item_name' => 'apa saja',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'stok apa saja yang minus')
+            ->call('executeCommand')
+            ->assertSee('Susu Minus Hal')
+            ->assertSee('-8');
+    }
+
+    public function test_adversarial_payment_methods_with_ai_redirect()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => true,
+                            'target_module' => 'PAYMENT',
+                            'action_type' => 'REDIRECT',
+                            'redirect_url' => '/payment-method',
+                            'ai_response' => 'Buka payment method',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'none',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'metode pembayaran apa saja')
+            ->call('executeCommand')
+            ->assertSee('Metode Pembayaran')
+            ->assertSee('QRIS');
+    }
+
+    public function test_adversarial_transaction_detail_with_ai_redirect()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $order = Pesanan::create([
+            'kode' => 'INV-ADV-999',
+            'nama' => 'Adversarial Customer',
+            'user_id' => $this->kasir->id,
+            'total' => 15000,
+            'status' => 'selesai',
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => true,
+                            'target_module' => 'TRANSACTION',
+                            'action_type' => 'REDIRECT',
+                            'redirect_url' => '/transaksi',
+                            'ai_response' => 'Buka transaksi',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'none',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'cek invoice INV-ADV-999')
+            ->call('executeCommand')
+            ->assertSee('Detail Transaksi')
+            ->assertSee('Invoice: INV-ADV-999');
+    }
+
+    public function test_navigation_stock_dapur_redirect_works()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => true,
+                            'target_module' => 'GENERAL_CHAT',
+                            'action_type' => 'REDIRECT',
+                            'redirect_url' => '/stock-dapur',
+                            'ai_response' => 'Membuka halaman stock dapur...',
+                            'payload' => $this->defaultPayload(),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'buka halaman stock dapur')
+            ->call('executeCommand')
+            ->assertRedirect('/stock-dapur');
+    }
+
+    public function test_navigation_member_redirect_works()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => true,
+                            'target_module' => 'GENERAL_CHAT',
+                            'action_type' => 'REDIRECT',
+                            'redirect_url' => '/member',
+                            'ai_response' => 'Membuka halaman member...',
+                            'payload' => $this->defaultPayload(),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'buka halaman member')
+            ->call('executeCommand')
+            ->assertRedirect('/member');
+    }
+
+    public function test_natural_language_matrix_queries()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        // Setup matrix data
+        $u = User::factory()->create(['name' => 'Matrix Member']);
+        Member::firstOrCreate(['user_id' => $u->id], [
+            'phone' => '089900001111',
+            'points' => 33,
+            'total_pengeluaran' => 99000,
+        ]);
+
+        $kopi = Ingredients::where('nama_bahan', 'Biji Kopi')->first();
+        if (! $kopi) {
+            Ingredients::create([
+                'nama_bahan' => 'Biji Kopi',
+                'satuan_id' => $this->satuanKg->id,
+                'stok' => 20,
+                'hpp' => 5000,
+            ]);
+        }
+
+        // Fake response returning empty/conversational to let deterministic resolver do the work
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'GENERAL_CHAT',
+                            'action_type' => 'none',
+                            'ai_response' => '',
+                            'payload' => $this->defaultPayload(),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        // Member count variations
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'total member')
+            ->call('executeCommand')
+            ->assertSee('Total member terdaftar:');
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'jumlah member')
+            ->call('executeCommand')
+            ->assertSee('Total member terdaftar:');
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'lihat semua member')
+            ->call('executeCommand')
+            ->assertSee('Total member:');
+
+        // Stock queries
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'stok apa yang habis')
+            ->call('executeCommand')
+            ->assertSee('habis');
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'stok apa yang menipis')
+            ->call('executeCommand')
+            ->assertSee('menipis');
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'berapa stok Biji Kopi')
+            ->call('executeCommand')
+            ->assertSee('Biji Kopi');
+
+        // Payment queries
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'metode pembayaran apa saja')
+            ->call('executeCommand')
+            ->assertSee('Metode Pembayaran');
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'apakah QRIS aktif')
+            ->call('executeCommand')
+            ->assertSee('QRIS');
+    }
 }

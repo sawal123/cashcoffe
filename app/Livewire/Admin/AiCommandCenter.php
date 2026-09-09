@@ -661,6 +661,27 @@ Database Context saat ini:
                 $aiResponse = 'Maaf, Anda tidak memiliki akses ke fitur tersebut.';
             }
 
+            // Deterministic READ override: Laravel is single source of truth for read intelligence
+            $deterministicReport = $this->resolveDeterministicReadIntent($payload, $userQuery);
+
+            if ($deterministicReport !== 'none') {
+                $isInScope = true;
+                $isAction = false;
+                $actionType = 'READ';
+                $redirectUrl = '';
+                $reportType = $deterministicReport;
+            } elseif ($this->isNavigationQuery($userQuery)) {
+                if (empty($redirectUrl) || $actionType !== 'REDIRECT') {
+                    $navUrl = $this->resolveNavigationUrl($userQuery);
+                    if ($navUrl) {
+                        $isAction = true;
+                        $actionType = 'REDIRECT';
+                        $redirectUrl = $navUrl;
+                        $aiResponse = $aiResponse ?: 'Membuka halaman...';
+                    }
+                }
+            }
+
             if (! $isInScope || $targetModule === 'OUT_OF_SCOPE') {
                 $this->chatHistory[] = [
                     'sender' => 'ai',
@@ -686,7 +707,9 @@ Database Context saat ini:
 
             // Case A: Conversational Turn / READ queries
             if (! $isAction || $actionType === 'READ' || $targetModule === 'GENERAL_CHAT') {
-                $reportType = $this->resolveReportType($payload, $userQuery);
+                if (empty($reportType) || $reportType === 'none') {
+                    $reportType = $this->resolveReportType($payload, $userQuery);
+                }
 
                 if ($reportType !== 'none') {
                     $databaseAnswer = (new AiDatabaseQueryService)->answer($reportType, $payload, $userQuery);
@@ -1358,12 +1381,74 @@ Database Context saat ini:
             .'Link: /menu/'.$menu->id.'/edit';
     }
 
-    private function resolveReportType(array &$payload, string $userQuery): string
+    private function isNavigationQuery(string $query): bool
     {
-        $reportType = strtolower(trim((string) ($payload['report_type'] ?? 'none')));
+        $q = mb_strtolower(trim($query));
 
-        if ($reportType !== '' && $reportType !== 'none') {
-            return $reportType;
+        // If query has invoice code or transaction check, it's not navigation
+        if (preg_match('/\b(INV[-A-Za-z0-9_]+)\b/i', $q) || preg_match('/\b([A-Za-z0-9]+(?:-[A-Za-z0-9]+)+)\b/', $q)) {
+            return false;
+        }
+
+        // Informational question indicators should not be treated as navigation
+        if (preg_match('/^(ada berapa|berapa|apa saja|apakah|siapa|kenapa|mengapa|sebab)\b/i', $q)) {
+            return false;
+        }
+
+        if (str_contains($q, 'minus') || str_contains($q, 'habis') || str_contains($q, 'menipis') || str_contains($q, 'kosong') || str_contains($q, 'riwayat') || str_contains($q, 'omzet')) {
+            return false;
+        }
+
+        // Navigation verbs: buka, buka halaman, buka menu, pergi ke, arahkan ke, masuk ke halaman, etc.
+        return (bool) preg_match('/^(buka\s+halaman|buka\s+menu|pergi\s+ke|arahkan\s+ke|masuk\s+ke\s+halaman|masuk\s+ke|navigasi\s+ke|ke\s+halaman|buka)\b/i', $q);
+    }
+
+    private function resolveNavigationUrl(string $query): ?string
+    {
+        $q = mb_strtolower(trim($query));
+
+        if (str_contains($q, 'stock') || str_contains($q, 'stok')) {
+            return '/stock-dapur';
+        }
+        if (str_contains($q, 'member')) {
+            return '/member';
+        }
+        if (str_contains($q, 'payment') || str_contains($q, 'pembayaran')) {
+            return '/payment-method';
+        }
+        if (str_contains($q, 'transaksi')) {
+            return '/transaksi';
+        }
+        if (str_contains($q, 'order') || str_contains($q, 'pesanan')) {
+            return '/order';
+        }
+        if (str_contains($q, 'meja')) {
+            return '/meja';
+        }
+        if (str_contains($q, 'diskon') || str_contains($q, 'discount')) {
+            return '/discount';
+        }
+        if (str_contains($q, 'menu')) {
+            return '/menu';
+        }
+        if (str_contains($q, 'omset') || str_contains($q, 'omzet')) {
+            return '/omset';
+        }
+        if (str_contains($q, 'pengeluaran')) {
+            return '/pengeluaran';
+        }
+        if (str_contains($q, 'asset') || str_contains($q, 'aset')) {
+            return '/asset';
+        }
+
+        return null;
+    }
+
+    private function resolveDeterministicReadIntent(array &$payload, string $userQuery): string
+    {
+        // 0. If query is a clear navigation command, do not override as deterministic READ
+        if ($this->isNavigationQuery($userQuery)) {
+            return 'none';
         }
 
         $query = mb_strtolower($userQuery);
@@ -1377,10 +1462,13 @@ Database Context saat ini:
         }
 
         if (str_contains($query, 'invoice')
-            || (str_contains($query, 'transaksi') && (str_contains($query, 'detail') || str_contains($query, 'lihat') || str_contains($query, 'cek') || str_contains($query, 'pesanan') || preg_match('/[A-Za-z0-9]+-[A-Za-z0-9]+/', $userQuery)))
-            || (str_contains($query, 'pesanan') && (str_contains($query, 'detail') || str_contains($query, 'lihat') || str_contains($query, 'cek') || preg_match('/[A-Za-z0-9]+-[A-Za-z0-9]+/', $userQuery)))
+            || (str_contains($query, 'transaksi') && (str_contains($query, 'detail') || str_contains($query, 'lihat') || str_contains($query, 'cek') || str_contains($query, 'pesanan') || preg_match('/\b(?:INV[-A-Za-z0-9_]+|[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+)\b/i', $userQuery)))
+            || (str_contains($query, 'pesanan') && (str_contains($query, 'detail') || str_contains($query, 'lihat') || str_contains($query, 'cek') || preg_match('/\b(?:INV[-A-Za-z0-9_]+|[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+)\b/i', $userQuery)))
+            || preg_match('/\b(INV[-A-Za-z0-9_]+)\b/i', $userQuery)
         ) {
-            if (preg_match('/([A-Za-z0-9]+-[A-Za-z0-9]+)/', $userQuery, $matches)) {
+            if (preg_match('/\b([A-Za-z0-9]+(?:-[A-Za-z0-9]+)+)\b/', $userQuery, $matches)) {
+                $payload['invoice_number'] = $matches[1];
+            } elseif (preg_match('/\b(INV[-A-Za-z0-9_]+)\b/i', $userQuery, $matches)) {
                 $payload['invoice_number'] = $matches[1];
             }
 
@@ -1389,50 +1477,157 @@ Database Context saat ini:
 
         // 2. Stock History (must be prioritized BEFORE generic inventory_stock)
         if (str_contains($query, 'riwayat stok')
+            || str_contains($query, 'riwayat stock')
             || str_contains($query, 'history stok')
+            || str_contains($query, 'history stock')
             || str_contains($query, 'stok masuk')
+            || str_contains($query, 'stock masuk')
             || str_contains($query, 'stok keluar')
+            || str_contains($query, 'stock keluar')
             || str_contains($query, 'perubahan stok')
+            || str_contains($query, 'perubahan stock')
             || str_contains($query, 'kenapa stok')
             || str_contains($query, 'mengapa stok')
+            || str_contains($query, 'sebab stok')
+            || ((str_contains($query, 'stok') || str_contains($query, 'stock')) && (str_contains($query, 'masuk') || str_contains($query, 'keluar')))
         ) {
+            if (empty($payload['stock_type'])) {
+                if (str_contains($query, 'masuk')) {
+                    $payload['stock_type'] = 'in';
+                } elseif (str_contains($query, 'keluar')) {
+                    $payload['stock_type'] = 'out';
+                }
+            }
+
+            if (preg_match('/^(apa saja|semua|yang keluar|yang masuk|dapur|stok|stock|bahan|keluar|masuk|none)$/i', trim((string) ($payload['item_name'] ?? '')))) {
+                $payload['item_name'] = '';
+            }
+
             return 'stock_history';
         }
 
-        // 3. Member Info
-        if (str_contains($query, 'member')
+        // 3. Current Inventory Stock
+        if (str_contains($query, 'stok minus')
+            || str_contains($query, 'stock minus')
+            || str_contains($query, 'stok habis')
+            || str_contains($query, 'stock habis')
+            || str_contains($query, 'stok kosong')
+            || str_contains($query, 'stock kosong')
+            || str_contains($query, 'stok menipis')
+            || str_contains($query, 'stock menipis')
+            || str_contains($query, 'stok sedikit')
+            || str_contains($query, 'stock sedikit')
+            || str_contains($query, 'stok dapur')
+            || str_contains($query, 'stock dapur')
+            || str_contains($query, 'lihat stok')
+            || str_contains($query, 'lihat stock')
+            || str_contains($query, 'berapa stok')
+            || str_contains($query, 'berapa stock')
+            || ((str_contains($query, 'stok') || str_contains($query, 'stock') || str_contains($query, 'bahan'))
+                && (str_contains($query, 'minus') || str_contains($query, 'negatif') || str_contains($query, 'habis') || str_contains($query, 'kosong') || str_contains($query, 'menipis') || str_contains($query, 'sedikit') || str_contains($query, 'apa') || str_contains($query, 'berapa') || str_contains($query, 'sekarang') || str_contains($query, 'saat ini')))
+        ) {
+            // Clean stop words from item_name
+            if (preg_match('/^(apa|apa saja|semua|yang minus|minus|habis|menipis|kosong|dapur|stok|stock|bahan|none|apa saja yang minus|apa yang minus|apa saja yang habis|apa yang habis|apa saja yang menipis|apa yang menipis)$/i', trim((string) ($payload['item_name'] ?? '')))) {
+                $payload['item_name'] = '';
+            }
+
+            if (empty($payload['item_name'])) {
+                $isStatusOnly = preg_match('/(?:stok|stock|bahan)\s+(?:apa(?:\s+saja)?\s+yang\s+(?:minus|habis|menipis|kosong)|(?:minus|habis|menipis|kosong)|dapur)/i', $userQuery)
+                    || preg_match('/^(?:stok|stock|bahan)?\s*(?:apa(?:\s+saja)?\s+)?(?:yang\s+)?(?:minus|habis|menipis|kosong)/i', $userQuery)
+                    || str_contains($query, 'apa saja yang minus')
+                    || str_contains($query, 'apa yang minus')
+                    || str_contains($query, 'apa saja yang habis')
+                    || str_contains($query, 'apa yang habis')
+                    || str_contains($query, 'apa saja yang menipis')
+                    || str_contains($query, 'apa yang menipis');
+
+                if (! $isStatusOnly) {
+                    if (preg_match('/(?:berapa\s+(?:stok|stock)|(?:stok|stock))\s+([A-Za-z0-9\s]+?)(?:\s+berapa|\s+sekarang|\s+saat ini|\?|$)/i', $userQuery, $mItem)) {
+                        $cand = trim($mItem[1]);
+                        $candLower = mb_strtolower($cand);
+                        $stopWords = [
+                            'apa', 'apa saja', 'apa yang minus', 'apa yang habis', 'apa yang menipis',
+                            'apa saja yang minus', 'apa saja yang habis', 'apa saja yang menipis',
+                            'dapur', 'yang minus', 'yang habis', 'yang menipis', 'kosong', 'minus',
+                            'habis', 'sedikit', 'menipis', 'semua', 'bahan',
+                        ];
+                        if (! in_array($candLower, $stopWords)) {
+                            $payload['item_name'] = $cand;
+                        }
+                    }
+                }
+            }
+
+            return 'inventory_stock';
+        }
+
+        // 4. Member Info
+        if (str_contains($query, 'ada berapa member')
+            || str_contains($query, 'berapa member')
+            || str_contains($query, 'berapa jumlah member')
+            || str_contains($query, 'jumlah member')
+            || str_contains($query, 'total member')
+            || str_contains($query, 'berapa banyak member')
+            || str_contains($query, 'member ada berapa')
+            || str_contains($query, 'semua member')
+            || str_contains($query, 'daftar member')
+            || str_contains($query, 'lihat semua member')
+            || str_contains($query, 'lihat member')
+            || str_contains($query, 'member yang terdaftar')
+            || str_contains($query, 'berapa orang member')
+            || str_contains($query, 'cari member')
+            || str_contains($query, 'informasi member')
+            || str_contains($query, 'info member')
+            || str_contains($query, 'detail member')
             || str_contains($query, 'poin member')
             || str_contains($query, 'total belanja member')
+            || (str_contains($query, 'member') && (str_contains($query, 'nomor') || str_contains($query, 'email') || str_contains($query, 'poin') || str_contains($query, 'belanja') || str_contains($query, 'terdaftar') || str_contains($query, 'orang') || str_contains($query, 'banyak') || str_contains($query, 'hitung')))
             || (str_contains($query, 'poin') && ! str_contains($query, 'tier'))
+            || (preg_match('/^(cari|informasi|info|detail|cek)\s+member\b/i', $userQuery))
+            || str_contains($query, 'member')
         ) {
+            $isAggregate = str_contains($query, 'ada berapa member')
+                || str_contains($query, 'berapa member')
+                || str_contains($query, 'berapa jumlah member')
+                || str_contains($query, 'jumlah member')
+                || str_contains($query, 'total member')
+                || str_contains($query, 'berapa banyak member')
+                || str_contains($query, 'member ada berapa')
+                || str_contains($query, 'semua member')
+                || str_contains($query, 'daftar member')
+                || str_contains($query, 'lihat semua member')
+                || str_contains($query, 'lihat member')
+                || str_contains($query, 'member yang terdaftar')
+                || str_contains($query, 'berapa orang member')
+                || str_contains($query, 'hitung member');
+
+            if ($isAggregate) {
+                $payload['member_name'] = '';
+                $payload['member_phone'] = '';
+                $payload['member_email'] = '';
+            } else {
+                if (preg_match('/^(ada berapa|berapa|jumlah|total|cari|informasi|info|detail|semua|daftar|none)$/i', trim((string) ($payload['member_name'] ?? '')))) {
+                    $payload['member_name'] = '';
+                }
+            }
+
             return 'member_info';
         }
 
-        // 4. Payment Methods
+        // 5. Payment Methods
         if (str_contains($query, 'metode pembayaran')
             || str_contains($query, 'payment method')
             || str_contains($query, 'payment qris')
             || str_contains($query, 'qris aktif')
+            || str_contains($query, 'apakah qris aktif')
             || str_contains($query, 'transaksi qris')
             || str_contains($query, 'omzet qris')
             || str_contains($query, 'transaksi per metode')
             || str_contains($query, 'omzet tunai')
+            || str_contains($query, 'transaksi tunai')
+            || str_contains($query, 'metode pembayaran paling')
         ) {
             return 'payment_methods';
-        }
-
-        // 5. Current Inventory Stock
-        if (str_contains($query, 'stok apa yang')
-            || str_contains($query, 'stok habis')
-            || str_contains($query, 'stok kosong')
-            || str_contains($query, 'stok minus')
-            || str_contains($query, 'stok sedikit')
-            || str_contains($query, 'stok menipis')
-            || str_contains($query, 'lihat stock')
-            || str_contains($query, 'stock dapur')
-            || (str_contains($query, 'stok') && (str_contains($query, 'berapa') || str_contains($query, 'sekarang') || str_contains($query, 'saat ini')))
-        ) {
-            return 'inventory_stock';
         }
 
         // 6. Existing Report Rules
@@ -1465,6 +1660,23 @@ Database Context saat ini:
             if (! empty($payload['menu_name'])) {
                 return 'menu_sales';
             }
+        }
+
+        return 'none';
+    }
+
+    private function resolveReportType(array &$payload, string $userQuery): string
+    {
+        // 1. Laravel deterministic READ intent wins first
+        $det = $this->resolveDeterministicReadIntent($payload, $userQuery);
+        if ($det !== 'none') {
+            return $det;
+        }
+
+        // 2. If no deterministic intent match, use AI's report_type if valid
+        $reportType = strtolower(trim((string) ($payload['report_type'] ?? 'none')));
+        if ($reportType !== '' && $reportType !== 'none') {
+            return $reportType;
         }
 
         return 'none';
