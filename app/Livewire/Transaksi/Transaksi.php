@@ -137,23 +137,25 @@ class Transaksi extends Component
                     abort(403, 'Anda tidak memiliki akses untuk mengubah transaksi yang sudah selesai.');
                 }
 
-                if ($oldStatus !== 'diproses' || !in_array($newStatus, ['selesai', 'dibatalkan'], true) || $oldStatus === $newStatus) {
-                    $this->dispatch('close-modal', name: 'edit-status-order');
-                    $this->dispatch(
-                        'showToast',
-                        type: 'error',
-                        message: "Transisi status dari '{$oldStatus}' ke '{$newStatus}' tidak valid."
-                    );
-                    return;
-                }
+                if ($oldStatus !== $newStatus) {
+                    if ($oldStatus !== 'diproses' || !in_array($newStatus, ['selesai', 'dibatalkan'], true)) {
+                        $this->dispatch('close-modal', name: 'edit-status-order');
+                        $this->dispatch(
+                            'showToast',
+                            type: 'error',
+                            message: "Transisi status dari '{$oldStatus}' ke '{$newStatus}' tidak valid."
+                        );
+                        return;
+                    }
 
-                if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
-                    $pesanan->processInventoryDeduction();
-                    $pesanan->applyMemberLoyaltyOnCompletion();
-                }
+                    if ($oldStatus === 'diproses' && $newStatus === 'selesai') {
+                        $pesanan->processInventoryDeduction();
+                        $pesanan->applyMemberLoyaltyOnCompletion();
+                    }
 
-                if ($oldStatus === 'diproses' && $newStatus === 'dibatalkan') {
-                    $pesanan->decrementDiscountUsageOnCancellation();
+                    if ($oldStatus === 'diproses' && $newStatus === 'dibatalkan') {
+                        $pesanan->decrementDiscountUsageOnCancellation();
+                    }
                 }
 
                 $pesanan->update([

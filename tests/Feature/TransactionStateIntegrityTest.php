@@ -920,4 +920,197 @@ class TransactionStateIntegrityTest extends TestCase
         // Usage should be decremented once
         $this->assertEquals($usageAfterCreate - 1, $disc->fresh()->digunakan);
     }
+
+    /**
+     * Regression: selesai -> selesai + ganti payment_method_id berhasil,
+     * stok, loyalty, dan diskon tidak berubah, status tetap selesai.
+     */
+    public function test_selesai_to_selesai_update_payment_method_succeeds_without_side_effects()
+    {
+        $manager = User::factory()->create();
+        $manager->assignRole('manager');
+
+        $newPaymentMethod = PaymentMethod::where('kode_metode', 'qris')->firstOrFail();
+
+        $order = $this->createTestOrder('selesai');
+        $initialStock = $this->ingredient->fresh()->stok;
+        $initialPoints = $this->member->fresh()->points;
+
+        Livewire::actingAs($manager)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'selesai')
+            ->set('metode_pembayaran', $newPaymentMethod->id)
+            ->call('updateStatus')
+            ->assertDispatched('close-modal', name: 'edit-status-order')
+            ->assertDispatched('showToast', type: 'success');
+
+        $order->refresh();
+        $this->assertEquals('selesai', $order->status);
+        $this->assertEquals($newPaymentMethod->id, $order->payment_method_id);
+        $this->assertEquals($initialStock, $this->ingredient->fresh()->stok);
+        $this->assertEquals($initialPoints, $this->member->fresh()->points);
+    }
+
+    /**
+     * Regression: selesai -> selesai ditolak 403 jika user tidak memiliki permission 'edit finished transaction'.
+     */
+    public function test_selesai_to_selesai_unauthorized_user_aborts_403()
+    {
+        $newPaymentMethod = PaymentMethod::where('kode_metode', 'transfer')->firstOrFail();
+
+        $order = $this->createTestOrder('selesai');
+
+        Livewire::actingAs($this->user) // kasir does not have 'edit finished transaction'
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'selesai')
+            ->set('metode_pembayaran', $newPaymentMethod->id)
+            ->call('updateStatus')
+            ->assertStatus(403);
+
+        $order->refresh();
+        $this->assertEquals('selesai', $order->status);
+        $this->assertEquals($this->paymentMethod->id, $order->payment_method_id);
+    }
+
+    /**
+     * Regression: diproses -> diproses + ganti metode = sukses tanpa inventory deduction dan loyalty.
+     */
+    public function test_diproses_to_diproses_update_payment_method_succeeds_without_inventory_deduction()
+    {
+        $newPaymentMethod = PaymentMethod::where('kode_metode', 'transfer')->firstOrFail();
+
+        $order = $this->createTestOrder('diproses');
+        $initialStock = $this->ingredient->fresh()->stok;
+        $initialPoints = $this->member->fresh()->points;
+
+        Livewire::actingAs($this->user)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'diproses')
+            ->set('metode_pembayaran', $newPaymentMethod->id)
+            ->call('updateStatus')
+            ->assertDispatched('close-modal', name: 'edit-status-order')
+            ->assertDispatched('showToast', type: 'success');
+
+        $order->refresh();
+        $this->assertEquals('diproses', $order->status);
+        $this->assertEquals($newPaymentMethod->id, $order->payment_method_id);
+        $this->assertEquals($initialStock, $this->ingredient->fresh()->stok);
+        $this->assertEquals($initialPoints, $this->member->fresh()->points);
+    }
+
+    /**
+     * Regression: selesai -> diproses tetap ditolak oleh validasi transisi meskipun memiliki permission.
+     */
+    public function test_selesai_to_diproses_rejected_even_with_permission()
+    {
+        $manager = User::factory()->create();
+        $manager->assignRole('manager');
+
+        $order = $this->createTestOrder('selesai');
+        $initialStock = $this->ingredient->fresh()->stok;
+
+        Livewire::actingAs($manager)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'diproses')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus')
+            ->assertDispatched('showToast', type: 'error', message: "Transisi status dari 'selesai' ke 'diproses' tidak valid.");
+
+        $order->refresh();
+        $this->assertEquals('selesai', $order->status);
+        $this->assertEquals($initialStock, $this->ingredient->fresh()->stok);
+    }
+
+    /**
+     * Regression: selesai -> dibatalkan tetap ditolak oleh validasi transisi meskipun memiliki permission.
+     */
+    public function test_selesai_to_dibatalkan_rejected_even_with_permission()
+    {
+        $manager = User::factory()->create();
+        $manager->assignRole('manager');
+
+        $order = $this->createTestOrder('selesai');
+
+        Livewire::actingAs($manager)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'dibatalkan')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus')
+            ->assertDispatched('showToast', type: 'error', message: "Transisi status dari 'selesai' ke 'dibatalkan' tidak valid.");
+
+        $order->refresh();
+        $this->assertEquals('selesai', $order->status);
+    }
+
+    /**
+     * Regression: diproses -> selesai tetap bekerja normal (inventory terpotong, loyalty bertambah).
+     */
+    public function test_diproses_to_selesai_works_normally_with_inventory_and_loyalty()
+    {
+        $newPaymentMethod = PaymentMethod::where('kode_metode', 'qris')->firstOrFail();
+
+        $order = $this->createTestOrder('diproses');
+        $initialStock = $this->ingredient->fresh()->stok;
+
+        Livewire::actingAs($this->user)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'selesai')
+            ->set('metode_pembayaran', $newPaymentMethod->id)
+            ->call('updateStatus')
+            ->assertDispatched('close-modal', name: 'edit-status-order')
+            ->assertDispatched('showToast', type: 'success');
+
+        $order->refresh();
+        $this->assertEquals('selesai', $order->status);
+        $this->assertEquals($newPaymentMethod->id, $order->payment_method_id);
+        $this->assertEquals($initialStock - 10, $this->ingredient->fresh()->stok);
+        $this->assertEquals(2, $this->member->fresh()->points);
+    }
+
+    /**
+     * Regression: selesai -> selesai tidak menduplikasi potongan stok, poin loyalty, atau kuota diskon.
+     */
+    public function test_selesai_to_selesai_does_not_duplicate_stock_points_or_discount_usage()
+    {
+        $manager = User::factory()->create();
+        $manager->assignRole('manager');
+
+        $discount = Discount::create([
+            'nama_diskon' => 'Promo Diskon Selesai',
+            'type' => 'fixed',
+            'kode_diskon' => 'PROMOSL',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+            'digunakan' => 1,
+        ]);
+
+        $order = $this->createTestOrder('selesai', $discount);
+        $stockBefore = $this->ingredient->fresh()->stok;
+        $pointsBefore = $this->member->fresh()->points;
+        $usageBefore = $discount->fresh()->digunakan;
+
+        $newPaymentMethod = PaymentMethod::where('kode_metode', 'qris')->firstOrFail();
+
+        Livewire::actingAs($manager)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'selesai')
+            ->set('metode_pembayaran', $newPaymentMethod->id)
+            ->call('updateStatus');
+
+        $order->refresh();
+        $this->assertEquals('selesai', $order->status);
+        $this->assertEquals($newPaymentMethod->id, $order->payment_method_id);
+        $this->assertEquals($stockBefore, $this->ingredient->fresh()->stok);
+        $this->assertEquals($pointsBefore, $this->member->fresh()->points);
+        $this->assertEquals($usageBefore, $discount->fresh()->digunakan);
+    }
 }
