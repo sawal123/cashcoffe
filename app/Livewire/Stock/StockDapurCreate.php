@@ -19,20 +19,35 @@ class StockDapurCreate extends Component
     public $newSatuan;
     public $hpp;
 
-    public $satuans, $stockId, $ingredient_id, $qty, $keterangan, $current_stok, $current_satuan;
+    public $satuans;
+    public ?int $ingredient_id = null;
+    public bool $isEdit = false;
+    public $qty, $keterangan, $current_stok, $current_satuan;
     public $editSatuanId, $editSatuanNama;
 
     public function mount($stockId = null)
     {
         $this->loadSatuan();
-        $this->stockId = $stockId;
-        // dd($stockId);
-        if ($stockId) {
-            $bahan = Ingredients::findOrFail(base64_decode($stockId));
-            // dd($bahan->stok);
+
+        if ($stockId !== null && $stockId !== '') {
+            $decoded = base64_decode($stockId, true);
+
+            if ($decoded === false || !ctype_digit((string) $decoded) || (int) $decoded <= 0) {
+                abort(404, 'Data bahan baku tidak ditemukan.');
+            }
+
+            $bahan = Ingredients::find((int) $decoded);
+
+            if (! $bahan) {
+                abort(404, 'Data bahan baku tidak ditemukan.');
+            }
+
+            $this->ingredient_id = (int) $bahan->id;
+            $this->isEdit = true;
             $this->nama_bahan = $bahan->nama_bahan;
             $this->satuan_id = $bahan->satuan_id;
-            $this->stok = intval($bahan->stok);
+            $this->stok = (float) $bahan->stok == intval($bahan->stok) ? intval($bahan->stok) : (float) $bahan->stok;
+            $this->hpp = $bahan->hpp !== null ? ((float) $bahan->hpp == intval($bahan->hpp) ? intval($bahan->hpp) : (float) $bahan->hpp) : null;
         }
     }
 
@@ -48,6 +63,7 @@ class StockDapurCreate extends Component
             'nama_bahan' => 'required',
             'stok' => 'required|numeric|min:0',
             'satuan_id' => 'required|exists:satuan_bahans,id',
+            'hpp' => 'nullable|numeric|min:0',
         ]);
 
         $ingredient = Ingredients::create([
@@ -65,20 +81,32 @@ class StockDapurCreate extends Component
             'tipe' => 'in'
         ]);
 
-        $this->reset(['nama_bahan', 'stok', 'satuan_id']);
+        $this->reset(['nama_bahan', 'stok', 'satuan_id', 'hpp']);
 
         $this->dispatch('showToast', type: 'success', message: 'Bahan berhasil disimpan!');
     }
 
-    public function update($id)
+    public function update($id = null)
     {
+        $canonicalId = $this->ingredient_id ?: (is_numeric($id) ? (int) $id : null);
+
+        if (! $canonicalId) {
+            abort(404, 'Data bahan baku tidak ditemukan.');
+        }
+
         $this->validate([
             'nama_bahan' => 'required',
             'stok' => 'required|numeric|min:0',
             'satuan_id' => 'required|exists:satuan_bahans,id',
+            'hpp' => 'nullable|numeric|min:0',
         ]);
 
-        $bahan = Ingredients::findOrFail($id);
+        $bahan = Ingredients::find($canonicalId);
+
+        if (! $bahan) {
+            abort(404, 'Data bahan baku tidak ditemukan.');
+        }
+
         $bahan->update([
             'nama_bahan' => $this->nama_bahan,
             'stok' => $this->stok,
@@ -152,10 +180,11 @@ class StockDapurCreate extends Component
 
     public function render()
     {
-        $title = $this->stockId ? 'Edit Bahan Dapur' : 'Tambah Bahan Dapur';
+        $title = $this->isEdit ? 'Edit Bahan Dapur' : 'Tambah Bahan Dapur';
         return view('livewire.stock.stock-dapur-create', [
             'title' => $title,
-            'backUrl' => '/stock-dapur'
+            'backUrl' => '/stock-dapur',
+            'isEdit' => $this->isEdit,
         ])->layout('layouts.app', ['title' => $title]);
     }
 }

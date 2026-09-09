@@ -10,8 +10,8 @@
     </div>
     <x-toast />
     @php
-        $submit = $stockId ? 'update(' . $stockId . ')' : 'simpan';
-        $button = $stockId ? 'Update' : 'Simpan';
+        $submit = $isEdit ? 'update' : 'simpan';
+        $button = $isEdit ? 'Update' : 'Simpan';
     @endphp
 
     <div class="grid grid-cols-12 gap-6">
