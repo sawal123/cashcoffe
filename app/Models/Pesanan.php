@@ -20,6 +20,7 @@ class Pesanan extends Model
     public const STATUS_DIBATALKAN = 'dibatalkan';
 
     protected $fillable = [
+        'branch_id',
         'kode',
         'nama',
         'user_id',

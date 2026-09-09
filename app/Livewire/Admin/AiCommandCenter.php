@@ -405,8 +405,8 @@ Tentukan properti berikut:
 4. 'redirect_url': URL tujuan/direct link (misal '/menu/create', '/member/15/edit', dll).
 5. 'ai_response': Kalimat jawaban interaktif dalam Bahasa Indonesia. Jika selesai action/redirect, sertakan link url tersebut di dalam respons.
 6. 'payload': Objek parameter terdeteksi:
-    - report_type: 'menu_sales' | 'top_selling_menus' | 'least_selling_menus' | 'sales_summary' | 'inventory_stock' | 'employee_attendance' | 'none'.
-    - menu_name, variant_name, price_tier, sales_channel, price_value, employee_name, shift_name, item_name, branch_name, qty, unit_name, fine_amount, date.
+    - report_type: 'menu_sales' | 'top_selling_menus' | 'least_selling_menus' | 'sales_summary' | 'inventory_stock' | 'employee_attendance' | 'menu_ingredients' | 'transaction_detail' | 'member_info' | 'payment_methods' | 'stock_history' | 'none'.
+    - menu_name, variant_name, price_tier, sales_channel, price_value, employee_name, shift_name, item_name, branch_name, qty, unit_name, fine_amount, date, invoice_number, member_name, member_phone, member_email, payment_method, stock_type.
     - date_from dan date_to dalam format YYYY-MM-DD. Hari ini adalah ".now()->toDateString().".
     - limit untuk jumlah hasil peringkat, maksimum 10.
 
@@ -417,6 +417,10 @@ CONTOH LAPORAN:
 - 'berapa omzet hari ini' => report_type='sales_summary', date_from=date_to=hari ini.
 - 'stok biji kopi di Medan' => report_type='inventory_stock', item_name='biji kopi', branch_name='Medan'.
 - 'absensi Budi bulan ini' => report_type='employee_attendance', employee_name='Budi', isi periode bulan berjalan.
+- 'cek invoice INV-00123' => action_type=READ, target_module='TRANSACTION', report_type='transaction_detail', invoice_number='INV-00123'.
+- 'informasi member Sawal' => action_type=READ, target_module='MEMBER', report_type='member_info', member_name='Sawal'.
+- 'metode pembayaran apa saja' => action_type=READ, target_module='PAYMENT', report_type='payment_methods'.
+- 'riwayat stok susu' => action_type=READ, target_module='INVENTORY', report_type='stock_history', item_name='susu'.
 
 ATURAN PENTING:
 - jika user berniat mengubah harga menu di semua tier atau di semua channel, isi price_tier atau sales_channel dengan nilai 'all'.
@@ -532,7 +536,12 @@ Database Context saat ini:
                                         ],
                                         'report_type' => [
                                             'type' => 'string',
-                                            'enum' => ['menu_sales', 'top_selling_menus', 'least_selling_menus', 'sales_summary', 'inventory_stock', 'employee_attendance', 'menu_ingredients', 'none'],
+                                            'enum' => [
+                                                'menu_sales', 'top_selling_menus', 'least_selling_menus', 'sales_summary',
+                                                'inventory_stock', 'employee_attendance', 'menu_ingredients',
+                                                'transaction_detail', 'member_info', 'payment_methods', 'stock_history',
+                                                'none',
+                                            ],
                                         ],
                                         'date_from' => [
                                             'type' => 'string',
@@ -543,11 +552,30 @@ Database Context saat ini:
                                         'limit' => [
                                             'type' => 'number',
                                         ],
+                                        'invoice_number' => [
+                                            'type' => 'string',
+                                        ],
+                                        'member_name' => [
+                                            'type' => 'string',
+                                        ],
+                                        'member_phone' => [
+                                            'type' => 'string',
+                                        ],
+                                        'member_email' => [
+                                            'type' => 'string',
+                                        ],
+                                        'payment_method' => [
+                                            'type' => 'string',
+                                        ],
+                                        'stock_type' => [
+                                            'type' => 'string',
+                                        ],
                                     ],
                                     'required' => [
                                         'menu_name', 'variant_name', 'price_tier', 'sales_channel', 'price_value',
                                         'employee_name', 'shift_name', 'item_name', 'branch_name', 'qty',
                                         'unit_name', 'fine_amount', 'date', 'report_type', 'date_from', 'date_to', 'limit',
+                                        'invoice_number', 'member_name', 'member_phone', 'member_email', 'payment_method', 'stock_type',
                                     ],
                                     'additionalProperties' => false,
                                 ],
@@ -1339,7 +1367,75 @@ Database Context saat ini:
         }
 
         $query = mb_strtolower($userQuery);
+        $trimmed = trim($userQuery);
 
+        // 1. Transaction / Invoice deterministic detection
+        if (\App\Models\Pesanan::where('kode', $trimmed)->exists()) {
+            $payload['invoice_number'] = $trimmed;
+
+            return 'transaction_detail';
+        }
+
+        if (str_contains($query, 'invoice')
+            || (str_contains($query, 'transaksi') && (str_contains($query, 'detail') || str_contains($query, 'lihat') || str_contains($query, 'cek') || str_contains($query, 'pesanan') || preg_match('/[A-Za-z0-9]+-[A-Za-z0-9]+/', $userQuery)))
+            || (str_contains($query, 'pesanan') && (str_contains($query, 'detail') || str_contains($query, 'lihat') || str_contains($query, 'cek') || preg_match('/[A-Za-z0-9]+-[A-Za-z0-9]+/', $userQuery)))
+        ) {
+            if (preg_match('/([A-Za-z0-9]+-[A-Za-z0-9]+)/', $userQuery, $matches)) {
+                $payload['invoice_number'] = $matches[1];
+            }
+
+            return 'transaction_detail';
+        }
+
+        // 2. Stock History (must be prioritized BEFORE generic inventory_stock)
+        if (str_contains($query, 'riwayat stok')
+            || str_contains($query, 'history stok')
+            || str_contains($query, 'stok masuk')
+            || str_contains($query, 'stok keluar')
+            || str_contains($query, 'perubahan stok')
+            || str_contains($query, 'kenapa stok')
+            || str_contains($query, 'mengapa stok')
+        ) {
+            return 'stock_history';
+        }
+
+        // 3. Member Info
+        if (str_contains($query, 'member')
+            || str_contains($query, 'poin member')
+            || str_contains($query, 'total belanja member')
+            || (str_contains($query, 'poin') && ! str_contains($query, 'tier'))
+        ) {
+            return 'member_info';
+        }
+
+        // 4. Payment Methods
+        if (str_contains($query, 'metode pembayaran')
+            || str_contains($query, 'payment method')
+            || str_contains($query, 'payment qris')
+            || str_contains($query, 'qris aktif')
+            || str_contains($query, 'transaksi qris')
+            || str_contains($query, 'omzet qris')
+            || str_contains($query, 'transaksi per metode')
+            || str_contains($query, 'omzet tunai')
+        ) {
+            return 'payment_methods';
+        }
+
+        // 5. Current Inventory Stock
+        if (str_contains($query, 'stok apa yang')
+            || str_contains($query, 'stok habis')
+            || str_contains($query, 'stok kosong')
+            || str_contains($query, 'stok minus')
+            || str_contains($query, 'stok sedikit')
+            || str_contains($query, 'stok menipis')
+            || str_contains($query, 'lihat stock')
+            || str_contains($query, 'stock dapur')
+            || (str_contains($query, 'stok') && (str_contains($query, 'berapa') || str_contains($query, 'sekarang') || str_contains($query, 'saat ini')))
+        ) {
+            return 'inventory_stock';
+        }
+
+        // 6. Existing Report Rules
         if (str_contains($query, 'laris') || str_contains($query, 'terlaris') || str_contains($query, 'paling laku')) {
             return 'top_selling_menus';
         }

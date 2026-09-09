@@ -12,7 +12,14 @@ use App\Models\MenuPrice;
 use App\Models\PriceTier;
 use App\Models\SalesChannel;
 use App\Models\SatuanBahan;
+use App\Models\Discount;
+use App\Models\Member;
+use App\Models\PaymentMethod;
+use App\Models\Pesanan;
+use App\Models\PesananItem;
+use App\Models\RiwayatStock;
 use App\Models\User;
+use App\Models\VariantOption;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Livewire\Livewire;
@@ -1098,5 +1105,592 @@ class AiCommandCenterTest extends TestCase
             ->call('executeCommand')
             ->assertSee('Menu paling sedikit dipesan')
             ->assertSee('Kopi Susu');
+    }
+
+    private function defaultPayload(array $overrides = []): array
+    {
+        return array_merge([
+            'menu_name' => '',
+            'variant_name' => '',
+            'price_tier' => '',
+            'sales_channel' => '',
+            'price_value' => 0,
+            'employee_name' => '',
+            'shift_name' => '',
+            'item_name' => '',
+            'branch_name' => '',
+            'qty' => 0,
+            'unit_name' => '',
+            'fine_amount' => 0,
+            'date' => '',
+            'report_type' => 'none',
+            'date_from' => '',
+            'date_to' => '',
+            'limit' => 10,
+            'invoice_number' => '',
+            'member_name' => '',
+            'member_phone' => '',
+            'member_email' => '',
+            'payment_method' => '',
+            'stock_type' => '',
+        ], $overrides);
+    }
+
+    public function test_superadmin_can_query_transaction_detail_by_invoice_successfully()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $memberUser = User::factory()->create(['name' => 'Sawal Member']);
+        $member = Member::create([
+            'user_id' => $memberUser->id,
+            'phone' => '081234567899',
+            'points' => 50,
+            'total_pengeluaran' => 100000,
+        ]);
+
+        $pm = PaymentMethod::where('kode_metode', 'qris')->first()
+            ?? PaymentMethod::create(['nama_metode' => 'QRIS', 'kode_metode' => 'qris', 'is_active' => true]);
+
+        $discount = Discount::create([
+            'nama_diskon' => 'Voucher 5K',
+            'type' => 'fixed',
+            'kode_diskon' => 'V5K',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'scope' => 'global',
+            'is_active' => true,
+        ]);
+
+        $order = Pesanan::create([
+            'kode' => 'INV-TEST-001',
+            'nama' => 'Sawal',
+            'user_id' => $this->kasir->id,
+            'member_id' => $member->id,
+            'branch_id' => $this->branchMedan->id,
+            'sales_channel_id' => $this->channel->id,
+            'payment_method_id' => $pm->id,
+            'discount_id' => $discount->id,
+            'discount_value' => 5000,
+            'total' => 25000,
+            'status' => 'selesai',
+        ]);
+
+        $item = PesananItem::create([
+            'pesanans_id' => $order->id,
+            'menus_id' => $this->menu->id,
+            'qty' => 2,
+            'harga_satuan' => 10000,
+            'subtotal' => 20000,
+        ]);
+
+        $variantGroup = \App\Models\VariantGroup::create(['nama_group' => 'Ukuran']);
+        $variant = VariantOption::create([
+            'variant_group_id' => $variantGroup->id,
+            'nama_opsi' => 'Large',
+        ]);
+        $item->variants()->attach($variant->id);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'TRANSACTION',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Berikut detailnya:',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'transaction_detail',
+                                'invoice_number' => 'INV-TEST-001',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'cek invoice INV-TEST-001')
+            ->call('executeCommand')
+            ->assertSee('Detail Transaksi')
+            ->assertSee('Invoice: INV-TEST-001')
+            ->assertSee('Status: Selesai')
+            ->assertSee('Kasir: Budi')
+            ->assertSee('Cabang: Medan')
+            ->assertSee('Pembayaran: QRIS')
+            ->assertSee('Member: Sawal Member')
+            ->assertSee('Kopi Susu (Large) × 2')
+            ->assertSee('Total: Rp25.000')
+            ->assertSee('Diskon: Rp5.000')
+            ->assertSee('Total Akhir: Rp20.000')
+            ->assertSee('/transaksi')
+            ->assertSee('/print/struk/'.$order->id);
+    }
+
+    public function test_query_transaction_detail_not_found_returns_clear_message()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'TRANSACTION',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Mencari...',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'transaction_detail',
+                                'invoice_number' => 'INV-NOT-FOUND',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'detail pesanan INV-NOT-FOUND')
+            ->call('executeCommand')
+            ->assertSee("Transaksi dengan invoice 'INV-NOT-FOUND' tidak ditemukan.");
+    }
+
+    public function test_raw_invoice_input_is_deterministically_resolved_to_transaction_detail()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $order = Pesanan::create([
+            'kode' => 'INV-EXACT-888',
+            'nama' => 'Pelanggan Direct',
+            'user_id' => $this->kasir->id,
+            'sales_channel_id' => $this->channel->id,
+            'total' => 15000,
+            'status' => 'selesai',
+        ]);
+
+        // Mock OpenAI returning report_type 'none'
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'GENERAL_CHAT',
+                            'action_type' => 'none',
+                            'ai_response' => 'Halo ada yang bisa dibantu?',
+                            'payload' => $this->defaultPayload(),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'INV-EXACT-888')
+            ->call('executeCommand')
+            ->assertSee('Detail Transaksi')
+            ->assertSee('Invoice: INV-EXACT-888')
+            ->assertSee('Pelanggan Direct');
+    }
+
+    public function test_superadmin_can_query_member_info_by_name()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $user = User::factory()->create([
+            'name' => 'Sawaluddin Siregar',
+            'email' => 'sawal@cashcoffee.test',
+            'password' => bcrypt('supersecret123'),
+            'remember_token' => 'secrettoken123',
+        ]);
+
+        $member = Member::create([
+            'user_id' => $user->id,
+            'phone' => '081299998888',
+            'address' => 'Medan Kota',
+            'points' => 320,
+            'total_pengeluaran' => 1500000,
+        ]);
+
+        Pesanan::create([
+            'kode' => 'INV-MBR-01',
+            'nama' => 'Sawal',
+            'user_id' => $this->kasir->id,
+            'member_id' => $member->id,
+            'sales_channel_id' => $this->channel->id,
+            'total' => 100000,
+            'status' => 'selesai',
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'MEMBER',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Mencari data member...',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'member_info',
+                                'member_name' => 'Sawaluddin Siregar',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'informasi member Sawaluddin Siregar')
+            ->call('executeCommand')
+            ->assertSee('Informasi Member')
+            ->assertSee('Nama: Sawaluddin Siregar')
+            ->assertSee('Email: sawal@cashcoffee.test')
+            ->assertSee('Telepon: 081299998888')
+            ->assertSee('Alamat: Medan Kota')
+            ->assertSee('Poin: 320')
+            ->assertSee('Total Pengeluaran: Rp1.500.000')
+            ->assertSee('Jumlah Transaksi: 1')
+            ->assertSee('INV-MBR-01')
+            ->assertSee('/member/'.$member->id.'/edit')
+            ->assertDontSee('supersecret123')
+            ->assertDontSee('secrettoken123');
+    }
+
+    public function test_superadmin_can_query_member_info_by_phone()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $user = User::factory()->create(['name' => 'Budi Member']);
+        $member = Member::create([
+            'user_id' => $user->id,
+            'phone' => '087711223344',
+            'points' => 75,
+            'total_pengeluaran' => 250000,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'MEMBER',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Cek member...',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'member_info',
+                                'member_phone' => '087711223344',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'member nomor 087711223344')
+            ->call('executeCommand')
+            ->assertSee('Budi Member')
+            ->assertSee('087711223344')
+            ->assertSee('Poin: 75');
+    }
+
+    public function test_member_not_found_handled_properly()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'MEMBER',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Cek member...',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'member_info',
+                                'member_name' => 'Fulan Anonymous',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'cari member Fulan Anonymous')
+            ->call('executeCommand')
+            ->assertSee("Member 'Fulan Anonymous' tidak ditemukan.");
+    }
+
+    public function test_superadmin_can_query_all_members_list_with_limit_and_total_count()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        for ($i = 1; $i <= 12; $i++) {
+            $u = User::factory()->create(['name' => "Member {$i}"]);
+            Member::create([
+                'user_id' => $u->id,
+                'phone' => '0811000000'.str_pad((string) $i, 2, '0', STR_PAD_LEFT),
+                'points' => $i * 10,
+                'total_pengeluaran' => $i * 50000,
+            ]);
+        }
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'MEMBER',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Berikut daftar member:',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'member_info',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'lihat semua member')
+            ->call('executeCommand')
+            ->assertSee('Total member: 12')
+            ->assertSee('/member');
+    }
+
+    public function test_superadmin_can_query_payment_methods_list()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'PAYMENT',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Berikut metode pembayarannya:',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'payment_methods',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'metode pembayaran apa saja')
+            ->call('executeCommand')
+            ->assertSee('Metode Pembayaran')
+            ->assertSee('Tunai')
+            ->assertSee('Status: Aktif')
+            ->assertSee('/payment-method');
+    }
+
+    public function test_superadmin_can_query_payment_method_statistics()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $qris = PaymentMethod::where('kode_metode', 'qris')->first()
+            ?? PaymentMethod::create(['nama_metode' => 'QRIS', 'kode_metode' => 'qris', 'is_active' => true]);
+
+        Pesanan::create([
+            'kode' => 'ORD-PM-01',
+            'nama' => 'Test QRIS',
+            'user_id' => $this->kasir->id,
+            'payment_method_id' => $qris->id,
+            'sales_channel_id' => $this->channel->id,
+            'total' => 100000,
+            'discount_value' => 10000,
+            'status' => 'selesai',
+            'created_at' => now(),
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'PAYMENT',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Berikut statistik pembayaran:',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'payment_methods',
+                                'payment_method' => 'QRIS',
+                                'date_from' => now()->toDateString(),
+                                'date_to' => now()->toDateString(),
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'berapa transaksi QRIS hari ini')
+            ->call('executeCommand')
+            ->assertSee('Penggunaan Metode Pembayaran')
+            ->assertSee('QRIS')
+            ->assertSee('Transaksi: 1')
+            ->assertSee('Omzet: Rp90.000');
+    }
+
+    public function test_inventory_stock_filter_habis_and_menipis()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        Ingredients::create([
+            'nama_bahan' => 'Gula Habis',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 0,
+            'hpp' => 3000,
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'INVENTORY',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Cek stok...',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'inventory_stock',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'stok apa yang habis')
+            ->call('executeCommand')
+            ->assertSee('Gula Habis')
+            ->assertSee('/stock-dapur');
+    }
+
+    public function test_superadmin_can_query_stock_history_with_transaction_invoice_highlight()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $susu = Ingredients::create([
+            'nama_bahan' => 'Susu Segar',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 8,
+            'hpp' => 15000,
+        ]);
+
+        RiwayatStock::create([
+            'ingredient_id' => $susu->id,
+            'kode' => 'OUT-999',
+            'qty' => 2,
+            'qty_before' => 10,
+            'qty_after' => 8,
+            'tipe' => 'out',
+            'keterangan' => 'Akumulasi resep: pesanan INV-ORD-999',
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'INVENTORY',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Berikut riwayat stoknya:',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'stock_history',
+                                'item_name' => 'Susu Segar',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'kenapa stok susu berkurang?')
+            ->call('executeCommand')
+            ->assertSee('Riwayat Stock — Susu Segar')
+            ->assertSee('Stok sekarang: 8 Kg')
+            ->assertSee('OUT 2 Kg')
+            ->assertSee('10 Kg → 8 Kg')
+            ->assertSee('Akumulasi resep: pesanan INV-ORD-999')
+            ->assertSee('Invoice terkait: INV-ORD-999')
+            ->assertSee('/riwayat-stock');
+    }
+
+    public function test_stock_history_filter_in_and_out()
+    {
+        config(['services.openai.key' => 'mocked-key']);
+
+        $teh = Ingredients::create([
+            'nama_bahan' => 'Daun Teh',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 15,
+            'hpp' => 5000,
+        ]);
+
+        RiwayatStock::create([
+            'ingredient_id' => $teh->id,
+            'kode' => 'IN-111',
+            'qty' => 5,
+            'qty_before' => 10,
+            'qty_after' => 15,
+            'tipe' => 'in',
+            'keterangan' => 'Penerimaan bahan baru',
+        ]);
+
+        Http::fake([
+            'https://api.openai.com/v1/chat/completions' => Http::response([
+                'choices' => [[
+                    'message' => [
+                        'content' => json_encode([
+                            'is_action' => false,
+                            'target_module' => 'INVENTORY',
+                            'action_type' => 'READ',
+                            'ai_response' => 'Berikut stok masuk:',
+                            'payload' => $this->defaultPayload([
+                                'report_type' => 'stock_history',
+                                'item_name' => 'Daun Teh',
+                                'stock_type' => 'in',
+                            ]),
+                        ]),
+                    ],
+                ]],
+            ], 200),
+        ]);
+
+        Livewire::actingAs($this->superadmin)
+            ->test(AiCommandCenter::class)
+            ->set('commandText', 'stok apa saja yang masuk hari ini')
+            ->call('executeCommand')
+            ->assertSee('IN 5 Kg')
+            ->assertSee('Penerimaan bahan baru');
     }
 }

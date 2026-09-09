@@ -18,4 +18,9 @@ class Member extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function pesanans()
+    {
+        return $this->hasMany(Pesanan::class, 'member_id');
+    }
 }
