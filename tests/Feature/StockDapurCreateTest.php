@@ -10,7 +10,9 @@ use App\Models\SatuanBahan;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
+use ReflectionMethod;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 use Tests\TestCase;
 
@@ -199,5 +201,90 @@ class StockDapurCreateTest extends TestCase
             'tipe' => 'in',
             'keterangan' => 'Stok awal',
         ]);
+    }
+
+    /**
+     * update() method has 0 parameters and does not accept client-provided target ID.
+     */
+    public function test_update_method_has_no_parameters_and_does_not_accept_client_id(): void
+    {
+        $reflection = new ReflectionMethod(StockDapurCreate::class, 'update');
+        $this->assertSame(0, $reflection->getNumberOfParameters());
+    }
+
+    /**
+     * ingredient_id is marked #[Locked] and cannot be mutated from client Livewire.
+     */
+    public function test_ingredient_id_is_locked_and_cannot_be_mutated_from_client(): void
+    {
+        $ingredient = Ingredients::create([
+            'nama_bahan' => 'Biji Kopi Robusta',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 10,
+            'hpp' => 50000,
+        ]);
+
+        $this->expectException(CannotUpdateLockedPropertyException::class);
+
+        Livewire::actingAs($this->user)
+            ->test(StockDapurCreate::class, ['stockId' => base64_encode($ingredient->id)])
+            ->set('ingredient_id', 9999);
+    }
+
+    /**
+     * Attempting to mutate target from ingredient A to ingredient B within same branch fails,
+     * and ingredient B is never modified.
+     */
+    public function test_same_branch_target_tampering_fails_and_ingredient_b_never_modified(): void
+    {
+        $ingredientA = Ingredients::create([
+            'nama_bahan' => 'Bahan Asli A',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 10,
+            'hpp' => 5000,
+        ]);
+
+        $ingredientB = Ingredients::create([
+            'nama_bahan' => 'Bahan Target B',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 25,
+            'hpp' => 12000,
+        ]);
+
+        $tamperingFailed = false;
+
+        try {
+            Livewire::actingAs($this->user)
+                ->test(StockDapurCreate::class, ['stockId' => base64_encode($ingredientA->id)])
+                ->set('nama_bahan', 'Tampered Name')
+                ->set('stok', 999)
+                ->set('ingredient_id', $ingredientB->id)
+                ->call('update');
+        } catch (CannotUpdateLockedPropertyException $e) {
+            $tamperingFailed = true;
+        }
+
+        $this->assertTrue($tamperingFailed, 'Expected Locked property mutation to throw CannotUpdateLockedPropertyException');
+
+        // Pastikan Ingredient B sama sekali tidak berubah di database
+        $ingredientB->refresh();
+        $this->assertEquals('Bahan Target B', $ingredientB->nama_bahan);
+        $this->assertEquals(25, $ingredientB->stok);
+        $this->assertEquals(12000, $ingredientB->hpp);
+        $this->assertEquals($this->satuanKg->id, $ingredientB->satuan_id);
+    }
+
+    /**
+     * update() fails safely (404) if ingredient_id is not set (e.g. called in create mode).
+     */
+    public function test_update_fails_safely_when_ingredient_id_is_null(): void
+    {
+        Livewire::actingAs($this->user)
+            ->test(StockDapurCreate::class)
+            ->set('nama_bahan', 'Test Bahan')
+            ->set('stok', 10)
+            ->set('satuan_id', $this->satuanKg->id)
+            ->call('update')
+            ->assertStatus(404);
     }
 }

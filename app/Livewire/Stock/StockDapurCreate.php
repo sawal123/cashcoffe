@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Stock;
 
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use App\Models\Ingredients;
 use App\Models\SatuanBahan;
@@ -20,7 +21,10 @@ class StockDapurCreate extends Component
     public $hpp;
 
     public $satuans;
+
+    #[Locked]
     public ?int $ingredient_id = null;
+
     public bool $isEdit = false;
     public $qty, $keterangan, $current_stok, $current_satuan;
     public $editSatuanId, $editSatuanNama;
@@ -86,11 +90,9 @@ class StockDapurCreate extends Component
         $this->dispatch('showToast', type: 'success', message: 'Bahan berhasil disimpan!');
     }
 
-    public function update($id = null)
+    public function update()
     {
-        $canonicalId = $this->ingredient_id ?: (is_numeric($id) ? (int) $id : null);
-
-        if (! $canonicalId) {
+        if (! $this->ingredient_id) {
             abort(404, 'Data bahan baku tidak ditemukan.');
         }
 
@@ -101,7 +103,7 @@ class StockDapurCreate extends Component
             'hpp' => 'nullable|numeric|min:0',
         ]);
 
-        $bahan = Ingredients::find($canonicalId);
+        $bahan = Ingredients::find($this->ingredient_id);
 
         if (! $bahan) {
             abort(404, 'Data bahan baku tidak ditemukan.');
