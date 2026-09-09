@@ -133,12 +133,23 @@ class Transaksi extends Component
                 $oldStatus = $pesanan->status;
                 $newStatus = $this->status;
 
-                if (!auth()->user()->can('edit finished transaction') && $oldStatus === 'selesai') {
+                $user = auth()->user();
+                $canEditFinished = $user && ($user->can('edit finished transaction') || $user->hasRole(['superadmin', 'admin', 'manager']));
+
+                if (! $canEditFinished && $oldStatus === 'selesai') {
                     abort(403, 'Anda tidak memiliki akses untuk mengubah transaksi yang sudah selesai.');
                 }
 
                 if ($oldStatus !== $newStatus) {
-                    if ($oldStatus !== 'diproses' || !in_array($newStatus, ['selesai', 'dibatalkan'], true)) {
+                    $isValidTransition = false;
+
+                    if ($oldStatus === 'diproses' && in_array($newStatus, ['selesai', 'dibatalkan'], true)) {
+                        $isValidTransition = true;
+                    } elseif ($oldStatus === 'selesai' && $newStatus === 'diproses' && $canEditFinished) {
+                        $isValidTransition = true;
+                    }
+
+                    if (! $isValidTransition) {
                         $this->dispatch('close-modal', name: 'edit-status-order');
                         $this->dispatch(
                             'showToast',

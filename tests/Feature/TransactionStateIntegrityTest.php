@@ -1002,15 +1002,16 @@ class TransactionStateIntegrityTest extends TestCase
     }
 
     /**
-     * Regression: selesai -> diproses tetap ditolak oleh validasi transisi meskipun memiliki permission.
+     * Selesai -> diproses berhasil untuk user manager.
      */
-    public function test_selesai_to_diproses_rejected_even_with_permission()
+    public function test_selesai_to_diproses_by_manager_succeeds()
     {
         $manager = User::factory()->create();
         $manager->assignRole('manager');
 
         $order = $this->createTestOrder('selesai');
         $initialStock = $this->ingredient->fresh()->stok;
+        $initialPoints = $this->member->fresh()->points;
 
         Livewire::actingAs($manager)
             ->test(Transaksi::class)
@@ -1018,11 +1019,40 @@ class TransactionStateIntegrityTest extends TestCase
             ->set('status', 'diproses')
             ->set('metode_pembayaran', $this->paymentMethod->id)
             ->call('updateStatus')
-            ->assertDispatched('showToast', type: 'error', message: "Transisi status dari 'selesai' ke 'diproses' tidak valid.");
+            ->assertDispatched('close-modal', name: 'edit-status-order')
+            ->assertDispatched('showToast', type: 'success', message: 'Transaksi berhasil diperbarui');
 
         $order->refresh();
-        $this->assertEquals('selesai', $order->status);
+        $this->assertEquals('diproses', $order->status);
         $this->assertEquals($initialStock, $this->ingredient->fresh()->stok);
+        $this->assertEquals($initialPoints, $this->member->fresh()->points);
+    }
+
+    /**
+     * Selesai -> diproses berhasil untuk user superadmin / admin.
+     */
+    public function test_selesai_to_diproses_by_superadmin_succeeds()
+    {
+        $superadmin = User::factory()->create();
+        $superadmin->assignRole('superadmin');
+
+        $order = $this->createTestOrder('selesai');
+        $initialStock = $this->ingredient->fresh()->stok;
+        $initialPoints = $this->member->fresh()->points;
+
+        Livewire::actingAs($superadmin)
+            ->test(Transaksi::class)
+            ->set('selectedOrder', $order)
+            ->set('status', 'diproses')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->call('updateStatus')
+            ->assertDispatched('close-modal', name: 'edit-status-order')
+            ->assertDispatched('showToast', type: 'success', message: 'Transaksi berhasil diperbarui');
+
+        $order->refresh();
+        $this->assertEquals('diproses', $order->status);
+        $this->assertEquals($initialStock, $this->ingredient->fresh()->stok);
+        $this->assertEquals($initialPoints, $this->member->fresh()->points);
     }
 
     /**
