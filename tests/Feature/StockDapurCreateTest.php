@@ -240,6 +240,25 @@ class StockDapurCreateTest extends TestCase
     }
 
     /**
+     * ingredient_branch_id is marked #[Locked] and cannot be mutated from client Livewire.
+     */
+    public function test_ingredient_branch_id_is_locked_and_cannot_be_mutated_from_client(): void
+    {
+        $ingredient = Ingredients::create([
+            'nama_bahan' => 'Biji Kopi Robusta Branch Test',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 10,
+            'hpp' => 50000,
+        ]);
+
+        $this->expectException(CannotUpdateLockedPropertyException::class);
+
+        Livewire::actingAs($this->user)
+            ->test(StockDapurCreate::class, ['stockId' => base64_encode($ingredient->id)])
+            ->set('ingredient_branch_id', 9999);
+    }
+
+    /**
      * Attempting to mutate target from ingredient A to ingredient B within same branch fails,
      * and ingredient B is never modified.
      */

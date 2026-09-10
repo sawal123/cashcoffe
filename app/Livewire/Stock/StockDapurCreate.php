@@ -163,22 +163,28 @@ class StockDapurCreate extends Component
             'hpp' => 'nullable|numeric|min:0',
         ]);
 
-        $bahan = Ingredients::find($this->ingredient_id);
+        DB::transaction(function () {
+            $bahan = Ingredients::lockForUpdate()
+                ->find($this->ingredient_id);
 
-        if (! $bahan) {
-            abort(404, 'Data bahan baku tidak ditemukan.');
-        }
+            if (! $bahan) {
+                abort(404, 'Data bahan baku tidak ditemukan.');
+            }
 
-        if ($bahan->branch_id === null || ($this->ingredient_branch_id !== null && (int) $bahan->branch_id !== (int) $this->ingredient_branch_id)) {
-            abort(422, 'Integritas cabang bahan tidak valid.');
-        }
+            if (
+                $bahan->branch_id === null ||
+                (int) $bahan->branch_id !== (int) $this->ingredient_branch_id
+            ) {
+                abort(422, 'Integritas cabang bahan tidak valid.');
+            }
 
-        $bahan->update([
-            'nama_bahan' => $this->nama_bahan,
-            'stok' => $this->stok,
-            'hpp' => $this->hpp ?: 0,
-            'satuan_id' => $this->satuan_id,
-        ]);
+            $bahan->update([
+                'nama_bahan' => $this->nama_bahan,
+                'stok' => $this->stok,
+                'hpp' => $this->hpp ?: 0,
+                'satuan_id' => $this->satuan_id,
+            ]);
+        });
 
         $this->dispatch('showToast', type: 'success', message: 'Bahan berhasil diupdate!');
     }

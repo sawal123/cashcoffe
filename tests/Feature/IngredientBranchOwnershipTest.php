@@ -9,6 +9,7 @@ use App\Models\SatuanBahan;
 use App\Models\User;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use Symfony\Component\HttpKernel\Exception\HttpException;
@@ -437,5 +438,146 @@ class IngredientBranchOwnershipTest extends TestCase
         $this->assertEquals(7500, $fresh->hpp);
         $this->assertSame($this->satuanGram->id, (int) $fresh->satuan_id);
         $this->assertSame($this->branchA->id, (int) $fresh->branch_id);
+    }
+
+    /**
+     * 16. ingredient_branch_id memang #[Locked] dan tidak dapat dimutasi client.
+     */
+    public function test_ingredient_branch_id_is_locked_and_cannot_be_mutated_from_client(): void
+    {
+        $ingredient = Ingredients::create([
+            'nama_bahan' => 'Bahan Alpha Locked Branch',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 10,
+            'hpp' => 5000,
+            'branch_id' => $this->branchA->id,
+        ]);
+
+        $this->expectException(CannotUpdateLockedPropertyException::class);
+
+        Livewire::actingAs($this->superadminWithoutBranch)
+            ->test(StockDapurCreate::class, ['stockId' => base64_encode($ingredient->id)])
+            ->set('ingredient_branch_id', $this->branchB->id);
+    }
+
+    /**
+     * 17. Update tetap berhasil pada ownership yang sama.
+     */
+    public function test_update_succeeds_under_same_branch_ownership(): void
+    {
+        $ingredient = Ingredients::create([
+            'nama_bahan' => 'Bahan Ownership Sama',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 15,
+            'hpp' => 12000,
+            'branch_id' => $this->branchA->id,
+        ]);
+
+        Livewire::actingAs($this->userBranchA)
+            ->test(StockDapurCreate::class, ['stockId' => base64_encode($ingredient->id)])
+            ->set('nama_bahan', 'Bahan Ownership Sama Updated')
+            ->set('stok', 25)
+            ->set('hpp', 14000)
+            ->set('satuan_id', $this->satuanKg->id)
+            ->call('update')
+            ->assertHasNoErrors()
+            ->assertDispatched('showToast', type: 'success', message: 'Bahan berhasil diupdate!');
+
+        $fresh = $ingredient->fresh();
+        $this->assertSame('Bahan Ownership Sama Updated', $fresh->nama_bahan);
+        $this->assertEquals(25, $fresh->stok);
+        $this->assertEquals(14000, $fresh->hpp);
+        $this->assertSame($this->branchA->id, (int) $fresh->branch_id);
+    }
+
+    /**
+     * 18. Ownership mismatch ditolak 422 dan metadata tidak berubah.
+     */
+    public function test_ownership_mismatch_is_rejected_with_422_and_metadata_remains_unchanged(): void
+    {
+        $ingredient = Ingredients::create([
+            'nama_bahan' => 'Bahan Original Alpha Mismatch',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 20,
+            'hpp' => 10000,
+            'branch_id' => $this->branchA->id,
+        ]);
+
+        $component = Livewire::actingAs($this->superadminWithoutBranch)
+            ->test(StockDapurCreate::class, ['stockId' => base64_encode($ingredient->id)])
+            ->set('nama_bahan', 'Nama Bahan Diubah Secara Liar')
+            ->set('stok', 999)
+            ->set('hpp', 50000);
+
+        // Simulasi perubahan branch_id di database (concurrent update) sebelum update() dipanggil
+        DB::table('ingredients')
+            ->where('id', $ingredient->id)
+            ->update(['branch_id' => $this->branchB->id]);
+
+        $component->call('update')
+            ->assertStatus(422);
+
+        // Metadata tidak boleh berubah di database
+        $fresh = Ingredients::withoutGlobalScopes()->find($ingredient->id);
+        $this->assertSame('Bahan Original Alpha Mismatch', $fresh->nama_bahan);
+        $this->assertEquals(20, $fresh->stok);
+        $this->assertEquals(10000, $fresh->hpp);
+        $this->assertSame($this->branchB->id, (int) $fresh->branch_id);
+    }
+
+    /**
+     * 19. update() menggunakan transaction + lockForUpdate agar ownership check dan metadata mutation berada dalam critical section yang sama.
+     */
+    public function test_update_uses_transaction_and_lock_for_update_in_critical_section(): void
+    {
+        $ingredient = Ingredients::create([
+            'nama_bahan' => 'Bahan Critical Section Test',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 10,
+            'hpp' => 5000,
+            'branch_id' => $this->branchA->id,
+        ]);
+
+        $retrievalLock = null;
+        $retrievalTxLevel = null;
+        $mutationTxLevel = null;
+
+        Ingredients::addGlobalScope('test_lock_checker', function ($builder) use (&$retrievalLock, &$retrievalTxLevel) {
+            $retrievalLock = $builder->getQuery()->lock;
+            $retrievalTxLevel = DB::transactionLevel();
+        });
+
+        Ingredients::updating(function ($model) use (&$mutationTxLevel) {
+            $mutationTxLevel = DB::transactionLevel();
+        });
+
+        Livewire::actingAs($this->userBranchA)
+            ->test(StockDapurCreate::class, ['stockId' => base64_encode($ingredient->id)])
+            ->set('nama_bahan', 'Bahan Critical Section Updated')
+            ->set('stok', 15)
+            ->call('update')
+            ->assertHasNoErrors();
+
+        // Verifikasi bahwa query pengambilan bahan menggunakan lockForUpdate (lock === true)
+        $this->assertTrue(
+            $retrievalLock === true,
+            'Expected ingredient retrieval query to have lockForUpdate (lock === true).'
+        );
+
+        // Verifikasi bahwa query lockForUpdate dieksekusi di dalam DB transaction
+        $this->assertNotNull($retrievalTxLevel);
+        $this->assertGreaterThanOrEqual(
+            1,
+            $retrievalTxLevel,
+            'Ownership check query with lockForUpdate must be executed inside a DB transaction.'
+        );
+
+        // Verifikasi bahwa update metadata juga dieksekusi di dalam critical section (DB transaction) yang sama
+        $this->assertNotNull($mutationTxLevel);
+        $this->assertGreaterThanOrEqual(
+            1,
+            $mutationTxLevel,
+            'Metadata update mutation must be executed inside a DB transaction.'
+        );
     }
 }
