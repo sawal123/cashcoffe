@@ -40,7 +40,28 @@
                                 placeholder="0" />
                         </div>
 
-                        @if(! $isEdit && $isSuperadminWithoutBranch)
+                        @if($isEdit && $ingredient_branch_name)
+                            <!-- Cabang (Read-Only on Edit) -->
+                            <div class="p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-700/60">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                            <iconify-icon icon="lucide:store" class="text-lg"></iconify-icon>
+                                        </div>
+                                        <div>
+                                            <span class="text-xs font-semibold text-neutral-500 dark:text-neutral-400 uppercase tracking-wider block">Cabang</span>
+                                            <span class="text-sm font-bold text-neutral-800 dark:text-neutral-100">{{ $ingredient_branch_name }}</span>
+                                        </div>
+                                    </div>
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-medium bg-neutral-200/70 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
+                                        Read-Only
+                                    </span>
+                                </div>
+                                <p class="text-xs text-neutral-400 dark:text-neutral-500 mt-2">
+                                    Cabang tidak dapat dipindahkan melalui halaman edit bahan.
+                                </p>
+                            </div>
+                        @elseif(! $isEdit && $isSuperadminWithoutBranch)
                             <!-- Cabang (Superadmin Only on Create) -->
                             <div>
                                 <x-ui.select label="Cabang *" wire:model="branch_id" required>
@@ -49,6 +70,17 @@
                                         <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
                                     @endforeach
                                 </x-ui.select>
+                            </div>
+                        @elseif(! $isEdit && $ingredient_branch_name)
+                            <!-- Cabang (Normal User Info on Create) -->
+                            <div class="p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-900/60 border border-neutral-200/80 dark:border-neutral-700/60 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                                    <iconify-icon icon="lucide:store" class="text-base"></iconify-icon>
+                                </div>
+                                <div>
+                                    <span class="text-xs font-medium text-neutral-400 block">Cabang</span>
+                                    <span class="text-sm font-semibold text-neutral-700 dark:text-neutral-200">{{ $ingredient_branch_name }}</span>
+                                </div>
                             </div>
                         @endif
 

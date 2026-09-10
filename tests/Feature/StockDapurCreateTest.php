@@ -37,6 +37,7 @@ class StockDapurCreateTest extends TestCase
             'branch_id' => $this->branch->id,
         ]);
         $this->user->assignRole('superadmin');
+        auth()->login($this->user);
 
         $this->satuanKg = SatuanBahan::create(['nama_satuan' => 'Kg']);
         $this->satuanGram = SatuanBahan::create(['nama_satuan' => 'Gram']);

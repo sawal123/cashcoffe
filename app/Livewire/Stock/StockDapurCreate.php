@@ -27,6 +27,11 @@ class StockDapurCreate extends Component
     #[Locked]
     public ?int $ingredient_id = null;
 
+    #[Locked]
+    public ?int $ingredient_branch_id = null;
+
+    public ?string $ingredient_branch_name = null;
+
     public bool $isEdit = false;
     public $qty, $keterangan, $current_stok, $current_satuan;
     public $editSatuanId, $editSatuanNama;
@@ -34,6 +39,8 @@ class StockDapurCreate extends Component
     public function mount($stockId = null)
     {
         $this->loadSatuan();
+
+        $user = auth()->user();
 
         if ($stockId !== null && $stockId !== '') {
             $decoded = base64_decode($stockId, true);
@@ -48,12 +55,32 @@ class StockDapurCreate extends Component
                 abort(404, 'Data bahan baku tidak ditemukan.');
             }
 
+            if ($bahan->branch_id === null) {
+                abort(422, 'Bahan dapur tidak memiliki cabang yang valid.');
+            }
+
             $this->ingredient_id = (int) $bahan->id;
+            $this->ingredient_branch_id = (int) $bahan->branch_id;
+
+            $branch = Branch::find($this->ingredient_branch_id);
+            if ($branch) {
+                $this->ingredient_branch_name = $branch->nama_cabang . ($branch->is_active ? '' : ' (Tidak Aktif)');
+            } else {
+                $this->ingredient_branch_name = 'Cabang #' . $this->ingredient_branch_id;
+            }
+
             $this->isEdit = true;
             $this->nama_bahan = $bahan->nama_bahan;
             $this->satuan_id = $bahan->satuan_id;
             $this->stok = (float) $bahan->stok == intval($bahan->stok) ? intval($bahan->stok) : (float) $bahan->stok;
             $this->hpp = $bahan->hpp !== null ? ((float) $bahan->hpp == intval($bahan->hpp) ? intval($bahan->hpp) : (float) $bahan->hpp) : null;
+        } else {
+            if ($user && $user->branch_id !== null) {
+                $branch = Branch::find($user->branch_id);
+                if ($branch) {
+                    $this->ingredient_branch_name = $branch->nama_cabang . ($branch->is_active ? '' : ' (Tidak Aktif)');
+                }
+            }
         }
     }
 
@@ -140,6 +167,10 @@ class StockDapurCreate extends Component
 
         if (! $bahan) {
             abort(404, 'Data bahan baku tidak ditemukan.');
+        }
+
+        if ($bahan->branch_id === null || ($this->ingredient_branch_id !== null && (int) $bahan->branch_id !== (int) $this->ingredient_branch_id)) {
+            abort(422, 'Integritas cabang bahan tidak valid.');
         }
 
         $bahan->update([
