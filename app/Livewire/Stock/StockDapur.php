@@ -4,7 +4,7 @@ namespace App\Livewire\Stock;
 
 use Livewire\Component;
 use App\Models\Ingredients;
-use Faker\Provider\Base;
+use Illuminate\Support\Facades\DB;
 use Livewire\WithPagination;
 
 class StockDapur extends Component
@@ -29,14 +29,49 @@ class StockDapur extends Component
 
     public function deleteIngredient($id)
     {
-        // dd($id);
-        $ingredient = Ingredients::find(base64_decode($id));
-        if ($ingredient) {
+        $decoded = base64_decode((string) $id, true);
+
+        if ($decoded === false || !ctype_digit((string) $decoded) || (int) $decoded <= 0) {
+            $this->dispatch('showToast', message: 'Bahan tidak ditemukan.', type: 'error', title: 'Error');
+            return;
+        }
+
+        $ingredientId = (int) $decoded;
+
+        DB::transaction(function () use ($ingredientId) {
+            $ingredient = Ingredients::lockForUpdate()->find($ingredientId);
+
+            if (! $ingredient) {
+                $this->dispatch('showToast', message: 'Bahan tidak ditemukan.', type: 'error', title: 'Error');
+                return;
+            }
+
+            $usedByBaseRecipe = DB::table('menu_ingredients')
+                ->where('ingredient_id', $ingredient->id)
+                ->exists();
+
+            $usedByVariantRecipe = DB::table('variant_option_ingredients')
+                ->where('ingredient_id', $ingredient->id)
+                ->exists();
+
+            if ($usedByBaseRecipe && $usedByVariantRecipe) {
+                $this->dispatch('showToast', message: 'Bahan tidak dapat dihapus karena masih digunakan dalam resep menu atau varian.', type: 'error', title: 'Error');
+                return;
+            }
+
+            if ($usedByBaseRecipe) {
+                $this->dispatch('showToast', message: 'Bahan tidak dapat dihapus karena masih digunakan dalam resep menu.', type: 'error', title: 'Error');
+                return;
+            }
+
+            if ($usedByVariantRecipe) {
+                $this->dispatch('showToast', message: 'Bahan tidak dapat dihapus karena masih digunakan dalam resep varian.', type: 'error', title: 'Error');
+                return;
+            }
+
             $ingredient->delete();
             $this->dispatch('showToast', message: 'Bahan berhasil dihapus.', type: 'success', title: 'Success');
-        } else {
-            $this->dispatch('showToast', message: 'Bahan tidak ditemukan.', type: 'error', title: 'Error');
-        }
+        });
     }
 
     public function render()
