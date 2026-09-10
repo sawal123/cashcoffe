@@ -161,7 +161,9 @@ class AuditRecipeBranchIntegrityCommand extends Command
             ->orderBy('ingredient_id')
             ->get();
 
+        $baseSourceRowsCount = $baseRecipeRows->count();
         $baseEvaluations = [];
+        $baseProblematicRowIds = [];
         $baseOkCount = 0;
         $baseCrossBranchCount = 0;
         $baseBranchlessCount = 0;
@@ -189,17 +191,21 @@ class AuditRecipeBranchIntegrityCommand extends Command
 
                 if ($status === 'OK') {
                     $baseOkCount++;
-                } elseif ($status === 'CROSS_BRANCH') {
-                    $baseCrossBranchCount++;
-                } elseif ($status === 'BRANCHLESS_INGREDIENT') {
-                    $baseBranchlessCount++;
-                } elseif ($status === 'MISSING_INGREDIENT') {
-                    $baseMissingCount++;
-                } elseif ($status === 'SOFT_DELETED_INGREDIENT') {
-                    $baseSoftDeletedCount++;
+                } else {
+                    $baseProblematicRowIds[$recipeRow->id] = true;
+                    if ($status === 'CROSS_BRANCH') {
+                        $baseCrossBranchCount++;
+                    } elseif ($status === 'BRANCHLESS_INGREDIENT') {
+                        $baseBranchlessCount++;
+                    } elseif ($status === 'MISSING_INGREDIENT') {
+                        $baseMissingCount++;
+                    } elseif ($status === 'SOFT_DELETED_INGREDIENT') {
+                        $baseSoftDeletedCount++;
+                    }
                 }
 
                 $baseEvaluations[] = [
+                    'recipe_row_id' => (int) $recipeRow->id,
                     'menu_id' => $menu->id,
                     'menu_name' => $menu->nama_menu,
                     'branch_id' => $branch->id,
@@ -213,7 +219,8 @@ class AuditRecipeBranchIntegrityCommand extends Command
             }
         }
 
-        $baseTotalEvaluated = count($baseEvaluations);
+        $baseEvaluatedCount = count($baseEvaluations);
+        $baseProblematicRowsCount = count($baseProblematicRowIds);
 
         // -------------------------------------------------------------------------
         // 6. Variant Recipe Audit (variant_option_ingredients)
@@ -223,6 +230,7 @@ class AuditRecipeBranchIntegrityCommand extends Command
             ->orderBy('ingredient_id')
             ->get();
 
+        $variantSourceRowsCount = $variantRecipeRows->count();
         $variantOptions = VariantOption::all()->keyBy('id');
         $variantGroups = VariantGroup::all()->keyBy('id');
 
@@ -233,6 +241,7 @@ class AuditRecipeBranchIntegrityCommand extends Command
         }
 
         $variantEvaluations = [];
+        $variantProblematicRowIds = [];
         $variantOkCount = 0;
         $variantCrossBranchCount = 0;
         $variantBranchlessCount = 0;
@@ -274,17 +283,21 @@ class AuditRecipeBranchIntegrityCommand extends Command
 
                     if ($status === 'OK') {
                         $variantOkCount++;
-                    } elseif ($status === 'CROSS_BRANCH') {
-                        $variantCrossBranchCount++;
-                    } elseif ($status === 'BRANCHLESS_INGREDIENT') {
-                        $variantBranchlessCount++;
-                    } elseif ($status === 'MISSING_INGREDIENT') {
-                        $variantMissingCount++;
-                    } elseif ($status === 'SOFT_DELETED_INGREDIENT') {
-                        $variantSoftDeletedCount++;
+                    } else {
+                        $variantProblematicRowIds[$recipeRow->id] = true;
+                        if ($status === 'CROSS_BRANCH') {
+                            $variantCrossBranchCount++;
+                        } elseif ($status === 'BRANCHLESS_INGREDIENT') {
+                            $variantBranchlessCount++;
+                        } elseif ($status === 'MISSING_INGREDIENT') {
+                            $variantMissingCount++;
+                        } elseif ($status === 'SOFT_DELETED_INGREDIENT') {
+                            $variantSoftDeletedCount++;
+                        }
                     }
 
                     $variantEvaluations[] = [
+                        'recipe_row_id' => (int) $recipeRow->id,
                         'menu_id' => $menu->id,
                         'menu_name' => $menu->nama_menu,
                         'branch_id' => $branch->id,
@@ -301,7 +314,8 @@ class AuditRecipeBranchIntegrityCommand extends Command
             }
         }
 
-        $variantTotalEvaluated = count($variantEvaluations);
+        $variantEvaluatedCount = count($variantEvaluations);
+        $variantProblematicRowsCount = count($variantProblematicRowIds);
 
         // -------------------------------------------------------------------------
         // 7. Multi-Branch Recipe Risk Classification
@@ -377,27 +391,33 @@ class AuditRecipeBranchIntegrityCommand extends Command
         $this->line('==================================================');
         $this->line('RECIPE BRANCH INTEGRITY AUDIT');
         $this->line('==================================================');
-        $this->line(sprintf('%-30s : %d', 'Active branches', $activeBranchesCount));
-        $this->line(sprintf('%-30s : %d', 'Active menus', $activeMenusCount));
-        $this->line(sprintf('%-30s : %d', 'Saleable menu/branch pairs', $saleablePairsCount));
+        $this->line(sprintf('%-33s: %d', 'Active branches', $activeBranchesCount));
+        $this->line(sprintf('%-33s: %d', 'Active menus', $activeMenusCount));
+        $this->line(sprintf('%-33s: %d', 'Saleable menu/branch pairs', $saleablePairsCount));
         $this->newLine();
-        $this->line(sprintf('%-30s : %d', 'Base recipe rows', $baseTotalEvaluated));
-        $this->line(sprintf('%-30s : %d', 'Base OK', $baseOkCount));
-        $this->line(sprintf('%-30s : %d', 'Base CROSS_BRANCH', $baseCrossBranchCount));
-        $this->line(sprintf('%-30s : %d', 'Base BRANCHLESS', $baseBranchlessCount));
-        $this->line(sprintf('%-30s : %d', 'Base MISSING', $baseMissingCount));
-        $this->line(sprintf('%-30s : %d', 'Base SOFT_DELETED', $baseSoftDeletedCount));
+        $this->line(sprintf('%-33s: %d', 'Base source recipe rows', $baseSourceRowsCount));
+        $this->line(sprintf('%-33s: %d', 'Base evaluated branch pairs', $baseEvaluatedCount));
+        $this->line(sprintf('%-33s: %d', 'Base problematic source rows', $baseProblematicRowsCount));
         $this->newLine();
-        $this->line(sprintf('%-30s : %d', 'Variant recipe rows', $variantTotalEvaluated));
-        $this->line(sprintf('%-30s : %d', 'Variant OK', $variantOkCount));
-        $this->line(sprintf('%-30s : %d', 'Variant CROSS_BRANCH', $variantCrossBranchCount));
-        $this->line(sprintf('%-30s : %d', 'Variant BRANCHLESS', $variantBranchlessCount));
-        $this->line(sprintf('%-30s : %d', 'Variant MISSING', $variantMissingCount));
-        $this->line(sprintf('%-30s : %d', 'Variant SOFT_DELETED', $variantSoftDeletedCount));
+        $this->line(sprintf('%-33s: %d', 'Base OK', $baseOkCount));
+        $this->line(sprintf('%-33s: %d', 'Base CROSS_BRANCH', $baseCrossBranchCount));
+        $this->line(sprintf('%-33s: %d', 'Base BRANCHLESS', $baseBranchlessCount));
+        $this->line(sprintf('%-33s: %d', 'Base MISSING', $baseMissingCount));
+        $this->line(sprintf('%-33s: %d', 'Base SOFT_DELETED', $baseSoftDeletedCount));
         $this->newLine();
-        $this->line(sprintf('%-30s : %d', 'Multi-branch recipe risks', $multiBranchRisksCount));
-        $this->line(sprintf('%-30s : %d', 'Branch menu duplicates', $branchMenuDuplicatesCount));
-        $this->line(sprintf('%-30s : %d', 'Database changes', 0));
+        $this->line(sprintf('%-33s: %d', 'Variant source recipe rows', $variantSourceRowsCount));
+        $this->line(sprintf('%-33s: %d', 'Variant evaluated menu/branches', $variantEvaluatedCount));
+        $this->line(sprintf('%-33s: %d', 'Variant problematic source rows', $variantProblematicRowsCount));
+        $this->newLine();
+        $this->line(sprintf('%-33s: %d', 'Variant OK', $variantOkCount));
+        $this->line(sprintf('%-33s: %d', 'Variant CROSS_BRANCH', $variantCrossBranchCount));
+        $this->line(sprintf('%-33s: %d', 'Variant BRANCHLESS', $variantBranchlessCount));
+        $this->line(sprintf('%-33s: %d', 'Variant MISSING', $variantMissingCount));
+        $this->line(sprintf('%-33s: %d', 'Variant SOFT_DELETED', $variantSoftDeletedCount));
+        $this->newLine();
+        $this->line(sprintf('%-33s: %d', 'Multi-branch recipe risks', $multiBranchRisksCount));
+        $this->line(sprintf('%-33s: %d', 'Branch menu duplicates', $branchMenuDuplicatesCount));
+        $this->line(sprintf('%-33s: %d', 'Database changes', 0));
         $this->line('==================================================');
         $this->newLine();
 
@@ -422,6 +442,7 @@ class AuditRecipeBranchIntegrityCommand extends Command
             $this->warn('BASE RECIPE INTEGRITY ISSUES:');
             $baseTableRows = array_map(function ($row) {
                 return [
+                    $row['recipe_row_id'],
                     $row['menu_id'],
                     $row['menu_name'],
                     $row['branch_id'],
@@ -434,7 +455,7 @@ class AuditRecipeBranchIntegrityCommand extends Command
             }, $baseIssues);
 
             $this->table(
-                ['Menu ID', 'Menu', 'Branch ID', 'Branch', 'Ingredient ID', 'Ingredient', 'Ingredient Branch', 'Status'],
+                ['Row ID', 'Menu ID', 'Menu', 'Branch ID', 'Branch', 'Ingredient ID', 'Ingredient', 'Ingredient Branch', 'Status'],
                 $baseTableRows
             );
             $this->newLine();
@@ -460,6 +481,7 @@ class AuditRecipeBranchIntegrityCommand extends Command
             $this->warn('VARIANT RECIPE INTEGRITY ISSUES:');
             $variantTableRows = array_map(function ($row) {
                 return [
+                    $row['recipe_row_id'],
                     $row['menu_id'],
                     $row['menu_name'],
                     $row['branch_id'],
@@ -474,7 +496,7 @@ class AuditRecipeBranchIntegrityCommand extends Command
             }, $variantIssues);
 
             $this->table(
-                ['Menu ID', 'Menu', 'Branch ID', 'Branch', 'Variant Group', 'Variant Option', 'Ingredient ID', 'Ingredient', 'Ingredient Branch', 'Status'],
+                ['Row ID', 'Menu ID', 'Menu', 'Branch ID', 'Branch', 'Variant Group', 'Variant Option', 'Ingredient ID', 'Ingredient', 'Ingredient Branch', 'Status'],
                 $variantTableRows
             );
             $this->newLine();

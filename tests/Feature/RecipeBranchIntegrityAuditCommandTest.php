@@ -121,10 +121,12 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Saleable menu/branch pairs     : 1')
-            ->expectsOutputToContain('Base recipe rows               : 1')
-            ->expectsOutputToContain('Base OK                        : 1')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 0')
+            ->expectsOutputToContain('Saleable menu/branch pairs       : 1')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 0')
+            ->expectsOutputToContain('Base OK                          : 1')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 0')
             ->expectsOutputToContain('No base recipe integrity issues found.')
             ->assertSuccessful();
     }
@@ -153,9 +155,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Base recipe rows               : 1')
-            ->expectsOutputToContain('Base OK                        : 0')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 1')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 1')
+            ->expectsOutputToContain('Base OK                          : 0')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 1')
             ->expectsOutputToContain('CROSS_BRANCH')
             ->assertSuccessful();
     }
@@ -184,11 +188,13 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Saleable menu/branch pairs     : 2')
-            ->expectsOutputToContain('Base recipe rows               : 2')
-            ->expectsOutputToContain('Base OK                        : 1')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 1')
-            ->expectsOutputToContain('Multi-branch recipe risks      : 1')
+            ->expectsOutputToContain('Saleable menu/branch pairs       : 2')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 2')
+            ->expectsOutputToContain('Base problematic source rows     : 1')
+            ->expectsOutputToContain('Base OK                          : 1')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 1')
+            ->expectsOutputToContain('Multi-branch recipe risks        : 1')
             ->assertSuccessful();
     }
 
@@ -226,10 +232,12 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
 
         // Because Branch B is unavailable, only Branch A is saleable -> no CROSS_BRANCH
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Saleable menu/branch pairs     : 1')
-            ->expectsOutputToContain('Base recipe rows               : 1')
-            ->expectsOutputToContain('Base OK                        : 1')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 0')
+            ->expectsOutputToContain('Saleable menu/branch pairs       : 1')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 0')
+            ->expectsOutputToContain('Base OK                          : 1')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 0')
             ->assertSuccessful();
     }
 
@@ -263,8 +271,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Saleable menu/branch pairs     : 1')
-            ->expectsOutputToContain('Base OK                        : 1')
+            ->expectsOutputToContain('Saleable menu/branch pairs       : 1')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 0')
+            ->expectsOutputToContain('Base OK                          : 1')
             ->assertSuccessful();
     }
 
@@ -293,10 +304,12 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Saleable menu/branch pairs     : 1')
-            ->expectsOutputToContain('Base recipe rows               : 1')
-            ->expectsOutputToContain('Base OK                        : 1')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 0')
+            ->expectsOutputToContain('Saleable menu/branch pairs       : 1')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 0')
+            ->expectsOutputToContain('Base OK                          : 1')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 0')
             ->assertSuccessful();
     }
 
@@ -325,10 +338,12 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Active menus                   : 0')
-            ->expectsOutputToContain('Saleable menu/branch pairs     : 0')
-            ->expectsOutputToContain('Base recipe rows               : 0')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 0')
+            ->expectsOutputToContain('Active menus                     : 0')
+            ->expectsOutputToContain('Saleable menu/branch pairs       : 0')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 0')
+            ->expectsOutputToContain('Base problematic source rows     : 0')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 0')
             ->assertSuccessful();
     }
 
@@ -361,9 +376,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
 
         // Inactive branch is excluded from active branches -> 0 saleable pairs
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Saleable menu/branch pairs     : 0')
-            ->expectsOutputToContain('Base recipe rows               : 0')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 0')
+            ->expectsOutputToContain('Saleable menu/branch pairs       : 0')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 0')
+            ->expectsOutputToContain('Base problematic source rows     : 0')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 0')
             ->assertSuccessful();
     }
 
@@ -391,8 +408,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Base BRANCHLESS                : 1')
-            ->expectsOutputToContain('Base OK                        : 0')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 1')
+            ->expectsOutputToContain('Base BRANCHLESS                  : 1')
+            ->expectsOutputToContain('Base OK                          : 0')
             ->expectsOutputToContain('BRANCHLESS_INGREDIENT')
             ->assertSuccessful();
     }
@@ -422,8 +442,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Base SOFT_DELETED              : 1')
-            ->expectsOutputToContain('Base OK                        : 0')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 1')
+            ->expectsOutputToContain('Base SOFT_DELETED                : 1')
+            ->expectsOutputToContain('Base OK                          : 0')
             ->expectsOutputToContain('SOFT_DELETED_INGREDIENT')
             ->assertSuccessful();
     }
@@ -452,8 +475,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
 
         if ($canCreateFixture) {
             $this->artisan('inventory:audit-recipe-branch-integrity')
-                ->expectsOutputToContain('Base MISSING                   : 1')
-                ->expectsOutputToContain('Base OK                        : 0')
+                ->expectsOutputToContain('Base source recipe rows          : 1')
+                ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+                ->expectsOutputToContain('Base problematic source rows     : 1')
+                ->expectsOutputToContain('Base MISSING                     : 1')
+                ->expectsOutputToContain('Base OK                          : 0')
                 ->expectsOutputToContain('MISSING_INGREDIENT')
                 ->assertSuccessful();
         } else {
@@ -502,9 +528,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Variant recipe rows            : 1')
-            ->expectsOutputToContain('Variant OK                     : 1')
-            ->expectsOutputToContain('Variant CROSS_BRANCH           : 0')
+            ->expectsOutputToContain('Variant source recipe rows       : 1')
+            ->expectsOutputToContain('Variant evaluated menu/branches  : 1')
+            ->expectsOutputToContain('Variant problematic source rows  : 0')
+            ->expectsOutputToContain('Variant OK                       : 1')
+            ->expectsOutputToContain('Variant CROSS_BRANCH             : 0')
             ->expectsOutputToContain('No variant recipe integrity issues found.')
             ->assertSuccessful();
     }
@@ -545,9 +573,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Variant recipe rows            : 1')
-            ->expectsOutputToContain('Variant OK                     : 0')
-            ->expectsOutputToContain('Variant CROSS_BRANCH           : 1')
+            ->expectsOutputToContain('Variant source recipe rows       : 1')
+            ->expectsOutputToContain('Variant evaluated menu/branches  : 1')
+            ->expectsOutputToContain('Variant problematic source rows  : 1')
+            ->expectsOutputToContain('Variant OK                       : 0')
+            ->expectsOutputToContain('Variant CROSS_BRANCH             : 1')
             ->expectsOutputToContain('CROSS_BRANCH')
             ->assertSuccessful();
     }
@@ -592,9 +622,11 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         // Evaluated against Menu 1 (Branch A) -> OK (1)
         // Evaluated against Menu 2 (Branch B) -> CROSS_BRANCH (1)
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Variant recipe rows            : 2')
-            ->expectsOutputToContain('Variant OK                     : 1')
-            ->expectsOutputToContain('Variant CROSS_BRANCH           : 1')
+            ->expectsOutputToContain('Variant source recipe rows       : 1')
+            ->expectsOutputToContain('Variant evaluated menu/branches  : 2')
+            ->expectsOutputToContain('Variant problematic source rows  : 1')
+            ->expectsOutputToContain('Variant OK                       : 1')
+            ->expectsOutputToContain('Variant CROSS_BRANCH             : 1')
             ->assertSuccessful();
     }
 
@@ -612,7 +644,7 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Branch menu duplicates         : 1')
+            ->expectsOutputToContain('Branch menu duplicates           : 1')
             ->expectsOutputToContain('DIAGNOSTIC: BRANCH MENU DUPLICATE ROWS:')
             ->assertSuccessful();
     }
@@ -667,7 +699,7 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ];
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Database changes               : 0')
+            ->expectsOutputToContain('Database changes                 : 0')
             ->assertSuccessful();
 
         // Snapshot tables after
@@ -707,9 +739,97 @@ class RecipeBranchIntegrityAuditCommandTest extends TestCase
         ]);
 
         $this->artisan('inventory:audit-recipe-branch-integrity')
-            ->expectsOutputToContain('Base OK                        : 1')
-            ->expectsOutputToContain('Base CROSS_BRANCH              : 0')
+            ->expectsOutputToContain('Base source recipe rows          : 1')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 1')
+            ->expectsOutputToContain('Base problematic source rows     : 0')
+            ->expectsOutputToContain('Base OK                          : 1')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 0')
             ->expectsOutputToContain('No base recipe integrity issues found.')
+            ->assertSuccessful();
+    }
+
+    /**
+     * 18. multiple branch evaluations from the same recipe row count as 1 unique problematic source row.
+     */
+    public function test_unique_problematic_source_rows_deduplication(): void
+    {
+        $tierC = PriceTier::create(['nama_tier' => 'Tier C', 'is_active' => true]);
+        $branchC = Branch::create([
+            'nama_cabang' => 'Cabang Gamma',
+            'kode_cabang' => 'GAM',
+            'price_tier_id' => $tierC->id,
+            'is_active' => true,
+        ]);
+
+        // Menu 1 saleable in branches A, B, C (3 pairs)
+        $menu1 = $this->createSaleableMenu('Menu Tri-Branch', [$this->branchA, $this->branchB, $branchC]);
+        // Menu 2 saleable in branches A, B (2 pairs)
+        $menu2 = $this->createSaleableMenu('Menu Bi-Branch', [$this->branchA, $this->branchB]);
+
+        // Recipe row 1 for Menu 1: belongs to Branch A (fails in B and C)
+        $ingredientA = Ingredients::create([
+            'nama_bahan' => 'Bahan Alpha Only',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 10,
+            'hpp' => 5000,
+            'branch_id' => $this->branchA->id,
+        ]);
+        DB::table('menu_ingredients')->insert([
+            'menu_id' => $menu1->id,
+            'ingredient_id' => $ingredientA->id,
+            'qty' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Recipe row 2 for Menu 2: branchless (fails in A and B)
+        $ingredientNull = Ingredients::create([
+            'nama_bahan' => 'Bahan Branchless',
+            'satuan_id' => $this->satuanKg->id,
+            'stok' => 10,
+            'hpp' => 5000,
+            'branch_id' => null,
+        ]);
+        DB::table('menu_ingredients')->insert([
+            'menu_id' => $menu2->id,
+            'ingredient_id' => $ingredientNull->id,
+            'qty' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Variant test: 1 variant recipe row evaluated in 3 branches for Menu 1
+        $vg = VariantGroup::create(['nama_group' => 'Ukuran Extra']);
+        $vo = VariantOption::create([
+            'variant_group_id' => $vg->id,
+            'nama_opsi' => 'Jumbo',
+        ]);
+        DB::table('menu_variant_group')->insert([
+            'menu_id' => $menu1->id,
+            'variant_group_id' => $vg->id,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('variant_option_ingredients')->insert([
+            'variant_option_id' => $vo->id,
+            'ingredient_id' => $ingredientA->id,
+            'qty' => 20,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->artisan('inventory:audit-recipe-branch-integrity')
+            ->expectsOutputToContain('Base source recipe rows          : 2')
+            ->expectsOutputToContain('Base evaluated branch pairs      : 5')
+            ->expectsOutputToContain('Base problematic source rows     : 2')
+            ->expectsOutputToContain('Base OK                          : 1')
+            ->expectsOutputToContain('Base CROSS_BRANCH                : 2')
+            ->expectsOutputToContain('Base BRANCHLESS                  : 2')
+            ->expectsOutputToContain('Variant source recipe rows       : 1')
+            ->expectsOutputToContain('Variant evaluated menu/branches  : 3')
+            ->expectsOutputToContain('Variant problematic source rows  : 1')
+            ->expectsOutputToContain('Variant OK                       : 1')
+            ->expectsOutputToContain('Variant CROSS_BRANCH             : 2')
             ->assertSuccessful();
     }
 }
