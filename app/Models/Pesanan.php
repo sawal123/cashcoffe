@@ -153,16 +153,24 @@ class Pesanan extends Model
             return;
         }
 
-        // 2. Lock Row sesuai ID berurutan (cegah deadlock)
+        // 2. Resolve order branch sebagai single source of truth
+        $orderBranchId = $this->branch_id;
+        if (empty($orderBranchId)) {
+            throw new \Exception("Pesanan tidak memiliki cabang yang valid untuk pemrosesan inventory.");
+        }
+
+        // 3. Lock Row sesuai ID berurutan (cegah deadlock) dengan isolasi order branch
         $ingredientIds = array_keys($stockChanges);
 
-        $lockedIngredients = Ingredients::whereIn('id', $ingredientIds)
+        $lockedIngredients = Ingredients::withoutGlobalScope('branch_filter')
+            ->where('branch_id', $orderBranchId)
+            ->whereIn('id', $ingredientIds)
             ->orderBy('id')
             ->lockForUpdate()
             ->get()
             ->keyBy('id');
 
-        // 3. Validasi Keberadaan Bahan Baku
+        // 4. Validasi Keberadaan Bahan Baku
         foreach ($stockChanges as $ingredientId => $neededQty) {
             $ingredient = $lockedIngredients->get($ingredientId);
             if (!$ingredient) {
@@ -171,7 +179,7 @@ class Pesanan extends Model
             }
         }
 
-        // 4. Eksekusi Pemotongan Stok dan Pembuatan Riwayat
+        // 5. Eksekusi Pemotongan Stok dan Pembuatan Riwayat
         foreach ($stockChanges as $ingredientId => $neededQty) {
             $ingredient = $lockedIngredients->get($ingredientId);
             if (!$ingredient) continue;
@@ -182,6 +190,7 @@ class Pesanan extends Model
             $ingredient->update(['stok' => $after]);
 
             RiwayatStock::create([
+                'branch_id'     => $orderBranchId,
                 'ingredient_id' => $ingredient->id,
                 'kode'          => strtoupper('OUT-' . Str::random(6)),
                 'qty'           => $neededQty,

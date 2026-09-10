@@ -30,6 +30,7 @@ class InventoryConsistencyTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected \App\Models\Branch $branch;
     protected User $user;
     protected Menu $menu;
     protected Ingredients $ingredientDasar;
@@ -46,7 +47,13 @@ class InventoryConsistencyTest extends TestCase
 
         $this->seed(RbacSeeder::class);
 
-        $this->user = User::factory()->create();
+        $this->branch = \App\Models\Branch::create([
+            'nama_cabang' => 'Branch Utama',
+            'kode_cabang' => 'BRU',
+            'is_active' => true,
+        ]);
+
+        $this->user = User::factory()->create(['branch_id' => $this->branch->id]);
         $this->user->assignRole('kasir');
 
         $this->priceTier = PriceTier::first() ?? PriceTier::create(['nama_tier' => 'Regular', 'is_active' => true]);
@@ -65,6 +72,7 @@ class InventoryConsistencyTest extends TestCase
         $satuan = SatuanBahan::create(['nama_satuan' => 'Gram']);
 
         $this->ingredientDasar = Ingredients::create([
+            'branch_id' => $this->branch->id,
             'nama_bahan' => 'Biji Kopi',
             'satuan_id' => $satuan->id,
             'stok' => 100,
@@ -72,6 +80,7 @@ class InventoryConsistencyTest extends TestCase
         ]);
 
         $this->ingredientVarian = Ingredients::create([
+            'branch_id' => $this->branch->id,
             'nama_bahan' => 'Susu',
             'satuan_id' => $satuan->id,
             'stok' => 50,
@@ -110,6 +119,7 @@ class InventoryConsistencyTest extends TestCase
     private function createTestOrder(int $qty = 1, bool $withVariant = false): Pesanan
     {
         $pesanan = Pesanan::create([
+            'branch_id' => $this->branch->id,
             'kode' => 'ORD-' . uniqid(),
             'nama' => 'Pelanggan Test',
             'user_id' => $this->user->id,
@@ -360,7 +370,7 @@ class InventoryConsistencyTest extends TestCase
     public function test_role_admin_dapat_melihat_dan_menjalankan_aksi_order()
     {
         $roleAdmin = \Spatie\Permission\Models\Role::firstOrCreate(['name' => 'admin']);
-        $admin = User::factory()->create();
+        $admin = User::factory()->create(['branch_id' => $this->branch->id]);
         $admin->assignRole('admin');
 
         $orderDiproses = $this->createTestOrder(1);

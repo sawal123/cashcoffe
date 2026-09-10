@@ -28,6 +28,7 @@ class MemberLoyaltyConsistencyTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected \App\Models\Branch $branch;
     protected User $user;
     protected Menu $menu;
     protected Ingredients $ingredient;
@@ -42,7 +43,13 @@ class MemberLoyaltyConsistencyTest extends TestCase
 
         $this->seed(RbacSeeder::class);
 
-        $this->user = User::factory()->create();
+        $this->branch = \App\Models\Branch::create([
+            'nama_cabang' => 'Cabang Test',
+            'kode_cabang' => 'CBT',
+            'is_active' => true,
+        ]);
+
+        $this->user = User::factory()->create(['branch_id' => $this->branch->id]);
         $this->user->assignRole('kasir');
 
         $this->priceTier    = PriceTier::first()    ?? PriceTier::create(['nama_tier' => 'Regular', 'is_active' => true]);
@@ -61,6 +68,7 @@ class MemberLoyaltyConsistencyTest extends TestCase
         $satuan = SatuanBahan::create(['nama_satuan' => 'Gram']);
 
         $this->ingredient = Ingredients::create([
+            'branch_id'  => $this->branch->id,
             'nama_bahan' => 'Biji Kopi',
             'satuan_id'  => $satuan->id,
             'stok'       => 1000,
@@ -84,6 +92,7 @@ class MemberLoyaltyConsistencyTest extends TestCase
     private function createOrder(float $total = 20000, float $discountValue = 0, ?int $memberId = null, string $status = 'diproses'): Pesanan
     {
         $pesanan = Pesanan::create([
+            'branch_id'         => $this->branch->id,
             'kode'              => 'ORD-' . uniqid(),
             'nama'              => 'Pelanggan Test',
             'user_id'           => $this->user->id,
@@ -169,6 +178,7 @@ class MemberLoyaltyConsistencyTest extends TestCase
     public function test_order_without_member_succeeds_without_error()
     {
         $pesanan = Pesanan::create([
+            'branch_id'         => $this->branch->id,
             'kode'              => 'ORD-NO-MEMBER',
             'nama'              => 'Anonim',
             'user_id'           => $this->user->id,
