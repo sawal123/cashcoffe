@@ -4,6 +4,8 @@ namespace App\Livewire\Variant;
 
 use App\Models\Ingredients;
 use App\Models\VariantOption;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class ManageVariantIngredient extends Component
@@ -36,7 +38,7 @@ class ManageVariantIngredient extends Component
     public function addIngredient(): void
     {
         $this->validate([
-            'newIngredientId' => 'required|exists:ingredients,id',
+            'newIngredientId' => 'required',
             'newQty'          => 'required|numeric|min:0.01',
         ], [
             'newIngredientId.required' => 'Pilih bahan terlebih dahulu.',
@@ -44,15 +46,28 @@ class ManageVariantIngredient extends Component
             'newQty.min'               => 'Qty harus lebih dari 0.',
         ]);
 
-        // Cegah duplikat
-        $exists = collect($this->recipeRows)->contains('ingredient_id', (int) $this->newIngredientId);
-        if ($exists) {
-            $this->addError('newIngredientId', 'Bahan ini sudah ada di resep.');
-            return;
-        }
+        DB::transaction(function () {
+            $ingredient = Ingredients::lockForUpdate()->find((int) $this->newIngredientId);
 
-        // Sync ke DB
-        $this->variantOption->ingredients()->attach($this->newIngredientId, ['qty' => $this->newQty]);
+            if (! $ingredient) {
+                throw ValidationException::withMessages([
+                    'newIngredientId' => 'Bahan tidak valid atau tidak tersedia untuk cabang Anda.',
+                ]);
+            }
+
+            // Cegah duplikat
+            $exists = collect($this->recipeRows)->contains('ingredient_id', $ingredient->id)
+                || $this->variantOption->ingredients()->where('ingredients.id', $ingredient->id)->exists();
+
+            if ($exists) {
+                throw ValidationException::withMessages([
+                    'newIngredientId' => 'Bahan ini sudah ada di resep.',
+                ]);
+            }
+
+            // Sync ke DB menggunakan canonical ID
+            $this->variantOption->ingredients()->attach($ingredient->id, ['qty' => $this->newQty]);
+        });
 
         $this->newIngredientId = '';
         $this->newQty = '';
@@ -92,7 +107,7 @@ class ManageVariantIngredient extends Component
 
     public function render()
     {
-        $allIngredients = Ingredients::withoutGlobalScope('branch_filter')
+        $allIngredients = Ingredients::query()
             ->orderBy('nama_bahan')
             ->get();
 

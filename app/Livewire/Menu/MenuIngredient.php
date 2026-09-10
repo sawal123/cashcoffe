@@ -8,6 +8,8 @@ use App\Models\Ingredients;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use App\Models\MenuIngredients as MenuIngredients;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class MenuIngredient extends Component
 {
@@ -24,11 +26,21 @@ class MenuIngredient extends Component
             'qty' => 'required|numeric|min:0.1',
         ]);
 
-        MenuIngredients::create([
-            'menu_id' => $this->menu_id,
-            'ingredient_id' => $this->ingredient_id,
-            'qty' => $this->qty,
-        ]);
+        DB::transaction(function () {
+            $ingredient = Ingredients::lockForUpdate()->find((int) $this->ingredient_id);
+
+            if (! $ingredient) {
+                throw ValidationException::withMessages([
+                    'ingredient_id' => 'Bahan tidak valid atau tidak tersedia untuk cabang Anda.',
+                ]);
+            }
+
+            MenuIngredients::create([
+                'menu_id' => $this->menu_id,
+                'ingredient_id' => $ingredient->id,
+                'qty' => $this->qty,
+            ]);
+        });
 
         $this->reset(['ingredient_id', 'qty']);
     }

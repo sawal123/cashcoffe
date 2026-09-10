@@ -26,6 +26,7 @@ class TransactionStateIntegrityTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected \App\Models\Branch $branch;
     protected User $user;
     protected Menu $menu;
     protected Ingredients $ingredient;
@@ -40,10 +41,17 @@ class TransactionStateIntegrityTest extends TestCase
 
         $this->seed(RbacSeeder::class);
 
-        $this->user = User::factory()->create();
-        $this->user->assignRole('kasir');
-
         $this->priceTier = PriceTier::first() ?? PriceTier::create(['nama_tier' => 'Regular', 'is_active' => true]);
+
+        $this->branch = \App\Models\Branch::create([
+            'nama_cabang' => 'Cabang Test',
+            'kode_cabang' => 'CBT',
+            'price_tier_id' => $this->priceTier->id,
+            'is_active' => true,
+        ]);
+
+        $this->user = User::factory()->create(['branch_id' => $this->branch->id]);
+        $this->user->assignRole('kasir');
         $this->salesChannel = SalesChannel::first() ?? SalesChannel::create(['nama_channel' => 'Dine In', 'is_active' => true]);
         $this->paymentMethod = PaymentMethod::first() ?? PaymentMethod::create(['nama_metode' => 'Cash', 'kode_metode' => 'tunai', 'is_active' => true]);
 
@@ -61,6 +69,7 @@ class TransactionStateIntegrityTest extends TestCase
         ]);
 
         $this->ingredient = Ingredients::create([
+            'branch_id' => $this->branch->id,
             'nama_bahan' => 'Biji Kopi',
             'satuan_id' => $satuan->id,
             'stok' => 100,
@@ -84,6 +93,7 @@ class TransactionStateIntegrityTest extends TestCase
     private function createTestOrder(string $status = 'diproses', ?Discount $discount = null): Pesanan
     {
         $pesanan = Pesanan::create([
+            'branch_id' => $this->branch->id,
             'kode' => 'ORD-' . uniqid(),
             'nama' => 'Pelanggan Test',
             'user_id' => $this->user->id,
