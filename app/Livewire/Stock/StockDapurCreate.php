@@ -2,14 +2,15 @@
 
 namespace App\Livewire\Stock;
 
+use App\Models\Branch;
+use App\Models\Ingredients;
+use App\Models\RiwayatStock;
+use App\Models\SatuanBahan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
-use App\Models\Ingredients;
-use App\Models\SatuanBahan;
-use Illuminate\Support\Str;
-use App\Models\RiwayatStock;
-use App\Models\MenuIngredients;
-use App\Livewire\Menu\MenuIngredient;
 
 class StockDapurCreate extends Component
 {
@@ -21,6 +22,7 @@ class StockDapurCreate extends Component
     public $hpp;
 
     public $satuans;
+    public $branch_id;
 
     #[Locked]
     public ?int $ingredient_id = null;
@@ -63,29 +65,60 @@ class StockDapurCreate extends Component
 
     public function simpan()
     {
-        $this->validate([
+        $user = auth()->user();
+        $isSuperadminWithoutBranch = $user && $user->hasRole('superadmin') && $user->branch_id === null;
+
+        $rules = [
             'nama_bahan' => 'required',
             'stok' => 'required|numeric|min:0',
             'satuan_id' => 'required|exists:satuan_bahans,id',
             'hpp' => 'nullable|numeric|min:0',
+        ];
+
+        if ($isSuperadminWithoutBranch) {
+            $rules['branch_id'] = [
+                'required',
+                Rule::exists('branches', 'id')->where('is_active', true),
+            ];
+        }
+
+        $this->validate($rules, [
+            'branch_id.required' => 'Cabang wajib dipilih.',
+            'branch_id.exists' => 'Cabang yang dipilih tidak valid atau tidak aktif.',
         ]);
 
-        $ingredient = Ingredients::create([
-            'nama_bahan' => $this->nama_bahan,
-            'stok' => $this->stok,
-            'hpp' => $this->hpp,
-            'satuan_id' => $this->satuan_id,
-        ]);
+        if ($user && $user->branch_id !== null) {
+            $resolvedBranchId = (int) $user->branch_id;
+        } elseif ($isSuperadminWithoutBranch) {
+            $resolvedBranchId = (int) $this->branch_id;
+        } else {
+            abort(403, 'User tidak memiliki cabang yang valid.');
+        }
 
-        RiwayatStock::create([
-            'ingredient_id' => $ingredient->id,
-            'kode' => strtoupper('IN-' . Str::random(6)),
-            'qty' => $this->stok,
-            'keterangan' => 'Stok awal',
-            'tipe' => 'in'
-        ]);
+        if (! $resolvedBranchId) {
+            abort(422, 'Cabang tidak valid.');
+        }
 
-        $this->reset(['nama_bahan', 'stok', 'satuan_id', 'hpp']);
+        DB::transaction(function () use ($resolvedBranchId) {
+            $ingredient = Ingredients::create([
+                'nama_bahan' => $this->nama_bahan,
+                'stok' => $this->stok,
+                'hpp' => $this->hpp ?: 0,
+                'satuan_id' => $this->satuan_id,
+                'branch_id' => $resolvedBranchId,
+            ]);
+
+            RiwayatStock::create([
+                'ingredient_id' => $ingredient->id,
+                'branch_id' => $ingredient->branch_id,
+                'kode' => strtoupper('IN-' . Str::random(6)),
+                'qty' => $this->stok,
+                'keterangan' => 'Stok awal',
+                'tipe' => 'in',
+            ]);
+        });
+
+        $this->reset(['nama_bahan', 'stok', 'satuan_id', 'hpp', 'branch_id']);
 
         $this->dispatch('showToast', type: 'success', message: 'Bahan berhasil disimpan!');
     }
@@ -112,7 +145,7 @@ class StockDapurCreate extends Component
         $bahan->update([
             'nama_bahan' => $this->nama_bahan,
             'stok' => $this->stok,
-            'hpp' => $this->hpp,
+            'hpp' => $this->hpp ?: 0,
             'satuan_id' => $this->satuan_id,
         ]);
 
@@ -182,11 +215,21 @@ class StockDapurCreate extends Component
 
     public function render()
     {
+        $user = auth()->user();
+        $isSuperadminWithoutBranch = $user && $user->hasRole('superadmin') && $user->branch_id === null;
+
+        $branches = [];
+        if (! $this->isEdit && $isSuperadminWithoutBranch) {
+            $branches = Branch::where('is_active', true)->orderBy('nama_cabang')->get();
+        }
+
         $title = $this->isEdit ? 'Edit Bahan Dapur' : 'Tambah Bahan Dapur';
         return view('livewire.stock.stock-dapur-create', [
             'title' => $title,
             'backUrl' => '/stock-dapur',
             'isEdit' => $this->isEdit,
+            'isSuperadminWithoutBranch' => $isSuperadminWithoutBranch,
+            'branches' => $branches,
         ])->layout('layouts.app', ['title' => $title]);
     }
 }

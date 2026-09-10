@@ -40,6 +40,18 @@
                                 placeholder="0" />
                         </div>
 
+                        @if(! $isEdit && $isSuperadminWithoutBranch)
+                            <!-- Cabang (Superadmin Only on Create) -->
+                            <div>
+                                <x-ui.select label="Cabang *" wire:model="branch_id" required>
+                                    <option value="">Pilih Cabang</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
+                                    @endforeach
+                                </x-ui.select>
+                            </div>
+                        @endif
+
                         <!-- Seleksi Satuan Ikon -->
                         <div>
                             <label class="text-sm font-semibold text-neutral-600 dark:text-neutral-400 mb-4 block">

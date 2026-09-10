@@ -20,6 +20,7 @@ class StockDapurCreateTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected Branch $branch;
     protected User $user;
     protected SatuanBahan $satuanKg;
     protected SatuanBahan $satuanGram;
@@ -30,7 +31,11 @@ class StockDapurCreateTest extends TestCase
 
         $this->seed(RbacSeeder::class);
 
-        $this->user = User::factory()->create();
+        $this->branch = Branch::create(['nama_cabang' => 'Cabang Utama', 'kode_cabang' => 'CBU', 'is_active' => true]);
+
+        $this->user = User::factory()->create([
+            'branch_id' => $this->branch->id,
+        ]);
         $this->user->assignRole('superadmin');
 
         $this->satuanKg = SatuanBahan::create(['nama_satuan' => 'Kg']);
@@ -190,6 +195,7 @@ class StockDapurCreateTest extends TestCase
             'stok' => 50,
             'hpp' => 18500,
             'satuan_id' => $this->satuanKg->id,
+            'branch_id' => $this->branch->id,
         ]);
 
         $created = Ingredients::where('nama_bahan', 'Susu UHT Fresh')->first();
@@ -197,6 +203,7 @@ class StockDapurCreateTest extends TestCase
 
         $this->assertDatabaseHas('riwayat_stocks', [
             'ingredient_id' => $created->id,
+            'branch_id' => $this->branch->id,
             'qty' => 50,
             'tipe' => 'in',
             'keterangan' => 'Stok awal',
