@@ -401,8 +401,10 @@
         @if (
                 $status !== 'selesai' &&
                 $discount &&
-                ($disc === null || (!($disc['member_only'] ?? false) || (isset($isMember) && $isMember)) &&
-                    ($disc['type'] === 'general' || ($disc['type'] === 'private' && ($isDiscountVerified || (isset($isMember) && $isMember)))))
+                $discountValue > 0 &&
+                $disc !== null &&
+                (!($disc['member_only'] ?? false) || (isset($isMember) && $isMember)) &&
+                ($disc['type'] === 'general' || ($disc['type'] === 'private' && ($isDiscountVerified || (isset($isMember) && $isMember))))
             )
             <div
                 class="flex items-center justify-between p-3.5 mb-6 bg-green-50 dark:bg-green-950/40 rounded-2xl border border-green-200 dark:border-green-800">
@@ -411,8 +413,7 @@
                         class="w-7 h-7 rounded-xl bg-green-500 text-white flex items-center justify-center shadow-sm shadow-green-500/30">
                         <iconify-icon icon="mingcute:ticket-line" class="text-base"></iconify-icon>
                     </div>
-                    <span class="text-xs font-black text-green-700 dark:text-green-400">Voucher Aktif:
-                        {{ $discount }}</span>
+                    <span class="text-xs font-black text-green-700 dark:text-green-400">Voucher Aktif: {{ $discount }}</span>
                 </div>
                 <button type="button" wire:click="hapusDiskon"
                     class="w-7 h-7 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 text-neutral-400 hover:text-red-500 transition-colors shadow-sm">
