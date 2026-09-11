@@ -307,12 +307,24 @@ trait HandlesCartInput
         }
     }
 
-    public function updatedDiscount()
+    public function updatedDiscount($value = null)
     {
-        // Reset status verifikasi menjadi false. 
-        // Jika kodenya private, kasir wajib masukin password lagi.
         $this->isDiscountVerified = false;
         $this->verifiedDiscountId = null;
+
+        $code = trim((string) ($value ?? $this->discount));
+        if ($code === '') {
+            $this->discountId = null;
+            $this->discount_id = null;
+        } else {
+            $user = auth()->user();
+            $disc = \App\Models\Discount::where('kode_diskon', $code)
+                ->accessibleTo($user)
+                ->where('is_active', true)
+                ->first();
+            $this->discountId = $disc?->id;
+            $this->discount_id = $disc?->id;
+        }
     }
 
     // Jangan lupa reset status verifikasi saat diskon dihapus
