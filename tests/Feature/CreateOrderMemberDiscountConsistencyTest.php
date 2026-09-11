@@ -508,4 +508,232 @@ class CreateOrderMemberDiscountConsistencyTest extends TestCase
         $this->assertEquals(0, $order->discount_value);
         $this->assertEquals(20000, $order->total);
     }
+
+    /**
+     * Test 11 — Update Order Add Member Discount via UI Flow
+     * Order created without discount -> opened for edit -> member & discount code entered -> updated successfully.
+     */
+    public function test_update_order_add_member_discount_via_ui_flow(): void
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'KHUSUS MEMBER',
+            'kode_diskon' => 'MEMBER',
+            'type' => 'general',
+            'jenis_diskon' => 'persentase',
+            'nilai_diskon' => 5,
+            'member_only' => true,
+            'scope' => 'global',
+            'limit' => 20,
+            'digunakan' => null,
+            'is_active' => true,
+        ]);
+
+        $memberUser = User::factory()->create([
+            'name' => 'Budi Update',
+            'email' => 'budi_update@example.com',
+            'branch_id' => $this->branchA->id,
+        ]);
+        $member = Member::create([
+            'user_id' => $memberUser->id,
+            'phone' => '081234567899',
+            'points' => 0,
+        ]);
+
+        // 1. Create order without discount
+        Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Customer Tanpa Diskon')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->call('saveOrder');
+
+        $order = Pesanan::latest('id')->firstOrFail();
+        $this->assertNull($order->discount_id);
+        $this->assertEquals(0, $order->discount_value);
+        $this->assertEquals(20000, $order->total);
+
+        // 2. Open edit order and apply member discount via UI flow
+        $editComponent = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->call('editOrder', $order->id)
+            ->set('member', $member->phone)
+            ->set('discount', 'MEMBER')
+            ->call('$refresh');
+
+        $this->assertEquals(1000, $editComponent->viewData('discountValue'));
+        $this->assertEquals(19000, $editComponent->viewData('totalAfterDiscount'));
+        $this->assertEquals('Diskon berhasil diterapkan.', $editComponent->viewData('discMessage'));
+
+        // 3. Submit update
+        $editComponent->call('updateOrder')
+            ->assertDispatched('showToast', function ($event, $params) {
+                return ($params['type'] ?? '') === 'success';
+            });
+
+        $fresh = $order->fresh();
+        $this->assertEquals($discount->id, $fresh->discount_id);
+        $this->assertEquals(1000, $fresh->discount_value);
+        $this->assertEquals(20000, $fresh->total);
+        $this->assertEquals($member->id, $fresh->member_id);
+        $this->assertEquals(1, $discount->fresh()->digunakan);
+    }
+
+    /**
+     * Test 12 — Update Order Remove Member Discount via UI Flow
+     * Order created with discount -> opened for edit -> hapusDiskon() -> updated successfully with discount removed.
+     */
+    public function test_update_order_remove_member_discount_via_ui_flow(): void
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'KHUSUS MEMBER',
+            'kode_diskon' => 'MEMBER',
+            'type' => 'general',
+            'jenis_diskon' => 'persentase',
+            'nilai_diskon' => 5,
+            'member_only' => true,
+            'scope' => 'global',
+            'limit' => 20,
+            'digunakan' => 5,
+            'is_active' => true,
+        ]);
+
+        $memberUser = User::factory()->create([
+            'name' => 'Siti Remove',
+            'email' => 'siti_remove@example.com',
+            'branch_id' => $this->branchA->id,
+        ]);
+        $member = Member::create([
+            'user_id' => $memberUser->id,
+            'phone' => '081234567888',
+            'points' => 0,
+        ]);
+
+        // 1. Create order with discount
+        Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Customer Diskon')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->set('member', $member->phone)
+            ->set('discount', 'MEMBER')
+            ->call('saveOrder');
+
+        $order = Pesanan::latest('id')->firstOrFail();
+        $this->assertEquals($discount->id, $order->discount_id);
+        $this->assertEquals(6, $discount->fresh()->digunakan);
+
+        // 2. Open edit order and remove discount
+        $editComponent = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->call('editOrder', $order->id);
+
+        $this->assertEquals('MEMBER', $editComponent->get('discount'));
+        $this->assertEquals($discount->id, $editComponent->get('discount_id'));
+
+        $editComponent->call('hapusDiskon')
+            ->call('updateOrder')
+            ->assertDispatched('showToast', function ($event, $params) {
+                return ($params['type'] ?? '') === 'success';
+            });
+
+        $fresh = $order->fresh();
+        $this->assertNull($fresh->discount_id);
+        $this->assertEquals(0, $fresh->discount_value);
+        $this->assertEquals(5, $discount->fresh()->digunakan);
+    }
+
+    /**
+     * Test 13 — Update Order Add Discount Fails if Limit Reached
+     * Order created without discount -> opened for edit -> discount at limit entered -> updateOrder fails explicitly.
+     */
+    public function test_update_order_add_discount_at_limit_fails_explicitly(): void
+    {
+        $discount = Discount::create([
+            'nama_diskon' => 'GLOBAL LIMIT',
+            'kode_diskon' => 'LIMITFULL',
+            'type' => 'general',
+            'jenis_diskon' => 'nominal',
+            'nilai_diskon' => 5000,
+            'member_only' => false,
+            'scope' => 'global',
+            'limit' => 5,
+            'digunakan' => 5,
+            'is_active' => true,
+        ]);
+
+        // 1. Create order without discount
+        Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Customer Biasa')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->call('saveOrder');
+
+        $order = Pesanan::latest('id')->firstOrFail();
+
+        // 2. Open edit order and try to apply limit-exhausted discount
+        $editComponent = Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->call('editOrder', $order->id)
+            ->set('discount', 'LIMITFULL')
+            ->call('updateOrder')
+            ->assertDispatched('showToast', function ($event, $params) {
+                return ($params['type'] ?? '') === 'error'
+                    && str_contains($params['message'] ?? '', 'batas penggunaan');
+            });
+
+        $fresh = $order->fresh();
+        $this->assertNull($fresh->discount_id);
+        $this->assertEquals(0, $fresh->discount_value);
+        $this->assertEquals(5, $discount->fresh()->digunakan);
+    }
+
+    /**
+     * Test 14 — Update Order Member-Only Discount with Invalid Member Fails Explicitly
+     */
+    public function test_update_order_add_member_only_discount_with_invalid_member_fails_explicitly(): void
+    {
+        Discount::create([
+            'nama_diskon' => 'KHUSUS MEMBER',
+            'kode_diskon' => 'MEMBER',
+            'type' => 'general',
+            'jenis_diskon' => 'persentase',
+            'nilai_diskon' => 5,
+            'member_only' => true,
+            'scope' => 'global',
+            'limit' => 20,
+            'digunakan' => 0,
+            'is_active' => true,
+        ]);
+
+        // 1. Create order without discount
+        Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->set('nama_costumer', 'Customer Tanpa Member')
+            ->set('metode_pembayaran', $this->paymentMethod->id)
+            ->set('sales_channel_id', $this->salesChannel->id)
+            ->set('pesanan', $this->cartPayload())
+            ->call('saveOrder');
+
+        $order = Pesanan::latest('id')->firstOrFail();
+
+        // 2. Open edit order and apply member discount without valid member
+        Livewire::actingAs($this->kasirA)
+            ->test(CreateOrder::class)
+            ->call('editOrder', $order->id)
+            ->set('member', '089999999999')
+            ->set('discount', 'MEMBER')
+            ->call('updateOrder')
+            ->assertDispatched('showToast', function ($event, $params) {
+                return ($params['type'] ?? '') === 'error'
+                    && str_contains($params['message'] ?? '', 'khusus member');
+            });
+
+        $fresh = $order->fresh();
+        $this->assertNull($fresh->discount_id);
+        $this->assertEquals(0, $fresh->discount_value);
+    }
 }

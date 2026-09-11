@@ -65,6 +65,8 @@ class CreateOrder extends Component
 
     public $discount_value;
 
+    public $persistedDiscountId = null;
+
     public $sales_channel_id = 1;
 
     public $salesChannels = [];
@@ -260,7 +262,6 @@ class CreateOrder extends Component
             if (! $disc->canBeUsedBy($cekMember)) {
                 $discMessage = 'Diskon ini khusus member. Masukkan nomor member yang valid.';
                 $discountValue = 0;
-
                 if (! $this->orderId) {
                     $this->discountId = null;
                     $this->discount_id = null;
@@ -268,15 +269,15 @@ class CreateOrder extends Component
             } elseif ($disc->type === 'private' && ! $this->isDiscountVerified && ! $isBypassed) {
                 $discMessage = 'Diskon private. Membutuhkan PIN/Password Admin.';
                 $discountValue = 0;
-
                 if (! $this->orderId) {
                     $this->discountId = null;
                     $this->discount_id = null;
                 }
             } else {
                 $discCurrentUsage = $disc->reconciledUsage();
+                $isSameExistingDiscount = $this->orderId && (int) $disc->id === (int) $this->persistedDiscountId;
 
-                if (! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit) {
+                if (! $isSameExistingDiscount && ! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit) {
                     $discMessage = 'Diskon sudah mencapai batas penggunaan.';
                     $discountValue = 0;
                     if (! $this->orderId) {

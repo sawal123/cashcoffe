@@ -42,6 +42,8 @@ trait HandlesOrderSubmit
         $isLegacyForeign = $persistedDiscount !== null
             && ! $persistedDiscount->isAccessibleTo(auth()->user());
 
+        $this->persistedDiscountId = $pesanan->discount_id;
+
         if ($persistedDiscount && ! $isLegacyForeign) {
             $this->discountId = $pesanan->discount_id;
             $this->discount_id = $pesanan->discount_id;
@@ -303,14 +305,40 @@ trait HandlesOrderSubmit
                 $totalProfit = 0;
                 $discountAmount = 0;
                 $memberId = $this->memberIdFromPhone($this->member);
+                $selectedDiscountCode = trim((string) ($this->discount ?? ''));
+
+                $targetDiscountId = null;
+
+                if (! empty($selectedDiscountCode)) {
+                    $code = $selectedDiscountCode;
+                    $discByCode = Discount::where('kode_diskon', $code)
+                        ->accessibleTo($user)
+                        ->first();
+
+                    if (! $discByCode && $this->discount_id === null) {
+                        throw new \InvalidArgumentException('Kode diskon tidak ditemukan atau tidak dapat diakses di cabang ini.');
+                    }
+
+                    if ($oldGlobalDiscountId === null && $discByCode) {
+                        // Adding discount to order that had none:
+                        $targetDiscountId = $discByCode->id;
+                    } elseif ($this->discount_id !== null) {
+                        $targetDiscountId = $this->discount_id;
+                    } else {
+                        // $oldGlobalDiscountId !== null && $this->discount_id === null: discount removed
+                        $targetDiscountId = null;
+                    }
+                } else {
+                    $targetDiscountId = $this->discount_id;
+                }
 
                 $disc = null;
-                if ($this->discount_id) {
+                if ($targetDiscountId) {
                     // Lock discount rows in deterministic order to prevent deadlock
-                    $discountIdsToLock = array_filter([
-                        $this->discount_id,
+                    $discountIdsToLock = array_filter(array_unique([
+                        $targetDiscountId,
                         $oldGlobalDiscountId,
-                    ]);
+                    ]));
                     sort($discountIdsToLock);
                     $lockedDiscounts = Discount::with('discountItems')
                         ->whereIn('id', $discountIdsToLock)
@@ -319,23 +347,37 @@ trait HandlesOrderSubmit
                         ->get()
                         ->keyBy('id');
 
-                    $disc = $lockedDiscounts->get($this->discount_id);
+                    $disc = $lockedDiscounts->get($targetDiscountId);
+
+                    if (! $disc) {
+                        throw new \InvalidArgumentException('Diskon tidak ditemukan.');
+                    }
 
                     // SERVER-AUTHORITATIVE branch check: tolak discount cabang lain
-                    if ($disc && ! $disc->isAccessibleTo($user)) {
+                    if (! $disc->isAccessibleTo($user)) {
                         throw new \InvalidArgumentException('Diskon tidak valid atau tidak tersedia untuk cabang Anda.');
                     }
 
-                    if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
-                        $disc = null;
-                        $this->discount_id = null;
+                    if (! $disc->is_active) {
+                        throw new \InvalidArgumentException('Kode diskon tidak valid atau sudah tidak aktif.');
+                    }
+
+                    if (
+                        ($disc->tanggal_mulai && $disc->tanggal_mulai->format('Y-m-d') > now()->format('Y-m-d')) ||
+                        ($disc->tanggal_akhir && $disc->tanggal_akhir->format('Y-m-d') < now()->format('Y-m-d'))
+                    ) {
+                        throw new \InvalidArgumentException('Kode diskon sudah tidak aktif atau masa berlaku telah berakhir.');
+                    }
+
+                    if (! $disc->canBeUsedByMemberId($memberId)) {
+                        throw new \InvalidArgumentException('Diskon ini khusus member. Masukkan nomor member yang valid.');
                     }
 
                     // SERVER-AUTHORITATIVE private discount check:
                     // valid jika member bypass, ATAU discount yang sama dengan
                     // persisted discount existing, ATAU verifikasi server terikat
                     // ke discount ID ini (fresh).
-                    if ($disc && $disc->type === 'private') {
+                    if ($disc->type === 'private') {
                         $isPrivateAuthorized = ($memberId !== null)
                             || ($existingPersistedDiscountId !== null
                                 && (int) $existingPersistedDiscountId === (int) $disc->id)
@@ -351,10 +393,15 @@ trait HandlesOrderSubmit
                     if ($oldGlobalDiscountId && $lockedDiscounts->has($oldGlobalDiscountId)) {
                         $oldGlobalDiscountModel = $lockedDiscounts->get($oldGlobalDiscountId);
                     }
+
+                    $this->discountId = $disc->id;
+                    $this->discount_id = $disc->id;
                 } elseif ($oldGlobalDiscountId) {
                     // No new discount, but old one needs to be locked for decrement
                     $oldGlobalDiscountModel = Discount::where('id', $oldGlobalDiscountId)->lockForUpdate()->first();
                 }
+
+                $hasEligibleItem = false;
 
                 foreach ($itemsToProcess as $item) {
                     $menu = $item['menu'];
@@ -379,6 +426,7 @@ trait HandlesOrderSubmit
                             }
                         }
                         if ($isEligible) {
+                            $hasEligibleItem = true;
                             if ($disc->jenis_diskon === 'persentase') {
                                 $itemDiscountValue = round($subtotalItem * ($disc->nilai_diskon / 100));
                                 if ($disc->maksimum_diskon && $itemDiscountValue > $disc->maksimum_diskon) {
@@ -431,8 +479,14 @@ trait HandlesOrderSubmit
 
                         if ($limitBlocking) {
                             // limit habis & bukan discount yang sama → tolak
+                            if ($selectedDiscountCode !== '' && ! $isSameExistingDiscount) {
+                                throw new \InvalidArgumentException('Diskon sudah mencapai batas penggunaan. Silakan periksa kembali total pesanan.');
+                            }
                         } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
                             // tidak memenuhi minimum transaksi
+                            if ($selectedDiscountCode !== '' && ! $isSameExistingDiscount) {
+                                throw new \InvalidArgumentException('Minimal transaksi untuk diskon ini adalah Rp ' . number_format($disc->minimum_transaksi, 0, ',', '.'));
+                            }
                         } else {
                             if ($disc->jenis_diskon === 'persentase') {
                                 $discountAmount = round($total * ($disc->nilai_diskon / 100));
@@ -479,7 +533,10 @@ trait HandlesOrderSubmit
                 if ($disc && $disc->scope === 'global') {
                     $appliedDiscountId = $newDiscountId;
                 } else {
-                    $appliedDiscountId = $disc?->id;
+                    if ($disc && ! $hasEligibleItem && $selectedDiscountCode !== '') {
+                        throw new \InvalidArgumentException('Tidak ada item dalam keranjang yang memenuhi syarat diskon ini.');
+                    }
+                    $appliedDiscountId = ($disc && $hasEligibleItem) ? $disc->id : null;
                 }
 
                 $totalAfterDiscount = max(0, $total - $discountAmount);
@@ -497,6 +554,13 @@ trait HandlesOrderSubmit
                     'uang_tunai' => $this->isCash ? $this->uang_tunai : 0,
                     'kembalian' => $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0,
                 ]);
+
+                $this->persistedDiscountId = $appliedDiscountId;
+                $this->discountId = $appliedDiscountId;
+                $this->discount_id = $appliedDiscountId;
+                if ($appliedDiscountId === null) {
+                    $this->discount = '';
+                }
             });
 
             $this->dispatch('showToast', type: 'success', message: 'Pesanan berhasil diperbarui');
