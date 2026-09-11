@@ -224,12 +224,21 @@ class CreateOrder extends Component
         $total = collect($this->pesanan)->sum(fn($p) => $p['harga'] * $p['qty']);
 
         // Ambil data diskon berdasarkan kode (WAJIB sesuai branch access user)
-        $disc = Discount::where('kode_diskon', $this->discount)
-            ->accessibleTo(auth()->user())
-            ->where('is_active', true)
-            ->whereDate('tanggal_mulai', '<=', now())
-            ->whereDate('tanggal_akhir', '>=', now())
-            ->first();
+        $disc = null;
+        if (! empty(trim((string) $this->discount))) {
+            $disc = Discount::where('kode_diskon', trim((string) $this->discount))
+                ->accessibleTo(auth()->user())
+                ->where('is_active', true)
+                ->where(function ($q) {
+                    $q->whereNull('tanggal_mulai')
+                        ->orWhereDate('tanggal_mulai', '<=', now());
+                })
+                ->where(function ($q) {
+                    $q->whereNull('tanggal_akhir')
+                        ->orWhereDate('tanggal_akhir', '>=', now());
+                })
+                ->first();
+        }
 
         if ($disc) {
             // 2. Isi variabel $result di sini, agar view selalu tahu tipe diskonnya (private/general)
@@ -252,17 +261,28 @@ class CreateOrder extends Component
                 $discMessage = 'Diskon ini khusus member. Masukkan nomor member yang valid.';
                 $discountValue = 0;
 
-                $this->discountId = null;
-                $this->discount_id = null;
+                if (! $this->orderId) {
+                    $this->discountId = null;
+                    $this->discount_id = null;
+                }
             } elseif ($disc->type === 'private' && ! $this->isDiscountVerified && ! $isBypassed) {
                 $discMessage = 'Diskon private. Membutuhkan PIN/Password Admin.';
                 $discountValue = 0;
 
-                $this->discountId = null;
-                $this->discount_id = null;
+                if (! $this->orderId) {
+                    $this->discountId = null;
+                    $this->discount_id = null;
+                }
             } else {
-                if (! is_null($disc->limit) && ! is_null($disc->digunakan) && $disc->digunakan >= $disc->limit) {
+                $discCurrentUsage = $disc->reconciledUsage();
+
+                if (! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit) {
                     $discMessage = 'Diskon sudah mencapai batas penggunaan.';
+                    $discountValue = 0;
+                    if (! $this->orderId) {
+                        $this->discountId = null;
+                        $this->discount_id = null;
+                    }
                 } else {
                     $itemScopeDiscounts = 0;
 
@@ -309,12 +329,30 @@ class CreateOrder extends Component
                             }
                         }
 
-                        $discountValue = $itemScopeDiscounts;
-                        $discMessage = 'Diskon Terpilih (Item/Kategori) berhasil diterapkan.';
+                        if ($itemScopeDiscounts > 0) {
+                            $discountValue = $itemScopeDiscounts;
+                            $discMessage = 'Diskon Terpilih (Item/Kategori) berhasil diterapkan.';
+                            if (! $this->orderId) {
+                                $this->discountId = $disc->id;
+                                $this->discount_id = $disc->id;
+                            }
+                        } else {
+                            $discountValue = 0;
+                            $discMessage = 'Tidak ada item dalam keranjang yang memenuhi syarat diskon ini.';
+                            if (! $this->orderId) {
+                                $this->discountId = null;
+                                $this->discount_id = null;
+                            }
+                        }
                     } else {
                         // Scope Global
                         if ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
                             $discMessage = 'Minimal transaksi untuk diskon ini adalah Rp ' . number_format($disc->minimum_transaksi, 0, ',', '.');
+                            $discountValue = 0;
+                            if (! $this->orderId) {
+                                $this->discountId = null;
+                                $this->discount_id = null;
+                            }
                         } else {
                             if ($disc->jenis_diskon === 'persentase') {
                                 $discountValue = round($total * ($disc->nilai_diskon / 100));
@@ -325,22 +363,26 @@ class CreateOrder extends Component
                                 $discountValue = $disc->nilai_diskon;
                             }
                             $discMessage = 'Diskon berhasil diterapkan.';
+                            if (! $this->orderId) {
+                                $this->discountId = $disc->id;
+                                $this->discount_id = $disc->id;
+                            }
                         }
-                    }
-
-                    if ($discMessage !== 'Diskon sudah mencapai batas penggunaan.' && strpos($discMessage, 'Minimal') === false) {
-                        $this->discountId = $disc->id;
-                        $this->discount_id = $disc->id;
                     }
                 }
             }
         } else {
             $result = null;
-            if ($this->discount == '') {
+            if (empty(trim((string) $this->discount))) {
                 $discMessage = null;
             } else {
                 $discMessage = 'Kode diskon tidak valid atau sudah tidak aktif.';
+                if (! $this->orderId) {
+                    $this->discountId = null;
+                    $this->discount_id = null;
+                }
             }
+            $discountValue = 0;
             $this->isDiscountVerified = false; // Reset status verifikasi jika kode salah/dihapus
             $this->verifiedDiscountId = null;
         }
@@ -406,8 +448,14 @@ class CreateOrder extends Component
         $this->kembalian = $this->isCash ? $this->uang_tunai - $totalAfterDiscount : 0;
 
         $availableDiscounts = Discount::where('is_active', true)
-            ->whereDate('tanggal_mulai', '<=', now())
-            ->whereDate('tanggal_akhir', '>=', now())
+            ->where(function ($q) {
+                $q->whereNull('tanggal_mulai')
+                    ->orWhereDate('tanggal_mulai', '<=', now());
+            })
+            ->where(function ($q) {
+                $q->whereNull('tanggal_akhir')
+                    ->orWhereDate('tanggal_akhir', '>=', now());
+            })
             ->accessibleTo($user)
             ->when(! $cekMember, function ($q) {
                 $q->where('member_only', false);

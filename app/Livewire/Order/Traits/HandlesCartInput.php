@@ -319,10 +319,16 @@ trait HandlesCartInput
     public function removeDiscount()
     {
         $this->discount = null;
+        $this->discountId = null;
         $this->discount_id = null;
         $this->discount_value = 0;
         $this->isDiscountVerified = false; // Reset status ini
         $this->verifiedDiscountId = null;
+    }
+
+    public function hapusDiskon()
+    {
+        $this->removeDiscount();
     }
 
     // Fungsi untuk mengirim notif/request ke Admin

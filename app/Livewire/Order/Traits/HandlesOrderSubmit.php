@@ -575,28 +575,63 @@ trait HandlesOrderSubmit
                 $totalProfit = 0;
                 $discountAmount = 0;
 
+                $selectedDiscountCode = trim((string) ($this->discount ?? ''));
+                $selectedDiscountId = $this->discountId;
+
                 $disc = null;
-                if ($this->discountId) {
-                    // Lock discount row before limit check
+                if ($selectedDiscountCode !== '') {
+                    // SERVER-AUTHORITATIVE: Resolve dari kode yang dipilih kasir/user
                     $disc = Discount::with('discountItems')
-                        ->where('id', $this->discountId)
+                        ->where('kode_diskon', $selectedDiscountCode)
                         ->lockForUpdate()
                         ->first();
 
+                    if (! $disc) {
+                        throw new \InvalidArgumentException('Kode diskon tidak valid atau sudah tidak aktif.');
+                    }
+
+                    // Tamper detection: jika client mengirim discountId berbeda dengan kode diskon
+                    if ($selectedDiscountId !== null && (int) $selectedDiscountId !== (int) $disc->id) {
+                        throw new \InvalidArgumentException('Diskon private belum diverifikasi.');
+                    }
+                } elseif ($selectedDiscountId) {
+                    // Fallback compatibility jika hanya discountId yang diset
+                    $disc = Discount::with('discountItems')
+                        ->where('id', $selectedDiscountId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (! $disc) {
+                        throw new \InvalidArgumentException('Diskon tidak valid atau tidak ditemukan.');
+                    }
+                }
+
+                $discCurrentUsage = 0;
+                if ($disc) {
                     // SERVER-AUTHORITATIVE branch check: tolak discount cabang lain
-                    if ($disc && ! $disc->isAccessibleTo($user)) {
+                    if (! $disc->isAccessibleTo($user)) {
                         throw new \InvalidArgumentException('Diskon tidak valid atau tidak tersedia untuk cabang Anda.');
                     }
 
-                    if ($disc && !$disc->canBeUsedByMemberId($memberId)) {
-                        $disc = null;
-                        $this->discountId = null;
+                    if (! $disc->is_active) {
+                        throw new \InvalidArgumentException('Kode diskon tidak valid atau sudah tidak aktif.');
+                    }
+
+                    if (
+                        ($disc->tanggal_mulai && $disc->tanggal_mulai->format('Y-m-d') > now()->format('Y-m-d')) ||
+                        ($disc->tanggal_akhir && $disc->tanggal_akhir->format('Y-m-d') < now()->format('Y-m-d'))
+                    ) {
+                        throw new \InvalidArgumentException('Kode diskon sudah tidak aktif atau masa berlaku telah berakhir.');
+                    }
+
+                    if (! $disc->canBeUsedByMemberId($memberId)) {
+                        throw new \InvalidArgumentException('Diskon ini khusus member. Masukkan nomor member yang valid.');
                     }
 
                     // SERVER-AUTHORITATIVE private discount check:
                     // hanya boleh diterapkan jika member bypass valid ATAU
                     // verifikasi server terikat ke discount ID ini.
-                    if ($disc && $disc->type === 'private') {
+                    if ($disc->type === 'private') {
                         $isPrivateAuthorized = ($memberId !== null)
                             || ($this->isDiscountVerified === true
                                 && $this->verifiedDiscountId !== null
@@ -605,6 +640,25 @@ trait HandlesOrderSubmit
                         if (! $isPrivateAuthorized) {
                             throw new \InvalidArgumentException('Diskon private belum diverifikasi.');
                         }
+                    }
+
+                    // Lock & check usage limit immediately
+                    $discCurrentUsage = $disc->reconciledUsage();
+                    $isLimitReached = ! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit;
+
+                    if ($isLimitReached) {
+                        if ($selectedDiscountCode !== '') {
+                            // User submit sambil discount dipilih aktif -> tolak keras, fail explicitly!
+                            throw new \InvalidArgumentException('Diskon sudah mencapai batas penggunaan. Silakan periksa kembali total pesanan.');
+                        } else {
+                            // Legacy/tamper compatibility: discountId saja tanpa active code -> jangan terapkan discount
+                            $disc = null;
+                        }
+                    }
+
+                    if ($disc) {
+                        $this->discountId = $disc->id;
+                        $this->discount_id = $disc->id;
                     }
                 }
 
@@ -661,32 +715,21 @@ trait HandlesOrderSubmit
                 }
 
                 if ($disc && $disc->is_active && $disc->scope === 'global') {
-                    if (
-                        (! $disc->tanggal_mulai || $disc->tanggal_mulai <= now()) &&
-                        (! $disc->tanggal_akhir || $disc->tanggal_akhir >= now())
-                    ) {
-                        // --- NULL-safe reconciliation (single source of truth) ---
-                        // Jika digunakan NULL (legacy), hitung active orders
-                        // TANPA branch_filter, dengan ownership branch discount.
-                        $discCurrentUsage = $disc->reconciledUsage();
+                    if ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
+                        throw new \InvalidArgumentException('Minimal transaksi untuk diskon ini adalah Rp ' . number_format($disc->minimum_transaksi, 0, ',', '.'));
+                    }
 
-                        if (! is_null($disc->limit) && $discCurrentUsage >= (int) $disc->limit) {
-                            // Limit habis
-                        } elseif ($disc->minimum_transaksi && $total < $disc->minimum_transaksi) {
-                            // Tidak memenuhi minimal transaksi
-                        } else {
-                            if ($disc->jenis_diskon === 'persentase') {
-                                $discountAmount = round($total * ($disc->nilai_diskon / 100));
-                                if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
-                                    $discountAmount = $disc->maksimum_diskon;
-                                }
-                            } elseif ($disc->jenis_diskon === 'nominal') {
-                                $discountAmount = $disc->nilai_diskon;
-                            }
-                            if ($discountAmount > 0) {
-                                $disc->update(['digunakan' => $discCurrentUsage + 1]);
-                            }
+                    if ($disc->jenis_diskon === 'persentase') {
+                        $discountAmount = round($total * ($disc->nilai_diskon / 100));
+                        if ($disc->maksimum_diskon && $discountAmount > $disc->maksimum_diskon) {
+                            $discountAmount = $disc->maksimum_diskon;
                         }
+                    } elseif ($disc->jenis_diskon === 'nominal') {
+                        $discountAmount = $disc->nilai_diskon;
+                    }
+
+                    if ($discountAmount > 0) {
+                        $disc->update(['digunakan' => $discCurrentUsage + 1]);
                     }
                 }
 
@@ -716,6 +759,9 @@ trait HandlesOrderSubmit
             $this->pesanan = [];
             $this->mejas_id = null;
             $this->nama_costumer = '';
+            $this->discount = '';
+            $this->discountId = null;
+            $this->discount_id = null;
 
             $this->setLastOrderSnapshot($pesanan->fresh([
                 'items.menu',
