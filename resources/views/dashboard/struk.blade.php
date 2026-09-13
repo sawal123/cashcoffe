@@ -386,7 +386,7 @@
                     <img id="logo" src="{{ asset($receiptLogo) }}" width="60"
                         style="display: block; margin: 0 auto 5px;"><br>
                     <div class="bold">{{ $receiptStoreName }}</div>
-                    <div style="font-size: 10px;">Jl. Tenis No.30, Ps. Merah Bar., Medan</div>
+                    <div style="font-size: 10px;">Jl. Laksana No.98, Kotamatsum III, Kec. Medan</div>
                     <div>{{ date('d/m/Y H:i') }}</div>
                 </div>
 
@@ -404,6 +404,10 @@
                     <tr>
                         <td>Cust</td>
                         <td>: {{ $pesanan->nama ?? '-' }}</td>
+                    </tr>
+                    <tr>
+                        <td>Type</td>
+                        <td>: {{ $pesanan->salesChannel->nama_channel ?? 'Dine In' }}</td>
                     </tr>
                     <tr>
                         <td>Ket</td>
@@ -509,6 +513,7 @@
             'invoice' => $pesanan->kode,
             'cashier' => $pesanan->user->name,
             'customer' => $pesanan->nama ?? '-',
+            'orderType' => $pesanan->salesChannel->nama_channel ?? 'Dine In',
             'status' => $pesanan->status === 'selesai' ? 'Selesai' : ucwords($pesanan->status),
             'items' => $receiptItems,
             'subtotal' => (int) $pesanan->total,
@@ -771,6 +776,7 @@
             appendText(line('Inv', `: ${receiptData.invoice}`));
             appendText(line('Kasir', `: ${receiptData.cashier}`));
             appendText(line('Cust', `: ${receiptData.customer}`));
+            appendText(line('Type', `: ${receiptData.orderType}`));
             appendText(line('Ket', `: Pesanan ${receiptData.status}`));
             appendText(divider);
 

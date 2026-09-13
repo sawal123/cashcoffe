@@ -5,7 +5,8 @@
     @php
         $siteName = trim((string) ($webSetting->app_name ?? 'Temuan Space')) ?: 'Temuan Space';
         $seoTitle = trim((string) ($webSetting->seo_title ?? '')) ?: $siteName;
-        $seoDescription = trim((string) ($webSetting->seo_description ?? '')) ?: $siteName . ' - coffee space dan sistem pemesanan.';
+        $seoDescription =
+            trim((string) ($webSetting->seo_description ?? '')) ?: $siteName . ' - coffee space dan sistem pemesanan.';
         $seoKeywords = trim((string) ($webSetting->seo_keywords ?? ''));
         $seoAuthor = trim((string) ($webSetting->seo_author ?? '')) ?: $siteName;
         $siteLogo = $webSetting->logo ?? 'logo/logow.png';
@@ -189,12 +190,12 @@
                 <!-- Desktop Menu -->
                 <!-- <div class="flex items-center space-x-6">
                     @auth
-                        <a href="{{ url('/dashboard') }}"
-                            class="text-sm font-bold text-blue-900 hover:text-blue-600 transition border border-transparent hover:border-blue-200 px-4 py-2 rounded-full hover:bg-blue-50/50">Dashboard</a>
-                    @else
-                        <a href="{{ route('login') }}"
-                            class="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition px-6 py-2.5 rounded-full shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transform hover:-translate-y-0.5">Log
-                            in</a>
+                                    <a href="{{ url('/dashboard') }}"
+                                        class="text-sm font-bold text-blue-900 hover:text-blue-600 transition border border-transparent hover:border-blue-200 px-4 py-2 rounded-full hover:bg-blue-50/50">Dashboard</a>
+@else
+    <a href="{{ route('login') }}"
+                                        class="text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition px-6 py-2.5 rounded-full shadow-md shadow-blue-200 hover:shadow-lg hover:shadow-blue-300 transform hover:-translate-y-0.5">Log
+                                        in</a>
                     @endauth
                 </div> -->
             </div>
@@ -318,7 +319,8 @@
                         </div>
 
                         <!-- Divider -->
-                        <div class="w-full h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent"></div>
+                        <div class="w-full h-px bg-gradient-to-r from-transparent via-blue-200/50 to-transparent">
+                        </div>
 
                         <!-- Location -->
                         <div class="flex items-start gap-5 group/item">
@@ -336,7 +338,7 @@
                                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-[0.2em] mb-1.5">Lokasi
                                 </h3>
                                 <p class="text-[15px] text-slate-700 leading-relaxed font-medium pr-4">
-                                    Jl. Tenis No.30, Ps. Merah Bar., Kec. Medan Kota, Kota Medan, Sumatera Utara 20216
+                                    Jl. Laksana No.98, Kotamatsum III, Kec. Medan Kota
                                 </p>
                             </div>
                         </div>
