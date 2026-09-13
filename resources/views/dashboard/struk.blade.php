@@ -5,6 +5,20 @@
     @php
         $receiptStoreName = trim((string) ($webSetting->app_name ?? 'Temuan Space')) ?: 'Temuan Space';
         $receiptLogo = $webSetting->logo ?? 'logo/logo.png';
+
+        // Diskon item/kategori tersimpan per-item dan sudah mengurangi subtotal item,
+        // sehingga tidak terlihat di pesanan.discount_value (yang khusus diskon global).
+        $itemDiscountTotal = (int) $pesanan->items->sum('discount_value');
+        $discountModel = $pesanan->discount;
+        $itemDiscountLabel = match ($discountModel?->scope) {
+            'category' => 'Disc Kategori',
+            'item' => 'Disc Item',
+            default => 'Discount',
+        };
+
+        if ($itemDiscountTotal > 0 && filled($discountModel?->nama_diskon)) {
+            $itemDiscountLabel .= ' (' . $discountModel->nama_diskon . ')';
+        }
     @endphp
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -424,6 +438,14 @@
                             <td class="col-qty">{{ $item->qty }}</td>
                             <td class="col-harga">{{ number_format($item->subtotal) }}</td>
                         </tr>
+                        @if ($item->discount_value > 0)
+                            <tr>
+                                <td colspan="3" style="padding-left: 5px; font-size: 10px; color: #555;">
+                                    Harga <s>{{ number_format($item->subtotal + $item->discount_value) }}</s>
+                                    &middot; Disc -{{ number_format($item->discount_value) }}
+                                </td>
+                            </tr>
+                        @endif
                         @if ($item->variants->count() > 0)
                             <tr>
                                 <td colspan="3" style="padding-left: 5px; font-size: 10px; color: #555;">
@@ -445,8 +467,14 @@
                 <table>
                     <tr>
                         <td class="bold">Sub Total</td>
-                        <td class="right">{{ number_format($pesanan->total) }}</td>
+                        <td class="right">{{ number_format($pesanan->total + $itemDiscountTotal) }}</td>
                     </tr>
+                    @if ($itemDiscountTotal > 0)
+                        <tr>
+                            <td>{{ $itemDiscountLabel }}</td>
+                            <td class="right">-{{ number_format($itemDiscountTotal) }}</td>
+                        </tr>
+                    @endif
                     @if ($pesanan->discount_value > 0)
                         <tr>
                             <td>Discount</td>
@@ -494,6 +522,7 @@
                     'name' => $item->menu->nama_menu,
                     'qty' => (int) $item->qty,
                     'subtotal' => (int) $item->subtotal,
+                    'discountValue' => (int) $item->discount_value,
                     'variants' => $item->variants
                         ->map(function ($variant) {
                             return [
@@ -516,7 +545,9 @@
             'orderType' => $pesanan->salesChannel->nama_channel ?? 'Dine In',
             'status' => $pesanan->status === 'selesai' ? 'Selesai' : ucwords($pesanan->status),
             'items' => $receiptItems,
-            'subtotal' => (int) $pesanan->total,
+            'subtotal' => (int) $pesanan->total + $itemDiscountTotal,
+            'itemDiscount' => $itemDiscountTotal,
+            'itemDiscountLabel' => $itemDiscountLabel,
             'discount' => (int) $pesanan->discount_value,
             'total' => (int) ($pesanan->total - $pesanan->discount_value),
             'paymentMethod' => $pesanan->paymentMethod
@@ -628,6 +659,14 @@
             const rows = [`${names[0].padEnd(nameWidth, ' ')}${qty}${price}`];
 
             names.slice(1).forEach((name) => rows.push(`  ${name}`));
+
+            const itemDiscount = Number(item.discountValue || 0);
+
+            if (itemDiscount > 0) {
+                const gross = money(item.subtotal + itemDiscount);
+                rows.push(`  Harga ${gross} -> ${money(item.subtotal)}`);
+            }
+
             item.variants.forEach((variant) => {
                 const extra = variant.extraPrice > 0 ? ` +${money(variant.extraPrice)}` : '';
                 splitText(`- ${variant.name}${extra}`, 30).forEach((variantLine) => rows.push(`  ${variantLine}`));
@@ -786,6 +825,10 @@
 
             appendText(divider);
             appendText(line('Sub Total', money(receiptData.subtotal)));
+
+            if (receiptData.itemDiscount > 0) {
+                appendText(line(receiptData.itemDiscountLabel, `-${money(receiptData.itemDiscount)}`));
+            }
 
             if (receiptData.discount > 0) {
                 appendText(line('Discount', `-${money(receiptData.discount)}`));
