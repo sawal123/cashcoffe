@@ -53,6 +53,14 @@ class JadiMember extends Component
             'phone.required' => 'Nomor WhatsApp wajib diisi.',
         ]);
 
+        $memberPhone = PhoneNumber::member($this->phone);
+
+        if ($memberPhone !== '' && $this->isPhoneAlreadyRegistered($memberPhone)) {
+            throw ValidationException::withMessages([
+                'phone' => 'Nomor sudah terdaftar.',
+            ]);
+        }
+
         $this->sendOtpToWhatsapp();
         $this->reset('otp');
     }
@@ -131,6 +139,13 @@ class JadiMember extends Component
         $this->reset(['step', 'name', 'phone', 'otp', 'otpSentTo', 'memberId']);
         $this->countryCode = '+62';
         $this->step = 'intro';
+    }
+
+    private function isPhoneAlreadyRegistered(string $phone): bool
+    {
+        return Member::query()
+            ->whereIn('phone', PhoneNumber::lookupValues($phone))
+            ->exists();
     }
 
     private function createMemberFromVerifiedPhone(string $phone): int
