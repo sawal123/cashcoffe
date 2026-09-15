@@ -38,7 +38,7 @@ class ZenzivaOtpService
             throw new RuntimeException('Invalid Zenziva response.');
         }
 
-        if (($payload['status'] ?? null) !== '1') {
+        if ((string) ($payload['status'] ?? '') !== '1') {
             throw new RuntimeException($payload['text'] ?? 'Zenziva rejected the OTP request.');
         }
 

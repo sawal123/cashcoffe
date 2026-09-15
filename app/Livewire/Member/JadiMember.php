@@ -262,6 +262,32 @@ class JadiMember extends Component
 
     private function getOtpSendErrorMessage(Throwable $exception): string
     {
+        $messages = [];
+        $currentException = $exception;
+
+        do {
+            $messages[] = $currentException->getMessage();
+            $currentException = $currentException->getPrevious();
+        } while ($currentException);
+
+        $message = strtolower(implode(' ', $messages));
+
+        if (str_contains($message, 'disconnected device') || str_contains($message, 'device disconnected')) {
+            return 'Layanan WhatsApp OTP sedang tidak terhubung. Hubungi admin.';
+        }
+
+        if (str_contains($message, 'credentials') || str_contains($message, 'userkey') || str_contains($message, 'passkey')) {
+            return 'Konfigurasi OTP belum lengkap. Hubungi admin.';
+        }
+
+        if (str_contains($message, 'saldo') || str_contains($message, 'balance') || str_contains($message, 'credit') || str_contains($message, 'quota') || str_contains($message, 'kuota')) {
+            return 'Kuota OTP tidak mencukupi. Hubungi admin.';
+        }
+
+        if (str_contains($message, 'timeout') || str_contains($message, 'timed out') || str_contains($message, 'connection') || str_contains($message, 'could not connect')) {
+            return 'Koneksi ke layanan OTP sedang bermasalah. Silakan coba lagi.';
+        }
+
         return 'OTP gagal dikirim. Silakan coba lagi.';
     }
 
