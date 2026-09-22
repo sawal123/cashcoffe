@@ -3,12 +3,17 @@
 namespace Tests\Feature;
 
 use App\Livewire\Order\CreateOrder;
+use App\Livewire\Variant\TableVariantGroup;
+use App\Models\Branch;
 use App\Models\Category;
 use App\Models\Menu;
 use App\Models\PaymentMethod;
 use App\Models\PriceTier;
 use App\Models\SalesChannel;
 use App\Models\User;
+use App\Models\VariantGroup;
+use App\Models\VariantOption;
+use App\Models\VariantPrice;
 use Database\Seeders\RbacSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -21,6 +26,10 @@ class CartInputLivewireTest extends TestCase
     protected User $user;
     protected Menu $plainMenu;
     protected Menu $variantMenu;
+    protected PriceTier $priceTier;
+    protected SalesChannel $dineInChannel;
+    protected SalesChannel $grabFoodChannel;
+    protected VariantOption $variantOption;
 
     protected function setUp(): void
     {
@@ -28,12 +37,19 @@ class CartInputLivewireTest extends TestCase
 
         $this->seed(RbacSeeder::class);
 
-        $this->user = User::factory()->create();
-        $this->user->assignRole('kasir');
-
-        PriceTier::first() ?? PriceTier::create(['nama_tier' => 'Regular', 'is_active' => true]);
-        $salesChannel = SalesChannel::first() ?? SalesChannel::create(['nama_channel' => 'Dine In', 'is_active' => true]);
+        $this->priceTier = PriceTier::create(['nama_tier' => 'Regular', 'is_active' => true]);
+        $this->dineInChannel = SalesChannel::create(['nama_channel' => 'Dine In', 'is_active' => true]);
+        $this->grabFoodChannel = SalesChannel::create(['nama_channel' => 'GrabFood', 'is_active' => true]);
         PaymentMethod::first() ?? PaymentMethod::create(['nama_metode' => 'Cash', 'kode_metode' => 'tunai', 'is_active' => true]);
+
+        $branch = Branch::create([
+            'nama_cabang' => 'Cabang Test',
+            'is_active' => true,
+            'price_tier_id' => $this->priceTier->id,
+        ]);
+
+        $this->user = User::factory()->create(['branch_id' => $branch->id]);
+        $this->user->assignRole('kasir');
 
         $category = Category::create(['nama' => 'Minuman']);
 
@@ -54,10 +70,22 @@ class CartInputLivewireTest extends TestCase
             'h_pokok' => 12000,
             'is_active' => true,
         ]);
-        $group = \App\Models\VariantGroup::create(['nama_group' => 'Ukuran', 'selection_type' => 'single', 'is_required' => false]);
-        \App\Models\VariantOption::create([
+        $group = VariantGroup::create(['nama_group' => 'Ukuran', 'selection_type' => 'single', 'is_required' => false]);
+        $this->variantOption = VariantOption::create([
             'variant_group_id' => $group->id,
             'nama_opsi' => 'Large',
+            'extra_price' => 0,
+        ]);
+        VariantPrice::create([
+            'variant_option_id' => $this->variantOption->id,
+            'price_tier_id' => $this->priceTier->id,
+            'sales_channel_id' => $this->dineInChannel->id,
+            'extra_price' => 3000,
+        ]);
+        VariantPrice::create([
+            'variant_option_id' => $this->variantOption->id,
+            'price_tier_id' => $this->priceTier->id,
+            'sales_channel_id' => $this->grabFoodChannel->id,
             'extra_price' => 5000,
         ]);
         $this->variantMenu->variantGroups()->attach($group->id);
@@ -96,5 +124,29 @@ class CartInputLivewireTest extends TestCase
             ->call('addPesanan', $this->variantMenu->id)
             ->assertSet('showVariantModal', true)
             ->assertSet('pesanan', []);
+    }
+
+    public function test_add_pesanan_variant_option_prices_follow_selected_sales_channel()
+    {
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('sales_channel_id', $this->dineInChannel->id)
+            ->call('addPesanan', $this->variantMenu->id)
+            ->assertSet('selectedMenuForVariant.option_prices.' . $this->variantOption->id, 3000)
+            ->assertSee('+Rp 3.000');
+
+        Livewire::actingAs($this->user)
+            ->test(CreateOrder::class)
+            ->set('sales_channel_id', $this->grabFoodChannel->id)
+            ->call('addPesanan', $this->variantMenu->id)
+            ->assertSet('selectedMenuForVariant.option_prices.' . $this->variantOption->id, 5000)
+            ->assertSee('+Rp 5.000');
+    }
+
+    public function test_variant_group_list_shows_variant_price_range()
+    {
+        Livewire::actingAs($this->user)
+            ->test(TableVariantGroup::class)
+            ->assertSee('Rp 3.000 - Rp 5.000');
     }
 }

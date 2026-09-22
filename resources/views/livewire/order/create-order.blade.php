@@ -385,6 +385,9 @@
 
                             <div class="grid grid-cols-2 gap-3">
                                 @foreach ($group->options as $option)
+                                    @php
+                                        $optionPrice = (int) ($selectedMenuForVariant['option_prices'][$option->id] ?? 0);
+                                    @endphp
                                     <button type="button"
                                         @click="toggle({{ $group->id }}, {{ $option->id }}, '{{ $group->selection_type }}')"
                                         class="relative flex flex-col p-4 rounded-[1.5rem] border-2 transition-all text-left overflow-hidden group"
@@ -402,10 +405,10 @@
                                             </template>
                                         </div>
 
-                                        @if ($option->extra_price > 0)
+                                        @if ($optionPrice > 0)
                                             <span class="text-[11px] font-bold"
                                                 :class="isSelected({{ $group->id }}, {{ $option->id }}) ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'">
-                                                +Rp {{ number_format($option->extra_price, 0, ',', '.') }}
+                                                +Rp {{ number_format($optionPrice, 0, ',', '.') }}
                                             </span>
                                         @else
                                             <span class="text-[11px] font-medium"

@@ -68,8 +68,22 @@
                                 </div>
                             </td>
                             <td data-label="Harga Tambahan" class="px-6 py-3" colspan="2">
+                                @php
+                                    $variantPrices = $option->variantPrices
+                                        ->pluck('extra_price')
+                                        ->map(fn ($price) => (int) $price);
+
+                                    if ($variantPrices->isEmpty()) {
+                                        $priceLabel = '+ Rp 0';
+                                    } elseif ($variantPrices->unique()->count() === 1) {
+                                        $priceLabel = '+ Rp ' . number_format($variantPrices->first(), 0, ',', '.');
+                                    } else {
+                                        $priceLabel = 'Rp ' . number_format($variantPrices->min(), 0, ',', '.')
+                                            . ' - Rp ' . number_format($variantPrices->max(), 0, ',', '.');
+                                    }
+                                @endphp
                                 <span class="text-xs text-neutral-500">
-                                    + Rp {{ number_format($option->extra_price, 0, ',', '.') }}
+                                    {{ $priceLabel }}
                                 </span>
                             </td>
                             <td data-label="Bahan" class="px-6 py-3 text-xs text-neutral-400">
