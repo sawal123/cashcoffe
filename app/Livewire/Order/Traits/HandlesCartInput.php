@@ -44,11 +44,21 @@ trait HandlesCartInput
 
         // Jika menu punya varian, buka modal penyesuaian
         if ($item->variantGroups->count() > 0) {
-            $optionPrices = [];
+            $optionIds = [];
             foreach ($item->variantGroups as $group) {
                 foreach ($group->options as $opt) {
-                    $optionPrices[$opt->id] = (int) $opt->extra_price;
+                    $optionIds[] = $opt->id;
                 }
+            }
+
+            $variantPrices = \App\Models\VariantPrice::whereIn('variant_option_id', $optionIds)
+                ->where('price_tier_id', $priceTierId)
+                ->where('sales_channel_id', $this->sales_channel_id)
+                ->pluck('extra_price', 'variant_option_id');
+
+            $optionPrices = [];
+            foreach ($optionIds as $optionId) {
+                $optionPrices[$optionId] = (int) ($variantPrices[$optionId] ?? 0);
             }
 
             $this->selectedMenuForVariant = [

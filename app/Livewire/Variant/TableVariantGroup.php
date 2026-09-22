@@ -171,7 +171,7 @@ class TableVariantGroup extends Component
         return view('livewire.variant.table-variant-group', [
             'groups' => VariantGroup::where('nama_group', 'like', '%' . $this->search . '%')
                 ->withCount('options')
-                ->with(['options' => fn($q) => $q->withCount('ingredients')])
+                ->with(['options' => fn($q) => $q->withCount('ingredients')->with('variantPrices')])
                 ->latest()
                 ->paginate(10),
             'title' => 'Daftar Grup Varian Produk'
