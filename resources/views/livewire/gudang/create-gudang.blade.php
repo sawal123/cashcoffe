@@ -64,7 +64,7 @@
 
         </div>
 
-        @if(! $gudangId)
+        @if(! $gudangId && ! $riwayatId)
         {{-- Tipe Transaksi --}}
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Tipe Transaksi</label>

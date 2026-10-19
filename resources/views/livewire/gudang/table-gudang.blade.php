@@ -47,7 +47,12 @@
                 </td>
 
                 <td data-label="Stok" class="px-6 py-4 text-center">
-                    <span class="font-semibold text-neutral-900 dark:text-white">{{ number_format($item->stok, 2, ',', '.') }}</span>
+                    <span class="font-semibold {{ $item->stok < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-neutral-900 dark:text-white' }}">
+                        {{ number_format($item->stok, 2, ',', '.') }}
+                    </span>
+                    @if ($item->stok < 0)
+                        <div class="text-xs font-semibold text-rose-600 dark:text-rose-400">Stok Negatif</div>
+                    @endif
                 </td>
 
                 <td data-label="Harga Satuan" class="px-6 py-4 text-right">
@@ -63,7 +68,9 @@
                 <td data-label="Aksi" class="px-6 py-4">
                     <div class="flex justify-center gap-2">
                         <x-ui.action-edit href="/gudang/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                        <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                        @role('superadmin')
+                            <x-ui.action-delete @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                        @endrole
                     </div>
                 </td>
             </tr>
@@ -83,8 +90,9 @@
         {{ $gudangs->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}
     </div>
 
-    {{-- Modal Konfirmasi Hapus --}}
-    <x-mdal name="confirm-delete">
+    @role('superadmin')
+        {{-- Modal Konfirmasi Hapus --}}
+        <x-mdal name="confirm-delete">
         <div class="px-6 py-6 text-center">
             <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
                 <iconify-icon icon="lucide:alert-triangle" class="text-2xl"></iconify-icon>
@@ -106,6 +114,7 @@
                 </x-ui.button>
             </div>
         </div>
-    </x-mdal>
+        </x-mdal>
+    @endrole
 
 </div>

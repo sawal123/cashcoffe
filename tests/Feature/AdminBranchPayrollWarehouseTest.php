@@ -192,7 +192,8 @@ class AdminBranchPayrollWarehouseTest extends TestCase
             ->assertSee('Stok Lokal A')
             ->assertDontSee('Stok Rahasia B')
             ->assertDontSee('Stok Lama Global')
-            ->call('deleteGudang', base64_encode($other->id));
+            ->call('deleteGudang', base64_encode($other->id))
+            ->assertForbidden();
 
         $this->assertDatabaseHas('gudangs', ['id' => $other->id]);
         $this->actingAs($this->adminA)->get('/gudang/'.base64_encode($other->id).'/edit')->assertNotFound();
@@ -201,7 +202,8 @@ class AdminBranchPayrollWarehouseTest extends TestCase
         Livewire::actingAs($this->adminA)
             ->test(TableRiwayat::class)
             ->assertDontSee('Stok Rahasia B')
-            ->call('deleteRiwayat', base64_encode($historyB->id));
+            ->call('deleteRiwayat', base64_encode($historyB->id))
+            ->assertForbidden();
 
         $this->assertDatabaseHas('gudang_riwayats', ['id' => $historyB->id]);
         $this->assertDatabaseHas('gudangs', ['id' => $legacy->id]);

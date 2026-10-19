@@ -40,6 +40,8 @@ class TableGudang extends Component
     public function deleteGudang($id)
     {
         $this->authorizeBranch();
+        abort_unless(auth()->user()->hasRole('superadmin'), 403);
+
         DB::beginTransaction();
         try {
             $gudang = Gudang::visibleTo(auth()->user())->find(base64_decode($id, true));

@@ -3,6 +3,7 @@
 namespace App\Livewire\Gudang;
 
 use App\Models\Gudang;
+use App\Services\GudangStockService;
 use Livewire\Component;
 use App\Models\GudangRiwayat;
 use Illuminate\Support\Facades\DB;
@@ -106,6 +107,7 @@ class CreateGudang extends Component
     public function simpan()
     {
         $branchId = $this->selectedBranchId();
+        $stockService = new GudangStockService;
         $this->validate([
             'nama_bahan' => 'required|string|max:255',
             'jumlah_masuk' => 'required|numeric|min:1',
@@ -146,13 +148,15 @@ class CreateGudang extends Component
 
                 if ($this->tipe === 'masuk') {
                     // Hitung rata-rata tertimbang
-                    $total_nilai_lama = $stokSebelum * $gudang->harga_satuan;
-                    $total_nilai_baru = $this->jumlah_masuk * $this->harga_satuan;
+                    $hargaLama = (float) ($gudang->harga_satuan ?? 0);
+                    $hargaBaru = (float) ($this->harga_satuan ?? $hargaLama);
+                    $total_nilai_lama = $stokSebelum * $hargaLama;
+                    $total_nilai_baru = $this->jumlah_masuk * $hargaBaru;
 
                     $stokSesudah = $stokSebelum + $this->jumlah_masuk;
-                    $harga_rata2 = $stokSesudah > 0
+                    $harga_rata2 = $stokSebelum > 0 && $stokSesudah > 0
                         ? ($total_nilai_lama + $total_nilai_baru) / $stokSesudah
-                        : $gudang->harga_satuan;
+                        : $hargaBaru;
 
                     $gudang->update([
                         'stok' => $stokSesudah,
@@ -160,7 +164,7 @@ class CreateGudang extends Component
                     ]);
                 } else {
                     // Jika keluar
-                    $stokSesudah = max(0, $stokSebelum - $this->jumlah_masuk);
+                    $stokSesudah = $stokSebelum - $this->jumlah_masuk;
                     $gudang->update(['stok' => $stokSesudah]);
                 }
             }
@@ -173,10 +177,11 @@ class CreateGudang extends Component
                 'stok_sebelum' => $stokSebelum,
                 'stok_sesudah' => $stokSesudah,
                 'harga_satuan' => $this->harga_satuan,
-                'total_harga' => $this->jumlah_masuk * $this->harga_satuan,
+                'total_harga' => $this->jumlah_masuk * ($this->harga_satuan ?? 0),
                 'keterangan' => $this->keterangan ?? ucfirst($this->tipe) . ' stok',
                 'user_id' => Auth::user()->id,
             ]);
+            $stockService->rebuild($gudang);
             // dd($this->jumlah_masuk * $this->harga_satuan);
 
             DB::commit();
@@ -195,6 +200,7 @@ class CreateGudang extends Component
     public function update()
     {
         $this->authorizeBranch();
+        $stockService = new GudangStockService;
         $this->validate([
             'nama_bahan' => 'required|string|max:255',
             'jumlah_masuk' => 'required|numeric|min:1',
@@ -203,60 +209,43 @@ class CreateGudang extends Component
             'minimum_stok' => 'nullable|numeric|min:0',
         ]);
 
-        $riwayat = GudangRiwayat::visibleTo(auth()->user())
-            ->findOrFail(base64_decode($this->riwayatId, true));
-
         DB::beginTransaction();
 
         try {
-            $gudang = $riwayat->gudang;
+            $riwayat = GudangRiwayat::visibleTo(auth()->user())
+                ->whereKey(base64_decode($this->riwayatId, true))
+                ->firstOrFail();
+            $gudang = Gudang::visibleTo(auth()->user())
+                ->lockForUpdate()
+                ->findOrFail($riwayat->gudang_id);
+            $riwayat = GudangRiwayat::whereKey($riwayat->id)
+                ->where('gudang_id', $gudang->id)
+                ->lockForUpdate()
+                ->firstOrFail();
 
-            // Ambil stok awal sebelum ada perubahan
-            $stokSebelum = $gudang->stok;
-
-            // Ambil jumlah lama dari riwayat sebelum diubah
             $jumlahLama = $riwayat->jumlah;
             $jumlahBaru = $this->jumlah_masuk;
-
-            // Hitung selisih jumlah
             $selisih = $jumlahBaru - $jumlahLama;
 
-            if ($riwayat->tipe === 'masuk') {
-                // Update stok gudang: tambah atau kurangi berdasarkan selisih
-                $gudang->stok += $selisih;
+            if ($riwayat->tipe === 'masuk' && $this->harga_satuan !== null) {
+                $stokSetelahEdit = (float) $gudang->stok + $selisih;
+                $stokTotal = $stokSetelahEdit + $jumlahBaru;
+                $hargaLama = (float) ($gudang->harga_satuan ?? 0);
+                $totalNilaiLama = $stokSetelahEdit * $hargaLama;
+                $totalNilaiBaru = $jumlahBaru * $this->harga_satuan;
 
-                // Update harga rata-rata baru kalau harga berubah
-                if ($this->harga_satuan !== null) {
-                    $total_nilai_lama = $gudang->stok * $gudang->harga_satuan;
-                    $total_nilai_baru = $jumlahBaru * $this->harga_satuan;
-                    $stokTotal = $gudang->stok + $jumlahBaru;
-
-                    $harga_rata2 = $stokTotal > 0
-                        ? ($total_nilai_lama + $total_nilai_baru) / $stokTotal
-                        : $gudang->harga_satuan;
-
-                    $gudang->harga_satuan = $harga_rata2;
-                }
-            } else {
-                // tipe keluar
-                $gudang->stok -= $selisih; // selisih negatif artinya stok bertambah (revisi)
-                if ($gudang->stok < 0) {
-                    $gudang->stok = 0;
-                }
+                $gudang->harga_satuan = $stokSetelahEdit > 0 && $stokTotal > 0
+                    ? ($totalNilaiLama + $totalNilaiBaru) / $stokTotal
+                    : $this->harga_satuan;
             }
 
-            // Update Gudang
-            $gudang->save();
-
-            // Update Riwayat
             $riwayat->update([
                 'jumlah' => $jumlahBaru,
-                'stok_sebelum' => $stokSebelum,
-                'stok_sesudah' => $gudang->stok,
                 'harga_satuan' => $this->harga_satuan,
-                'total_harga' => $jumlahBaru * $this->harga_satuan,
+                'total_harga' => $jumlahBaru * ($this->harga_satuan ?? 0),
                 'keterangan' => $this->keterangan ?? ucfirst($riwayat->tipe) . ' stok',
             ]);
+            $stockService->rebuild($gudang);
 
             DB::commit();
 
