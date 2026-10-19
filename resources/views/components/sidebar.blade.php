@@ -2,6 +2,8 @@
     :class="{ 'blur-sm pointer-events-none select-none': modalActive }">
     @php
         $siteLogo = $webSetting->logo ?? 'logo/logow.png';
+        $user = auth()->user();
+        $canManageWarehouse = $user->hasAnyRole(['admin', 'superadmin']);
     @endphp
     <button type="button" class="sidebar-close-btn !mt-4">
         <iconify-icon icon="radix-icons:cross-2"></iconify-icon>
@@ -74,11 +76,11 @@
 
             <li class="menu-title">
                 <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">Menu & Order</span>
+                    <span class="color">{{ $user->hasRole('manager') ? 'Menu' : 'Menu & Order' }}</span>
                 </a>
             </li>
 
-            @unlessrole('superadmin')
+            @unlessrole(['superadmin', 'manager'])
             <li>
                 <a href="/order" wire:navigate class="{{ request()->is('order*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:cart-3-bold" class="menu-icon"></iconify-icon>
@@ -105,14 +107,14 @@
             </li>
             @endrole
 
-            @unlessrole(['kasir', 'superadmin'])
+            @role('manager')
             <li>
                 <a href="/menu-cabang" wire:navigate class="{{ request()->is('menu-cabang*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:checklist-minimalistic-broken" class="menu-icon"></iconify-icon>
                     <span>Ketersediaan Menu</span>
                 </a>
             </li>
-            @endunlessrole
+            @endrole
 
 
             <li class="menu-title">
@@ -128,21 +130,25 @@
                 </a>
             </li>
 
+            @unlessrole('manager')
             <li>
                 <a href="/member" wire:navigate class="{{ request()->is('member*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:users-group-two-rounded-bold" class="menu-icon"></iconify-icon>
                     <span>Member</span>
                 </a>
             </li>
+            @endunlessrole
 
-            @unlessrole('kasir')
+            @unlessrole(['kasir', 'manager'])
             <li>
                 <a href="/omset" wire:navigate class="{{ request()->is('omset*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:graph-up-bold" class="menu-icon"></iconify-icon>
                     <span>Omset</span>
                 </a>
             </li>
+            @endunlessrole
 
+            @unlessrole('kasir')
             <li>
                 <a href="/pengeluaran" wire:navigate class="{{ request()->is('pengeluaran*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:money-bag-broken" class="menu-icon"></iconify-icon>
@@ -158,14 +164,16 @@
                     <span>Discount</span>
                 </a>
             </li>
+            @endrole
+            @hasanyrole('admin|manager|superadmin')
             <li>
                 <a href="/payroll/generasi" wire:navigate class="{{ request()->is('payroll*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:bill-list-bold" class="menu-icon"></iconify-icon>
                     <span>Generasi Gaji</span>
                 </a>
             </li>
-            @endrole
-            @unlessrole('kasir')
+            @endhasanyrole
+            @if(! $user->hasRole('kasir') || $canManageWarehouse || $user->hasRole('manager'))
             <!-- GROUP: Gudang -->
             <li class="menu-title">
                 <a href="#" class="menu-title-link" onclick="return false;">
@@ -195,7 +203,7 @@
                 </a>
             </li>
 
-            @role('superadmin')
+            @if($canManageWarehouse || $user->hasRole('manager'))
             <li>
                 <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
@@ -210,8 +218,8 @@
                     <span>Riwayat Gudang</span>
                 </a>
             </li>
-            @endrole
-            @endunlessrole
+            @endif
+            @endif
             <!-- GROUP: User -->
             @role('superadmin')
             <li class="menu-title">

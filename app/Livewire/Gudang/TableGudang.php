@@ -25,18 +25,29 @@ class TableGudang extends Component
     }
     public function mount()
     {
-        abort_if(!auth()->user()->hasRole('superadmin'), 403);
+        $this->authorizeBranch();
         $this->search = '';
         $this->perPage = 10;
     }
 
+    private function authorizeBranch(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->hasAnyRole(['admin', 'manager', 'superadmin']), 403);
+        abort_if(! $user->hasRole('superadmin') && $user->branch_id === null, 403);
+    }
+
     public function deleteGudang($id)
     {
+        $this->authorizeBranch();
+        abort_unless(auth()->user()->hasRole('superadmin'), 403);
+
         DB::beginTransaction();
         try {
-            $gudang = Gudang::find(base64_decode($id));
+            $gudang = Gudang::visibleTo(auth()->user())->find(base64_decode($id, true));
 
             if (!$gudang) {
+                DB::rollBack();
                 $this->dispatch('showToast', [
                     'type' => 'error',
                     'message' => 'Data bahan tidak ditemukan.'
@@ -59,7 +70,8 @@ class TableGudang extends Component
     }
     public function render()
     {
-        $gudangs = Gudang::query()
+        $this->authorizeBranch();
+        $gudangs = Gudang::visibleTo(auth()->user())->with('branch')
             ->when($this->search, function ($query) {
                 $query->where('nama_bahan', 'like', '%' . $this->search . '%');
             })

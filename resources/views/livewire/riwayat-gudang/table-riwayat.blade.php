@@ -44,6 +44,9 @@
                 </td>
                 <td data-label="Nama Bahan" class="px-6 py-4 font-bold text-neutral-800 dark:text-neutral-200">
                     {{ $item->gudang->nama_bahan }}
+                    @role('superadmin')
+                        <div class="text-xs font-normal text-neutral-500">{{ $item->gudang->branch?->nama_cabang ?? 'Belum ditetapkan ke cabang' }}</div>
+                    @endrole
                 </td>
                 <td data-label="Tipe" class="px-6 py-4 text-center">
                     @if ($item->tipe === 'masuk')
@@ -78,9 +81,11 @@
                 </td>
                 <td data-label="Aksi" class="px-6 py-4">
                     <div class="flex justify-center gap-2">
-                        <x-ui.action-edit href="/gudang/{{ base64_encode($item->id) }}/edit" wire:navigate />
-                        <x-ui.action-delete
-                            @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                        <x-ui.action-edit href="{{ route('gudang.riwayat.edit', base64_encode($item->id)) }}" wire:navigate />
+                        @role('superadmin')
+                            <x-ui.action-delete
+                                @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
+                        @endrole
                     </div>
                 </td>
             </tr>
@@ -100,8 +105,9 @@
         {{ $riwayats->links(data: ['scroll' => false], view: 'vendor.livewire.tailwind') }}
     </div>
 
-    {{-- Modal Delete --}}
-    <x-mdal name="confirm-delete">
+    @role('superadmin')
+        {{-- Modal Delete --}}
+        <x-mdal name="confirm-delete">
         <div class="px-6 py-6 text-center">
             <div
                 class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-3xl bg-rose-100 text-rose-600 shadow-sm border border-rose-200">
@@ -126,5 +132,6 @@
                 </x-ui.button>
             </div>
         </div>
-    </x-mdal>
+        </x-mdal>
+    @endrole
 </div>

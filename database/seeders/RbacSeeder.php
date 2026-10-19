@@ -26,6 +26,7 @@ class RbacSeeder extends Seeder
         }
 
         $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
+        Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
         $manager = Role::firstOrCreate(['name' => 'manager']);
         $kasir = Role::firstOrCreate(['name' => 'kasir']);
 

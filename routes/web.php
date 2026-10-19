@@ -137,14 +137,6 @@ Route::middleware(['auth', 'role:kasir|manager|admin|superadmin'])->group(functi
         Route::get('/absense/shift-master', App\Livewire\Admin\Shift\ShiftManager::class)->name('absense.shift-master');
         Route::get('/absense/{userId}', App\Livewire\Absense\ShowAbsense::class)->name('absense.show');
 
-        // Payroll
-        Route::get('/payroll/generasi', App\Livewire\Payroll\GenerasiGaji::class)->name('payroll.generasi');
-
-        // Gudang
-        Route::get('/gudang', App\Livewire\Gudang\TableGudang::class)->name('gudang.index');
-        Route::get('/gudang/create', App\Livewire\Gudang\CreateGudang::class)->name('gudang.create');
-        Route::get('/gudang/{gudangId}/edit', App\Livewire\Gudang\CreateGudang::class)->name('gudang.edit');
-
         // Riwayat Stock
         Route::get('/riwayat-stock', App\Livewire\Stock\RiwayatStock::class)->name('riwayat-stock.index');
         Route::get('/riwayat-stock/create', App\Livewire\Stock\StockAdd::class)->name('riwayat-stock.create');
@@ -156,7 +148,14 @@ Route::middleware(['auth', 'role:kasir|manager|admin|superadmin'])->group(functi
         Route::get('/user/jabatan', App\Livewire\User\TableJabatan::class)->name('user.jabatan');
         Route::get('/user/{userId}/edit', App\Livewire\User\CreateUser::class)->name('user.edit');
 
-        // Riwayat Gudang
+    });
+
+    Route::middleware(['role:manager|admin|superadmin'])->group(function () {
+        Route::get('/payroll/generasi', App\Livewire\Payroll\GenerasiGaji::class)->name('payroll.generasi');
+        Route::get('/gudang', App\Livewire\Gudang\TableGudang::class)->name('gudang.index');
+        Route::get('/gudang/create', App\Livewire\Gudang\CreateGudang::class)->name('gudang.create');
+        Route::get('/gudang/riwayat/{riwayatId}/edit', App\Livewire\Gudang\CreateGudang::class)->name('gudang.riwayat.edit');
+        Route::get('/gudang/{gudangId}/edit', App\Livewire\Gudang\CreateGudang::class)->name('gudang.edit');
         Route::get('/riwayat-gudang', App\Livewire\RiwayatGudang\TableRiwayat::class)->name('riwayat-gudang.index');
     });
 
