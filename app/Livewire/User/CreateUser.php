@@ -90,11 +90,14 @@ class CreateUser extends Component
 
     public function save()
     {
+        // Form superadmin tidak memiliki penempatan, jabatan, atau payroll.
+        $isSuperadmin = in_array('superadmin', (array) $this->role_selected, true);
+
         // 1. Validasi Dinamis
         $this->validate([
             'name' => 'required|string|max:255',
             'phone' => 'nullable|numeric',
-            'jabatan_id' => 'required|exists:jabatans,id',
+            'jabatan_id' => [Rule::requiredIf(! $isSuperadmin), 'nullable', 'exists:jabatans,id'],
             'role_selected' => 'required|array|min:1',
             'role_selected.*' => 'exists:roles,name',
 
@@ -105,9 +108,7 @@ class CreateUser extends Component
             ],
 
             'branch_id' => [
-                Rule::requiredIf(function () {
-                    return ! in_array('superadmin', $this->role_selected);
-                }),
+                Rule::requiredIf(! $isSuperadmin),
                 'nullable',
                 'exists:branches,id',
             ],
@@ -115,16 +116,18 @@ class CreateUser extends Component
             'password' => $this->isEdit ? 'nullable|min:6' : 'required|min:6',
 
             // Validasi Komponen Gaji
-            'gaji_pokok' => 'nullable|numeric|min:0',
-            'tunjangan_harian' => 'nullable|numeric|min:0',
-            'hak_cuti' => 'nullable|integer|min:0',
+            'gaji_pokok' => [Rule::excludeIf($isSuperadmin), 'nullable', 'numeric', 'min:0'],
+            'tunjangan_harian' => [Rule::excludeIf($isSuperadmin), 'nullable', 'numeric', 'min:0'],
+            'hak_cuti' => [Rule::excludeIf($isSuperadmin), 'nullable', 'integer', 'min:0'],
         ]);
 
-        $payrollData = [
-            'gaji_pokok' => empty($this->gaji_pokok) ? 0 : $this->gaji_pokok,
-            'tunjangan_harian' => empty($this->tunjangan_harian) ? 0 : $this->tunjangan_harian,
-            'hak_cuti' => empty($this->hak_cuti) ? 12 : $this->hak_cuti,
-        ];
+        $payrollData = $isSuperadmin
+            ? ['gaji_pokok' => null, 'tunjangan_harian' => null, 'hak_cuti' => 0]
+            : [
+                'gaji_pokok' => $this->gaji_pokok ?: 0,
+                'tunjangan_harian' => $this->tunjangan_harian ?: 0,
+                'hak_cuti' => $this->hak_cuti ?? 12,
+            ];
 
         if ($this->isEdit) {
             // === LOGIC UPDATE ===
@@ -134,8 +137,8 @@ class CreateUser extends Component
                 'name' => $this->name,
                 'email' => $this->email,
                 'phone' => $this->phone,
-                'branch_id' => $this->branch_id,
-                'jabatan_id' => $this->jabatan_id,
+                'branch_id' => $isSuperadmin ? null : $this->branch_id,
+                'jabatan_id' => $isSuperadmin ? null : $this->jabatan_id,
             ], $payrollData);
 
             if (! empty($this->password)) {
@@ -145,16 +148,16 @@ class CreateUser extends Component
             $user->update($dataToUpdate);
             $user->syncRoles($this->role_selected);
 
-            $message = 'Data user & parameter kompensasi gaji berhasil diperbarui.';
+            $message = 'Data pengguna berhasil diperbarui.';
         } else {
             // === LOGIC CREATE ===
             $dataToCreate = array_merge([
                 'name' => $this->name,
                 'email' => $this->email,
                 'phone' => $this->phone,
-                'jabatan_id' => $this->jabatan_id,
+                'jabatan_id' => $isSuperadmin ? null : $this->jabatan_id,
                 'password' => Hash::make($this->password),
-                'branch_id' => auth()->user()->hasRole('superadmin') ? $this->branch_id : auth()->user()->branch_id,
+                'branch_id' => $isSuperadmin ? null : (auth()->user()->hasRole('superadmin') ? $this->branch_id : auth()->user()->branch_id),
             ], $payrollData);
 
             $user = User::create($dataToCreate);

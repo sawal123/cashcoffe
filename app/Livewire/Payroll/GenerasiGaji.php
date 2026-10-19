@@ -27,6 +27,7 @@ class GenerasiGaji extends Component
 
     public function mount()
     {
+        $this->authorizedBranchId();
         $periodStart = Carbon::now();
 
         // Siklus payroll dimulai tanggal 26. Pada tanggal 1-25, periode aktif
@@ -41,8 +42,11 @@ class GenerasiGaji extends Component
 
     public function hitungGajiMassal()
     {
+        $branchId = $this->authorizedBranchId();
         $payrollService = new PayrollService;
-        $employees = User::role('karyawan')->get();
+        $employees = User::role('karyawan')
+            ->when($branchId !== null, fn ($query) => $query->where('branch_id', $branchId))
+            ->get();
 
         if ($employees->isEmpty()) {
             $this->dispatch('showToast', message: 'Tidak ada karyawan aktif dengan role karyawan.', type: 'warning', title: 'Peringatan');
@@ -72,7 +76,7 @@ class GenerasiGaji extends Component
 
     public function showDoubleShiftDetails($payrollId)
     {
-        $payroll = Payroll::with('user')->findOrFail($payrollId);
+        $payroll = $this->visiblePayroll($payrollId);
 
         if (! $payroll->user) {
             $this->openDetailModal('Rincian Double Shift', 'double_shift', []);
@@ -112,7 +116,7 @@ class GenerasiGaji extends Component
 
     public function showDeductionDetails($payrollId)
     {
-        $payroll = Payroll::with('user')->findOrFail($payrollId);
+        $payroll = $this->visiblePayroll($payrollId);
 
         if (! $payroll->user) {
             $this->openDetailModal('Rincian Potongan', 'deduction', []);
@@ -280,14 +284,39 @@ class GenerasiGaji extends Component
         $this->showDetailModal = true;
     }
 
+    private function authorizedBranchId(): ?int
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->hasAnyRole(['superadmin', 'admin']), 403);
+
+        if ($user->hasRole('superadmin')) {
+            return null;
+        }
+
+        abort_if($user->branch_id === null, 403, 'Admin harus memiliki cabang.');
+
+        return (int) $user->branch_id;
+    }
+
+    private function visiblePayroll($payrollId): Payroll
+    {
+        $branchId = $this->authorizedBranchId();
+
+        return Payroll::with('user')
+            ->when($branchId !== null, fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('branch_id', $branchId)))
+            ->findOrFail($payrollId);
+    }
+
     public function render()
     {
+        $branchId = $this->authorizedBranchId();
         $payrollService = new PayrollService;
         [$startDateCarbon, $endDateCarbon] = $payrollService->getCutoffPeriod((int) $this->year, (int) $this->month);
         $startDate = $startDateCarbon->toDateString();
         $endDate = $endDateCarbon->toDateString();
 
         $payrolls = Payroll::with(['user.jabatan'])
+            ->when($branchId !== null, fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('branch_id', $branchId)))
             ->where('periode_mulai', $startDate)
             ->where('periode_selesai', $endDate)
             ->get();

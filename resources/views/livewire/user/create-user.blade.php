@@ -47,6 +47,7 @@
                     @endif
                 </div>
 
+                @if (! in_array('superadmin', $role_selected ?? [], true))
                 {{-- BRANCH --}}
                 @if(auth()->user()->hasRole('superadmin'))
                 <div>
@@ -68,6 +69,8 @@
                     @endforeach
                 </x-ui.select>
 
+                @endif
+
                 {{-- ROLE --}}
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
@@ -76,7 +79,7 @@
                     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                         @foreach ($roles as $role)
                             <label class="flex items-center gap-2 p-3 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 cursor-pointer hover:border-primary-500 transition-colors">
-                                <input type="checkbox" wire:model="role_selected" value="{{ $role->name }}" class="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
+                                <input type="checkbox" wire:model.live="role_selected" value="{{ $role->name }}" class="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-primary-500">
                                 <span class="text-sm font-medium text-neutral-700 dark:text-neutral-300">{{ ucfirst($role->name) }}</span>
                             </label>
                         @endforeach
@@ -85,6 +88,7 @@
                     <p class="text-[10px] text-neutral-400 mt-1">*Pilih satu atau lebih hak akses untuk user ini. Karyawan biasa wajib diberi role 'karyawan' agar bisa absen.</p>
                 </div>
 
+                @if (! in_array('superadmin', $role_selected ?? [], true))
                 {{-- PARAMETER KOMPENSASI GAJI & CUTI (Khusus Akses Manajemen Operasional) --}}
                 <div class="mt-2 pt-6 border-t border-neutral-100 dark:border-neutral-700 space-y-4">
                     <div class="flex items-center gap-2 mb-2">
@@ -108,6 +112,8 @@
                     </div>
                     <p class="text-[10px] text-neutral-400 mt-1">*Parameter ini akan menjadi acuan dasar pada modul kalkulasi otomatis saat pencetakan slip/rekap payroll bulanan.</p>
                 </div>
+
+                @endif
 
                 {{-- Footer Action --}}
                 <div class="mt-4 pt-6 border-t border-neutral-100 dark:border-neutral-700 flex justify-end gap-3">

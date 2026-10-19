@@ -158,13 +158,15 @@
                     <span>Discount</span>
                 </a>
             </li>
+            @endrole
+            @hasanyrole('admin|superadmin')
             <li>
                 <a href="/payroll/generasi" wire:navigate class="{{ request()->is('payroll*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:bill-list-bold" class="menu-icon"></iconify-icon>
                     <span>Generasi Gaji</span>
                 </a>
             </li>
-            @endrole
+            @endhasanyrole
             @unlessrole('kasir')
             <!-- GROUP: Gudang -->
             <li class="menu-title">
@@ -195,7 +197,7 @@
                 </a>
             </li>
 
-            @role('superadmin')
+            @hasanyrole('admin|superadmin')
             <li>
                 <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
@@ -210,7 +212,7 @@
                     <span>Riwayat Gudang</span>
                 </a>
             </li>
-            @endrole
+            @endhasanyrole
             @endunlessrole
             <!-- GROUP: User -->
             @role('superadmin')
