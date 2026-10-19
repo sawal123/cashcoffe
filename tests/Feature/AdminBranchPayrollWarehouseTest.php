@@ -24,8 +24,11 @@ class AdminBranchPayrollWarehouseTest extends TestCase
     use RefreshDatabase;
 
     protected Branch $branchA;
+
     protected Branch $branchB;
+
     protected User $adminA;
+
     protected User $superadmin;
 
     protected function setUp(): void
@@ -112,6 +115,42 @@ class AdminBranchPayrollWarehouseTest extends TestCase
                 ->assertNotFound();
 
             $this->actingAs($this->adminA)->get('/payroll/generasi')->assertOk();
+        } finally {
+            Carbon::setTestNow();
+        }
+    }
+
+    public function test_admin_mass_payroll_only_generates_for_own_branch(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-10-19 12:00:00'));
+        try {
+            $employeeA = User::factory()->create([
+                'name' => 'Mass Payroll Employee A',
+                'branch_id' => $this->branchA->id,
+                'gaji_pokok' => 1000000,
+            ]);
+            $employeeB = User::factory()->create([
+                'name' => 'Mass Payroll Employee B',
+                'branch_id' => $this->branchB->id,
+                'gaji_pokok' => 1000000,
+            ]);
+            $employeeA->assignRole('karyawan');
+            $employeeB->assignRole('karyawan');
+
+            Livewire::actingAs($this->adminA)
+                ->test(GenerasiGaji::class)
+                ->call('hitungGajiMassal')
+                ->assertHasNoErrors();
+
+            [$start, $end] = (new PayrollService)->getCutoffPeriod(2026, 9);
+
+            $periodPayrolls = fn (int $userId) => Payroll::query()
+                ->where('user_id', $userId)
+                ->whereDate('periode_mulai', $start->toDateString())
+                ->whereDate('periode_selesai', $end->toDateString());
+
+            $this->assertSame(1, $periodPayrolls($employeeA->id)->count());
+            $this->assertSame(0, $periodPayrolls($employeeB->id)->count());
         } finally {
             Carbon::setTestNow();
         }
