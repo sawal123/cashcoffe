@@ -146,7 +146,9 @@
                     <span>Omset</span>
                 </a>
             </li>
+            @endunlessrole
 
+            @unlessrole('kasir')
             <li>
                 <a href="/pengeluaran" wire:navigate class="{{ request()->is('pengeluaran*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:money-bag-broken" class="menu-icon"></iconify-icon>
