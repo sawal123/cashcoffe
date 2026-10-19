@@ -287,7 +287,7 @@ class GenerasiGaji extends Component
     private function authorizedBranchId(): ?int
     {
         $user = auth()->user();
-        abort_unless($user && $user->hasAnyRole(['superadmin', 'admin']), 403);
+        abort_unless($user && $user->hasAnyRole(['superadmin', 'admin', 'manager']), 403);
 
         if ($user->hasRole('superadmin')) {
             return null;

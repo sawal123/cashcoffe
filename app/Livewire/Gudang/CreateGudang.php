@@ -26,7 +26,7 @@ class CreateGudang extends Component
     private function authorizeBranch(): ?int
     {
         $user = auth()->user();
-        abort_unless($user && $user->hasAnyRole(['admin', 'superadmin']), 403);
+        abort_unless($user && $user->hasAnyRole(['admin', 'manager', 'superadmin']), 403);
         if ($user->hasRole('superadmin')) {
             return null;
         }

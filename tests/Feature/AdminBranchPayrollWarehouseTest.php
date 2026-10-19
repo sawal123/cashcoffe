@@ -31,11 +31,13 @@ class AdminBranchPayrollWarehouseTest extends TestCase
 
     protected User $superadmin;
 
+    protected User $manager;
+
     protected function setUp(): void
     {
         parent::setUp();
 
-        foreach (['superadmin', 'admin', 'karyawan', 'kasir'] as $role) {
+        foreach (['superadmin', 'admin', 'manager', 'karyawan', 'kasir'] as $role) {
             Role::firstOrCreate(['name' => $role, 'guard_name' => 'web']);
         }
 
@@ -47,6 +49,9 @@ class AdminBranchPayrollWarehouseTest extends TestCase
 
         $this->superadmin = User::factory()->create(['branch_id' => null]);
         $this->superadmin->assignRole('superadmin');
+
+        $this->manager = User::factory()->create(['branch_id' => $this->branchA->id]);
+        $this->manager->assignRole('manager');
     }
 
     private function stock(string $name, ?int $branchId): Gudang
@@ -164,6 +169,23 @@ class AdminBranchPayrollWarehouseTest extends TestCase
             ->assertSee('href="/gudang"', false)
             ->assertSee('href="/riwayat-gudang"', false)
             ->assertDontSee('href="/menu-cabang"', false);
+    }
+
+    public function test_manager_sidebar_hides_order_and_shows_payroll_warehouse_navigation(): void
+    {
+        $response = $this->actingAs($this->manager)->get('/dashboard');
+
+        $response->assertOk()
+            ->assertSee('href="/payroll/generasi"', false)
+            ->assertSee('href="/gudang"', false)
+            ->assertSee('href="/riwayat-gudang"', false)
+            ->assertDontSee('href="/order"', false)
+            ->assertDontSee('href="/order/create"', false)
+            ->assertDontSee('Menu &amp; Order', false);
+
+        $this->actingAs($this->manager)->get('/payroll/generasi')->assertOk();
+        $this->actingAs($this->manager)->get('/gudang')->assertOk();
+        $this->actingAs($this->manager)->get('/riwayat-gudang')->assertOk();
     }
 
     public function test_admin_can_create_only_own_branch_stock_even_with_forged_branch_property(): void

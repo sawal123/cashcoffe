@@ -33,7 +33,7 @@ class TableGudang extends Component
     private function authorizeBranch(): void
     {
         $user = auth()->user();
-        abort_unless($user && $user->hasAnyRole(['admin', 'superadmin']), 403);
+        abort_unless($user && $user->hasAnyRole(['admin', 'manager', 'superadmin']), 403);
         abort_if(! $user->hasRole('superadmin') && $user->branch_id === null, 403);
     }
 

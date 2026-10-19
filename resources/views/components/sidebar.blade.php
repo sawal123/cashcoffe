@@ -76,11 +76,11 @@
 
             <li class="menu-title">
                 <a href="#" class="menu-title-link" onclick="return false;">
-                    <span class="color">Menu & Order</span>
+                    <span class="color">{{ $user->hasRole('manager') ? 'Menu' : 'Menu & Order' }}</span>
                 </a>
             </li>
 
-            @unlessrole('superadmin')
+            @unlessrole(['superadmin', 'manager'])
             <li>
                 <a href="/order" wire:navigate class="{{ request()->is('order*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:cart-3-bold" class="menu-icon"></iconify-icon>
@@ -161,7 +161,7 @@
                 </a>
             </li>
             @endrole
-            @hasanyrole('admin|superadmin')
+            @hasanyrole('admin|manager|superadmin')
             <li>
                 <a href="/payroll/generasi" wire:navigate class="{{ request()->is('payroll*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:bill-list-bold" class="menu-icon"></iconify-icon>
@@ -169,7 +169,7 @@
                 </a>
             </li>
             @endhasanyrole
-            @if(! $user->hasRole('kasir') || $canManageWarehouse)
+            @if(! $user->hasRole('kasir') || $canManageWarehouse || $user->hasRole('manager'))
             <!-- GROUP: Gudang -->
             <li class="menu-title">
                 <a href="#" class="menu-title-link" onclick="return false;">
@@ -199,7 +199,7 @@
                 </a>
             </li>
 
-            @if($canManageWarehouse)
+            @if($canManageWarehouse || $user->hasRole('manager'))
             <li>
                 <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>

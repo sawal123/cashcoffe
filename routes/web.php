@@ -150,7 +150,7 @@ Route::middleware(['auth', 'role:kasir|manager|admin|superadmin'])->group(functi
 
     });
 
-    Route::middleware(['role:admin|superadmin'])->group(function () {
+    Route::middleware(['role:manager|admin|superadmin'])->group(function () {
         Route::get('/payroll/generasi', App\Livewire\Payroll\GenerasiGaji::class)->name('payroll.generasi');
         Route::get('/gudang', App\Livewire\Gudang\TableGudang::class)->name('gudang.index');
         Route::get('/gudang/create', App\Livewire\Gudang\CreateGudang::class)->name('gudang.create');
