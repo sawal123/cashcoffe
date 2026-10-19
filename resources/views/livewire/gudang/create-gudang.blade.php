@@ -10,10 +10,26 @@
     </div>
     <x-toast />
     @php
-        $submit = $gudangId ? 'update(' . $gudangId . ')' : 'simpan';
-        $button = $gudangId ? 'Update' : 'Simpan';
+        $submit = $riwayatId ? 'update' : ($gudangId ? 'updateBahan' : 'simpan');
+        $button = ($gudangId || $riwayatId) ? 'Update' : 'Simpan';
     @endphp
     <form wire:submit.prevent="{{ $submit }}" class="grid grid-cols-12 gap-4">
+        @role('superadmin')
+            <div class="md:col-span-6 col-span-12">
+                <label class="form-label">Cabang Gudang *</label>
+                <select wire:model.live="branch_id" @disabled($branchLocked)
+                    class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200">
+                    <option value="">-- Pilih Cabang --</option>
+                    @foreach ($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->nama_cabang }}</option>
+                    @endforeach
+                </select>
+                @error('branch_id') <p class="text-sm text-red-500">{{ $message }}</p> @enderror
+                @if($gudangId && ! $branchLocked)
+                    <p class="text-xs text-neutral-500 mt-1">Stok lama belum memiliki cabang. Pilih cabang untuk menetapkannya.</p>
+                @endif
+            </div>
+        @endrole
 
         {{-- Nama Bahan --}}
         <div class="md:col-span-6 col-span-12">
@@ -30,7 +46,7 @@
                     wire:model.defer="nama_bahan"
                     class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 
                bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
-                    placeholder="Contoh: Gula, Sirup, Kopi" :disabled="$wire.gudangId !== null" {{-- <-- inilah bagian penting --}}
+                    placeholder="Contoh: Gula, Sirup, Kopi" :disabled="$wire.riwayatId !== null" {{-- <-- inilah bagian penting --}}
                     required>
 
                 <template x-if="open && results.length > 0 && $wire.gudangId === null">
@@ -48,6 +64,7 @@
 
         </div>
 
+        @if(! $gudangId)
         {{-- Tipe Transaksi --}}
         <div class="md:col-span-6 col-span-12">
             <label class="form-label">Tipe Transaksi</label>
@@ -70,6 +87,8 @@
                 class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 px-3 py-2 bg-white dark:bg-neutral-800 text-neutral-800 dark:text-neutral-200"
                 placeholder="Contoh: 5" required>
         </div>
+
+        @endif
 
         {{-- Satuan --}}
         <div class="md:col-span-6 col-span-12">

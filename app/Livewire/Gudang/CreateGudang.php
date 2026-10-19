@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Auth;
 class CreateGudang extends Component
 {
     public $gudangId = null;
+    public $riwayatId = null;
+    public $branch_id = null;
+    public $branchLocked = false;
     public $nama_bahan, $jumlah_masuk, $satuan, $harga_satuan, $minimum_stok, $keterangan;
     public $tipe = 'masuk'; // default
     public $submit = 'simpan';
@@ -19,54 +22,105 @@ class CreateGudang extends Component
     public $title = 'Tambah Stok Gudang';
     public $backUrl = '/gudang';
 
-    public function mount($gudangId = null)
+    private function authorizeBranch(): ?int
     {
-        $this->daftarBahan = Gudang::pluck('nama_bahan')->toArray();
-        
-        if ($gudangId) {
-            $this->gudangId = $gudangId;
-            $gudang = GudangRiwayat::find(\base64_decode($this->gudangId));
-
-            if ($gudang) {
-                $this->title = 'Edit Stok Gudang';
-                $this->button = 'Update';
-                $this->submit = 'update';
-                $this->nama_bahan = $gudang->gudang->nama_bahan;
-                $this->jumlah_masuk = $gudang->jumlah;
-                $this->satuan = $gudang->gudang->satuan;
-                $this->harga_satuan = $gudang->harga_satuan;
-                $this->minimum_stok = $gudang->minimum_stok;
-                $this->keterangan = $gudang->keterangan;
-                $this->tipe = $gudang->tipe;
-            } else {
-                $this->dispatch('showToast', type: 'error', message: 'Data bahan tidak ditemukan.');
-            }
+        $user = auth()->user();
+        abort_unless($user && $user->hasAnyRole(['admin', 'superadmin']), 403);
+        if ($user->hasRole('superadmin')) {
+            return null;
         }
+        abort_if($user->branch_id === null, 403, 'Admin harus memiliki cabang.');
+        return (int) $user->branch_id;
     }
 
+    private function selectedBranchId(): int
+    {
+        $adminBranchId = $this->authorizeBranch();
+        if ($adminBranchId !== null) {
+            return $adminBranchId; // Ignore manipulated Livewire branch field.
+        }
+        $this->validate(['branch_id' => 'required|integer|exists:branches,id']);
+        return (int) $this->branch_id;
+    }
+
+    private function refreshSuggestions(): void
+    {
+        $branchId = auth()->user()->hasRole('superadmin')
+            ? $this->branch_id : auth()->user()->branch_id;
+        $this->daftarBahan = $branchId
+            ? Gudang::where('branch_id', $branchId)->orderBy('nama_bahan')->pluck('nama_bahan')->toArray()
+            : [];
+    }
+
+    public function updatedBranchId(): void
+    {
+        $this->authorizeBranch();
+        $this->refreshSuggestions();
+    }
+
+    public function mount($gudangId = null, $riwayatId = null)
+    {
+        $this->branch_id = $this->authorizeBranch();
+        if ($riwayatId) {
+            $riwayat = GudangRiwayat::visibleTo(auth()->user())
+                ->with('gudang')->findOrFail(base64_decode($riwayatId, true));
+            $this->riwayatId = $riwayatId;
+            $this->branch_id = $riwayat->gudang->branch_id;
+            $this->branchLocked = true;
+            $this->title = 'Edit Riwayat Gudang';
+            $this->nama_bahan = $riwayat->gudang->nama_bahan;
+            $this->jumlah_masuk = $riwayat->jumlah;
+            $this->satuan = $riwayat->gudang->satuan;
+            $this->harga_satuan = $riwayat->harga_satuan;
+            $this->minimum_stok = $riwayat->gudang->minimum_stok;
+            $this->keterangan = $riwayat->keterangan;
+            $this->tipe = $riwayat->tipe;
+        } elseif ($gudangId) {
+            $gudang = Gudang::visibleTo(auth()->user())
+                ->findOrFail(base64_decode($gudangId, true));
+            $this->gudangId = $gudangId;
+            $this->branch_id = $gudang->branch_id;
+            $this->branchLocked = $gudang->branch_id !== null;
+            $this->title = 'Edit Bahan Gudang';
+            $this->nama_bahan = $gudang->nama_bahan;
+            $this->satuan = $gudang->satuan;
+            $this->harga_satuan = $gudang->harga_satuan;
+            $this->minimum_stok = $gudang->minimum_stok;
+            $this->keterangan = $gudang->keterangan;
+        }
+        $this->refreshSuggestions();
+    }
 
     public function searchBahan($query)
     {
-        $this->daftarBahan = Gudang::where('nama_bahan', 'like', "%{$query}%")
-            ->limit(5)
-            ->pluck('nama_bahan')
-            ->toArray();
+        $this->authorizeBranch();
+        $branchId = auth()->user()->hasRole('superadmin')
+            ? $this->branch_id : auth()->user()->branch_id;
+        $this->daftarBahan = $branchId
+            ? Gudang::where('branch_id', $branchId)
+                ->where('nama_bahan', 'like', "%{$query}%")
+                ->limit(5)->pluck('nama_bahan')->toArray()
+            : [];
     }
+
     public function simpan()
     {
+        $branchId = $this->selectedBranchId();
         $this->validate([
             'nama_bahan' => 'required|string|max:255',
             'jumlah_masuk' => 'required|numeric|min:1',
             'satuan' => 'required|string',
             'harga_satuan' => 'nullable|numeric|min:0',
             'minimum_stok' => 'nullable|numeric|min:0',
+            'tipe' => 'required|in:masuk,keluar',
         ]);
 
         DB::beginTransaction();
 
         try {
             // Cari bahan berdasarkan nama
-            $gudang = Gudang::where('nama_bahan', $this->nama_bahan)->first();
+            $gudang = Gudang::where('branch_id', $branchId)
+                ->where('nama_bahan', $this->nama_bahan)->lockForUpdate()->first();
 
             if (! $gudang) {
                 // Barang baru
@@ -74,6 +128,7 @@ class CreateGudang extends Component
                 $stokSesudah = $this->jumlah_masuk;
 
                 $gudang = Gudang::create([
+                    'branch_id' => $branchId,
                     'nama_bahan' => $this->nama_bahan,
                     'stok' => $stokSesudah,
                     'satuan' => $this->satuan,
@@ -121,11 +176,11 @@ class CreateGudang extends Component
             // dd($this->jumlah_masuk * $this->harga_satuan);
 
             DB::commit();
-            $this->daftarBahan = Gudang::pluck('nama_bahan')->toArray();
+            $this->refreshSuggestions();
             $this->dispatch('showToast', type: 'success', message: 'Data gudang berhasil disimpan!');
             $this->reset(['nama_bahan', 'jumlah_masuk', 'satuan', 'harga_satuan', 'minimum_stok', 'keterangan', 'tipe']);
 
-            $this->daftarBahan = Gudang::pluck('nama_bahan')->toArray();
+            $this->refreshSuggestions();
         } catch (\Exception $e) {
             DB::rollBack();
             $this->dispatch('showToast', type: 'error', message: 'Gagal menyimpan: ' . $e->getMessage());
@@ -134,6 +189,7 @@ class CreateGudang extends Component
 
     public function update()
     {
+        $this->authorizeBranch();
         $this->validate([
             'nama_bahan' => 'required|string|max:255',
             'jumlah_masuk' => 'required|numeric|min:1',
@@ -145,7 +201,8 @@ class CreateGudang extends Component
         DB::beginTransaction();
 
         try {
-            $riwayat = GudangRiwayat::findOrFail($this->gudangId);
+            $riwayat = GudangRiwayat::visibleTo(auth()->user())
+                ->findOrFail(base64_decode($this->riwayatId, true));
             $gudang = $riwayat->gudang;
 
             // Ambil stok awal sebelum ada perubahan
@@ -198,7 +255,7 @@ class CreateGudang extends Component
             DB::commit();
 
             $this->dispatch('showToast', type: 'success', message: 'Data gudang berhasil diperbarui!');
-            $this->reset(['gudangId', 'nama_bahan', 'jumlah_masuk', 'satuan', 'harga_satuan', 'minimum_stok', 'keterangan', 'tipe']);
+            $this->reset(['riwayatId', 'nama_bahan', 'jumlah_masuk', 'satuan', 'harga_satuan', 'minimum_stok', 'keterangan', 'tipe']);
         } catch (\Exception $e) {
             DB::rollBack();
             $this->dispatch('showToast', type: 'error', message: 'Gagal memperbarui: ' . $e->getMessage());
@@ -206,9 +263,39 @@ class CreateGudang extends Component
     }
 
 
+    public function updateBahan()
+    {
+        $this->authorizeBranch();
+        $branchId = $this->selectedBranchId();
+        $this->validate([
+            'nama_bahan' => 'required|string|max:255',
+            'satuan' => 'required|string',
+            'harga_satuan' => 'nullable|numeric|min:0',
+            'minimum_stok' => 'nullable|numeric|min:0',
+        ]);
+        $gudang = Gudang::visibleTo(auth()->user())
+            ->findOrFail(base64_decode($this->gudangId, true));
+        // A legacy warehouse entry may be assigned once; existing ownership is immutable.
+        abort_if($gudang->branch_id !== null && (int) $gudang->branch_id !== $branchId, 403);
+        $gudang->update([
+            'branch_id' => $branchId,
+            'nama_bahan' => $this->nama_bahan,
+            'satuan' => $this->satuan,
+            'harga_satuan' => $this->harga_satuan,
+            'minimum_stok' => $this->minimum_stok ?? 0,
+            'keterangan' => $this->keterangan,
+        ]);
+        $this->branchLocked = true;
+        $this->dispatch('showToast', type: 'success', message: 'Data bahan gudang berhasil diperbarui!');
+    }
+
     public function render()
     {
+        $this->authorizeBranch();
         return view('livewire.gudang.create-gudang', [
+            'branches' => auth()->user()->hasRole('superadmin')
+                ? \App\Models\Branch::orderBy('nama_cabang')->get()
+                : collect(),
             'title' => $this->title,
             'backUrl' => $this->backUrl
         ])->layout('layouts.app', ['title' => $this->title]);
