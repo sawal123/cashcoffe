@@ -167,7 +167,7 @@
                 </a>
             </li>
             @endhasanyrole
-            @unlessrole('kasir')
+            @if(! auth()->user()->hasRole('kasir') || auth()->user()->hasAnyRole(['admin', 'superadmin']))
             <!-- GROUP: Gudang -->
             <li class="menu-title">
                 <a href="#" class="menu-title-link" onclick="return false;">
@@ -213,7 +213,7 @@
                 </a>
             </li>
             @endhasanyrole
-            @endunlessrole
+            @endif
             <!-- GROUP: User -->
             @role('superadmin')
             <li class="menu-title">
