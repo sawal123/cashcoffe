@@ -122,6 +122,10 @@ class CreateGudang extends Component
             $gudang = Gudang::where('branch_id', $branchId)
                 ->where('nama_bahan', $this->nama_bahan)->lockForUpdate()->first();
 
+            if (! $gudang && $this->tipe === 'keluar') {
+                throw new \InvalidArgumentException('Tidak dapat mengeluarkan bahan yang belum ada di cabang ini.');
+            }
+
             if (! $gudang) {
                 // Barang baru
                 $stokSebelum = 0;
@@ -178,7 +182,8 @@ class CreateGudang extends Component
             DB::commit();
             $this->refreshSuggestions();
             $this->dispatch('showToast', type: 'success', message: 'Data gudang berhasil disimpan!');
-            $this->reset(['nama_bahan', 'jumlah_masuk', 'satuan', 'harga_satuan', 'minimum_stok', 'keterangan', 'tipe']);
+            $this->reset(['nama_bahan', 'jumlah_masuk', 'satuan', 'harga_satuan', 'minimum_stok', 'keterangan']);
+            $this->tipe = 'masuk';
 
             $this->refreshSuggestions();
         } catch (\Exception $e) {
@@ -198,11 +203,12 @@ class CreateGudang extends Component
             'minimum_stok' => 'nullable|numeric|min:0',
         ]);
 
+        $riwayat = GudangRiwayat::visibleTo(auth()->user())
+            ->findOrFail(base64_decode($this->riwayatId, true));
+
         DB::beginTransaction();
 
         try {
-            $riwayat = GudangRiwayat::visibleTo(auth()->user())
-                ->findOrFail(base64_decode($this->riwayatId, true));
             $gudang = $riwayat->gudang;
 
             // Ambil stok awal sebelum ada perubahan

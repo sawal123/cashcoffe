@@ -97,7 +97,7 @@ class CreateUser extends Component
         $this->validate([
             'name' => 'required|string|max:255',
             'phone' => 'nullable|numeric',
-            'jabatan_id' => [Rule::requiredIf(! $isSuperadmin), 'nullable', 'exists:jabatans,id'],
+            'jabatan_id' => [Rule::excludeIf($isSuperadmin), Rule::requiredIf(! $isSuperadmin), 'nullable', 'exists:jabatans,id'],
             'role_selected' => 'required|array|min:1',
             'role_selected.*' => 'exists:roles,name',
 
@@ -108,6 +108,7 @@ class CreateUser extends Component
             ],
 
             'branch_id' => [
+                Rule::excludeIf($isSuperadmin),
                 Rule::requiredIf(! $isSuperadmin),
                 'nullable',
                 'exists:branches,id',
@@ -170,7 +171,7 @@ class CreateUser extends Component
                 $this->branch_id = auth()->user()->branch_id;
             }
 
-            $message = 'User baru beserta struktur gaji bulanan berhasil ditambahkan.';
+            $message = 'Pengguna baru berhasil ditambahkan.';
         }
 
         $this->dispatch('showToast', type: 'success', message: $message);

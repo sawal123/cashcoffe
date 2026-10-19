@@ -45,6 +45,7 @@ class GenerasiGaji extends Component
         $branchId = $this->authorizedBranchId();
         $payrollService = new PayrollService;
         $employees = User::role('karyawan')
+            ->whereDoesntHave('roles', fn ($query) => $query->where('name', 'superadmin'))
             ->when($branchId !== null, fn ($query) => $query->where('branch_id', $branchId))
             ->get();
 
