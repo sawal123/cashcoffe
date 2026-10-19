@@ -27,7 +27,6 @@ class GenerasiGaji extends Component
 
     public function mount()
     {
-        $this->authorizedBranchId();
         $periodStart = Carbon::now();
 
         // Siklus payroll dimulai tanggal 26. Pada tanggal 1-25, periode aktif
@@ -303,9 +302,13 @@ class GenerasiGaji extends Component
     {
         $branchId = $this->authorizedBranchId();
 
-        return Payroll::with('user')
+        $payroll = Payroll::with('user')
             ->when($branchId !== null, fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('branch_id', $branchId)))
-            ->findOrFail($payrollId);
+            ->find($payrollId);
+
+        abort_if($payroll === null, 404);
+
+        return $payroll;
     }
 
     public function render()
@@ -318,8 +321,8 @@ class GenerasiGaji extends Component
 
         $payrolls = Payroll::with(['user.jabatan'])
             ->when($branchId !== null, fn ($query) => $query->whereHas('user', fn ($userQuery) => $userQuery->where('branch_id', $branchId)))
-            ->where('periode_mulai', $startDate)
-            ->where('periode_selesai', $endDate)
+            ->whereDate('periode_mulai', $startDate)
+            ->whereDate('periode_selesai', $endDate)
             ->get();
 
         return view('livewire.payroll.generasi-gaji', [
