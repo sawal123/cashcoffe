@@ -2,6 +2,8 @@
     :class="{ 'blur-sm pointer-events-none select-none': modalActive }">
     @php
         $siteLogo = $webSetting->logo ?? 'logo/logow.png';
+        $user = auth()->user();
+        $canManageWarehouse = $user->hasAnyRole(['admin', 'superadmin']);
     @endphp
     <button type="button" class="sidebar-close-btn !mt-4">
         <iconify-icon icon="radix-icons:cross-2"></iconify-icon>
@@ -105,14 +107,14 @@
             </li>
             @endrole
 
-            @unlessrole(['kasir', 'superadmin'])
+            @role('manager')
             <li>
                 <a href="/menu-cabang" wire:navigate class="{{ request()->is('menu-cabang*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:checklist-minimalistic-broken" class="menu-icon"></iconify-icon>
                     <span>Ketersediaan Menu</span>
                 </a>
             </li>
-            @endunlessrole
+            @endrole
 
 
             <li class="menu-title">
@@ -167,7 +169,7 @@
                 </a>
             </li>
             @endhasanyrole
-            @if(! auth()->user()->hasRole('kasir') || auth()->user()->hasAnyRole(['admin', 'superadmin']))
+            @if(! $user->hasRole('kasir') || $canManageWarehouse)
             <!-- GROUP: Gudang -->
             <li class="menu-title">
                 <a href="#" class="menu-title-link" onclick="return false;">
@@ -197,7 +199,7 @@
                 </a>
             </li>
 
-            @hasanyrole('admin|superadmin')
+            @if($canManageWarehouse)
             <li>
                 <a href="/gudang" wire:navigate class="{{ request()->is('gudang*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:box-bold" class="menu-icon"></iconify-icon>
@@ -212,7 +214,7 @@
                     <span>Riwayat Gudang</span>
                 </a>
             </li>
-            @endhasanyrole
+            @endif
             @endif
             <!-- GROUP: User -->
             @role('superadmin')

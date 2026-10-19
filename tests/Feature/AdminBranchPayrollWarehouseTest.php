@@ -156,6 +156,16 @@ class AdminBranchPayrollWarehouseTest extends TestCase
         }
     }
 
+    public function test_admin_sidebar_shows_branch_warehouse_navigation(): void
+    {
+        $response = $this->actingAs($this->adminA)->get('/dashboard');
+
+        $response->assertOk()
+            ->assertSee('href="/gudang"', false)
+            ->assertSee('href="/riwayat-gudang"', false)
+            ->assertDontSee('href="/menu-cabang"', false);
+    }
+
     public function test_admin_can_create_only_own_branch_stock_even_with_forged_branch_property(): void
     {
         Livewire::actingAs($this->adminA)
