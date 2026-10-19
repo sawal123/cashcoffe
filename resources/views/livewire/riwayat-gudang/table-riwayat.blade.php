@@ -44,6 +44,9 @@
                 </td>
                 <td data-label="Nama Bahan" class="px-6 py-4 font-bold text-neutral-800 dark:text-neutral-200">
                     {{ $item->gudang->nama_bahan }}
+                    @role('superadmin')
+                        <div class="text-xs font-normal text-neutral-500">{{ $item->gudang->branch?->nama_cabang ?? 'Belum ditetapkan ke cabang' }}</div>
+                    @endrole
                 </td>
                 <td data-label="Tipe" class="px-6 py-4 text-center">
                     @if ($item->tipe === 'masuk')
@@ -78,7 +81,7 @@
                 </td>
                 <td data-label="Aksi" class="px-6 py-4">
                     <div class="flex justify-center gap-2">
-                        <x-ui.action-edit href="/gudang/{{ base64_encode($item->id) }}/edit" wire:navigate />
+                        <x-ui.action-edit href="{{ route('gudang.riwayat.edit', base64_encode($item->id)) }}" wire:navigate />
                         <x-ui.action-delete
                             @click="$dispatch('open-modal', { name: 'confirm-delete', id: {{ json_encode(base64_encode($item->id)) }} })" />
                     </div>

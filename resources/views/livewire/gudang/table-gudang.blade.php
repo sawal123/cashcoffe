@@ -37,6 +37,9 @@
 
                 <td data-label="Nama Bahan" class="px-6 py-4">
                     <span class="font-bold text-neutral-800 dark:text-neutral-200">{{ $item->nama_bahan }}</span>
+                    @role('superadmin')
+                        <div class="text-xs text-neutral-500">{{ $item->branch?->nama_cabang ?? 'Belum ditetapkan ke cabang' }}</div>
+                    @endrole
                 </td>
 
                 <td data-label="Satuan" class="px-6 py-4 text-sm text-neutral-600 dark:text-neutral-400">

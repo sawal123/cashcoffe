@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class GudangRiwayat extends Model
@@ -20,6 +21,11 @@ class GudangRiwayat extends Model
         'keterangan',
         'user_id',
     ];
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return $query->whereHas('gudang', fn (Builder $gudang) => $gudang->visibleTo($user));
+    }
 
     public function gudang()
     {

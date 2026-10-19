@@ -13,7 +13,7 @@ class TableRiwayat extends Component
 
     public function mount()
     {
-        abort_if(!auth()->user()->hasRole('superadmin'), 403);
+        $this->authorizeBranch();
     }
 
     public $search = '';
@@ -25,6 +25,13 @@ class TableRiwayat extends Component
     protected $listeners = ['confirmDelete'];
 
 
+
+    private function authorizeBranch(): void
+    {
+        $user = auth()->user();
+        abort_unless($user && $user->hasAnyRole(['admin', 'superadmin']), 403);
+        abort_if(! $user->hasRole('superadmin') && $user->branch_id === null, 403);
+    }
 
     public function setFilter($type)
     {
@@ -39,11 +46,13 @@ class TableRiwayat extends Component
 
     public function deleteRiwayat($id)
     {
+        $this->authorizeBranch();
         DB::beginTransaction();
         try {
-            $riwayat = GudangRiwayat::find(base64_decode($id));
+            $riwayat = GudangRiwayat::visibleTo(auth()->user())->find(base64_decode($id, true));
 
             if (! $riwayat) {
+                DB::rollBack();
                 $this->dispatch('showToast', [
                     'type' => 'error',
                     'message' => 'Data riwayat tidak ditemukan.'
@@ -62,8 +71,9 @@ class TableRiwayat extends Component
     }
     public function render()
     {
-        $query = GudangRiwayat::query()
-            ->with('gudang')
+        $this->authorizeBranch();
+        $query = GudangRiwayat::visibleTo(auth()->user())
+            ->with('gudang.branch')
             ->when($this->filterType !== 'semua', function ($q) {
                 $q->where('tipe', $this->filterType);
             })
