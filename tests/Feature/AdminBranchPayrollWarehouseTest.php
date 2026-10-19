@@ -181,6 +181,8 @@ class AdminBranchPayrollWarehouseTest extends TestCase
             ->assertSee('href="/riwayat-gudang"', false)
             ->assertDontSee('href="/order"', false)
             ->assertDontSee('href="/order/create"', false)
+            ->assertDontSee('href="/member"', false)
+            ->assertDontSee('href="/omset"', false)
             ->assertDontSee('Menu &amp; Order', false);
 
         $this->actingAs($this->manager)->get('/payroll/generasi')->assertOk();

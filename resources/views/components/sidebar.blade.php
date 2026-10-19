@@ -130,14 +130,16 @@
                 </a>
             </li>
 
+            @unlessrole('manager')
             <li>
                 <a href="/member" wire:navigate class="{{ request()->is('member*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:users-group-two-rounded-bold" class="menu-icon"></iconify-icon>
                     <span>Member</span>
                 </a>
             </li>
+            @endunlessrole
 
-            @unlessrole('kasir')
+            @unlessrole(['kasir', 'manager'])
             <li>
                 <a href="/omset" wire:navigate class="{{ request()->is('omset*') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:graph-up-bold" class="menu-icon"></iconify-icon>
