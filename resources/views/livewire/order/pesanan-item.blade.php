@@ -1,4 +1,4 @@
-<div x-data="{ showCartMobile: false }"
+<div x-data="{ showCartMobile: false, cashModalOpen: false }"
     x-effect="const shouldLock = window.innerWidth < 1024 && showCartMobile; document.documentElement.classList.toggle('overflow-hidden', shouldLock); document.body.classList.toggle('overflow-hidden', shouldLock)"
     @resize.window="if (window.innerWidth >= 1024) showCartMobile = false"
     @keydown.escape.window="showCartMobile = false"
@@ -209,7 +209,7 @@
                             @endphp
                             <button type="button" @if ($loop->index >= 4) x-show="expanded" x-transition @endif
                                 wire:click="$set('metode_pembayaran','{{ $pay->id }}')"
-                                @click="if('{{ $pay->kode_metode }}' === 'tunai') $dispatch('open-tunai-modal')"
+                                @click="cashModalOpen = '{{ $pay->kode_metode }}' === 'tunai'"
                                 class="flex flex-col items-center justify-center p-2 rounded-2xl border-2 transition-all duration-300 group
                                         {{ $metode_pembayaran == $pay->id
                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-95'
@@ -406,7 +406,6 @@
         {{-- Cash Modal Logic --}}
         @if ($this->isCash)
             <div x-data="{
-                    open: false,
                     uang: '{{ $uang_tunai ? $uang_tunai : '' }}',
                     minTunai: totalAfterDiscount(),
                     sync() {
@@ -415,34 +414,93 @@
                         this.uang = clean;
                         $wire.set('uang_tunai', clean === '' ? null : parseInt(clean));
                     },
+                    appendDigit(digit) {
+                        this.uang = `${this.uang || ''}${digit}`.replace(/^0+(?=\d)/, '');
+                        this.sync();
+                    },
+                    backspace() {
+                        this.uang = String(this.uang || '').slice(0, -1);
+                        this.sync();
+                    },
+                    setExactAmount() {
+                        this.uang = String(Math.round(this.minTunai));
+                        this.sync();
+                    },
                     get isValid() { return this.uang && parseInt(this.uang) >= this.minTunai; }
                 }" @order-preview-total-updated.window="minTunai = $event.detail.total" x-init="
-                    $watch('open', value => {
+                    $watch('cashModalOpen', value => {
                         window.dispatchEvent(new CustomEvent('toggle-blur', { detail: !!value }));
                         document.body.classList.toggle('overflow-hidden', !!value);
                     });
+                    if (cashModalOpen) {
+                        window.dispatchEvent(new CustomEvent('toggle-blur', { detail: true }));
+                        document.body.classList.add('overflow-hidden');
+                    }
                     if ($wire.uang_tunai) {
                         uang = String($wire.uang_tunai);
-                        open = false;
                     }
-                " @open-tunai-modal.window="open = true">
+                " @keydown.escape.window="cashModalOpen = false">
 
                 @teleport('body')
-                <div x-show="open" style="display: none;"
+                <div x-show="cashModalOpen" style="display: none;"
                     class="fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div @click.away="open = false"
-                        class="bg-white dark:bg-neutral-800 rounded-[2.5rem] w-full max-w-sm p-8 shadow-2xl relative border border-neutral-100 dark:border-neutral-700">
+                    <div @click.away="cashModalOpen = false"
+                        class="bg-white dark:bg-neutral-800 rounded-[2rem] w-full max-w-sm p-5 sm:p-8 shadow-2xl relative border border-neutral-100 dark:border-neutral-700">
+                        <button type="button" @click="cashModalOpen = false"
+                            class="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-neutral-400 transition hover:bg-neutral-100 hover:text-neutral-700 dark:hover:bg-neutral-700 dark:hover:text-white"
+                            aria-label="Tutup pembayaran tunai">
+                            <iconify-icon icon="mingcute:close-line" class="text-2xl"></iconify-icon>
+                        </button>
                         <div
-                            class="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 mb-6">
+                            class="mb-5 flex h-14 w-14 items-center justify-center rounded-3xl bg-blue-50 text-blue-600 dark:bg-blue-900/30">
                             <iconify-icon icon="mingcute:wallet-line" class="text-3xl"></iconify-icon>
                         </div>
-                        <h3 class="text-xl font-black text-neutral-900 dark:text-white mb-2">Pembayaran Tunai</h3>
-                        <p class="text-sm text-neutral-500 mb-6">Masukkan jumlah uang yang diterima dari pelanggan.</p>
+                        <h3 class="mb-2 text-xl font-black text-neutral-900 dark:text-white">Pembayaran Tunai</h3>
+                        <p class="mb-5 text-sm text-neutral-500">Masukkan jumlah uang yang diterima dari pelanggan.</p>
 
-                        <x-ui.input label="Jumlah Uang" x-model="uang" x-on:input="sync" inputmode="numeric" type="text"
-                            placeholder="50.000" />
+                        <div class="mb-4 rounded-2xl border border-blue-100 bg-blue-50/60 px-4 py-3 dark:border-blue-900/50 dark:bg-blue-900/20">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-[10px] font-black uppercase tracking-widest text-neutral-400">Uang diterima</span>
+                                <span class="truncate text-xl font-black text-blue-700 dark:text-blue-300"
+                                    x-text="uang ? 'Rp ' + new Intl.NumberFormat('id-ID').format(uang) : 'Rp 0'"></span>
+                            </div>
+                        </div>
 
-                        <div class="mt-4 min-h-[20px] mb-6">
+                        <div class="grid grid-cols-3 gap-2 sm:gap-3" aria-label="Keypad nominal tunai">
+                            @foreach (range(1, 9) as $digit)
+                                <button type="button" @click="appendDigit('{{ $digit }}')"
+                                    class="flex h-12 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 text-lg font-black text-neutral-800 transition hover:border-blue-400 hover:bg-blue-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-blue-700 dark:hover:bg-blue-900/30 sm:h-14">
+                                    {{ $digit }}
+                                </button>
+                            @endforeach
+                            <button type="button" @click="backspace()"
+                                class="flex h-12 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 text-neutral-600 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 active:scale-95 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-red-800 dark:hover:bg-red-900/20 sm:h-14"
+                                aria-label="Hapus angka terakhir">
+                                <iconify-icon icon="mingcute:delete-2-line" class="text-xl"></iconify-icon>
+                            </button>
+                            <button type="button" @click="appendDigit('0')"
+                                class="flex h-12 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 text-lg font-black text-neutral-800 transition hover:border-blue-400 hover:bg-blue-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-blue-700 dark:hover:bg-blue-900/30 sm:h-14">
+                                0
+                            </button>
+                            <button type="button" @click="uang = ''; sync()"
+                                class="flex h-12 items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50 text-[10px] font-black uppercase tracking-widest text-neutral-500 transition hover:border-red-300 hover:bg-red-50 hover:text-red-600 active:scale-95 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-red-800 dark:hover:bg-red-900/20 sm:h-14">
+                                Reset
+                            </button>
+                        </div>
+
+                        <button type="button" @click="setExactAmount()"
+                            class="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 text-sm font-black text-blue-700 transition hover:bg-blue-100 active:scale-95 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50">
+                            <iconify-icon icon="mingcute:check-circle-line" class="text-lg"></iconify-icon>
+                            Uang Pas
+                            <span class="text-xs font-bold opacity-70" x-text="'(Rp ' + new Intl.NumberFormat('id-ID').format(minTunai) + ')' "></span>
+                        </button>
+
+                        <div class="mt-4">
+                            <x-ui.input label="Atau masukkan manual" x-model="uang" x-on:input="sync" inputmode="numeric" type="text"
+                                placeholder="50.000" />
+                        </div>
+
+                        <div class="mb-5 mt-3 min-h-[20px]">
                             <template x-if="!isValid">
                                 <span class="text-[11px] font-bold text-red-500 italic block">
                                     *Masih kurang <span x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(minTunai)"></span>
@@ -450,7 +508,7 @@
                             </template>
                         </div>
 
-                        <button type="button" @click="if(isValid) open = false" :disabled="!isValid"
+                        <button type="button" @click="if(isValid) cashModalOpen = false" :disabled="!isValid"
                             class="w-full py-4 text-sm font-bold rounded-2xl bg-blue-600 text-white transition-all shadow-lg shadow-blue-500/30"
                             :class="!isValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 active:scale-95'">
                             Simpan & Lanjutkan
@@ -460,7 +518,7 @@
                 @endteleport
 
                 <div class="p-4 mb-6 bg-blue-50/30 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-900/50 flex justify-between items-center cursor-pointer hover:bg-blue-50 transition-all group"
-                    @click="open = true">
+                    @click="cashModalOpen = true">
                     <span class="text-xs font-black text-neutral-400 uppercase tracking-widest">Tunai Diterima:</span>
                     <div class="flex items-center gap-2">
                         <span class="text-lg font-black text-blue-700 dark:text-blue-400"
