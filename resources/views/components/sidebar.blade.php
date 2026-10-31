@@ -98,14 +98,14 @@
             </li>
             @endhasanyrole
 
-            @role('superadmin')
+            @hasanyrole('kasir|superadmin')
             <li>
                 <a href="/menu" wire:navigate class="{{ request()->is('menu') ? 'active-page' : '' }}">
                     <iconify-icon icon="solar:book-broken" class="menu-icon"></iconify-icon>
                     <span>Menu</span>
                 </a>
             </li>
-            @endrole
+            @endhasanyrole
 
             @role('manager')
             <li>

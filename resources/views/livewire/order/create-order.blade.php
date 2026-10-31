@@ -1,8 +1,366 @@
-<div class="order-create-page flex flex-col gap-6 w-full">
+<div class="order-create-page flex flex-col gap-6 w-full"
+    x-data="cashcoffeOrderCart({
+        cart: @js($pesanan),
+        discount: @js($frontendDiscount),
+        discountAmount: @js($discountValue),
+        discountCode: @js($discount),
+        status: @js($status),
+        storageBase: @js(asset('storage')),
+        defaultImage: @js(asset('images/default-menu.png')),
+    })"
+    x-init="init()"
+    x-on:order-cart-state-updated.window="applyServerState($event.detail)">
+    <script data-navigate-once>
+        window.cashcoffeOrderCart = window.cashcoffeOrderCart || function (initial) {
+            return {
+                cart: {},
+                discountConfig: initial.discount || null,
+                discountCode: initial.discountCode || '',
+                serverDiscountAmount: Number(initial.discountAmount || 0),
+                variantMenu: null,
+                selectedOptions: {},
+                variantOpen: false,
+                syncing: false,
+                status: initial.status || null,
+                storageBase: initial.storageBase || '/storage',
+                defaultImage: initial.defaultImage || '/images/default-menu.png',
+
+                init() {
+                    this.cart = this.normalizeCart(initial.cart || {});
+                    this.emitTotal();
+                },
+
+                normalizeCart(source) {
+                    const normalized = {};
+                    const entries = Array.isArray(source)
+                        ? source.map((item, index) => [item.key || String(index), item])
+                        : Object.entries(source || {});
+
+                    entries.forEach(([key, item]) => {
+                        const cartKey = String(item.key || key);
+                        normalized[cartKey] = {
+                            ...item,
+                            key: cartKey,
+                            id: Number(item.id),
+                            harga: Number(item.harga || 0),
+                            qty: Math.max(1, Number(item.qty || 1)),
+                            category_id: Number(item.category_id || 0),
+                            selected_options: Array.isArray(item.selected_options) ? item.selected_options : [],
+                            display_options: Array.isArray(item.display_options) ? item.display_options : [],
+                        };
+                    });
+
+                    return normalized;
+                },
+
+                cartPayload() {
+                    const payload = {};
+
+                    Object.entries(this.cart).forEach(([key, item]) => {
+                        const { key: ignoredKey, ...data } = item;
+                        payload[key] = data;
+                    });
+
+                    return payload;
+                },
+
+                syncCartToLivewire() {
+                    if (this.$wire) {
+                        this.$wire.set('pesanan', this.cartPayload(), false);
+                    }
+                },
+
+                cartItems() {
+                    return Object.values(this.cart);
+                },
+
+                formatMoney(value) {
+                    return new Intl.NumberFormat('id-ID').format(Math.round(Number(value || 0)));
+                },
+
+                imageUrl(item) {
+                    if (item.image_url) return item.image_url;
+                    return item.gambar ? `${this.storageBase}/${item.gambar}` : this.defaultImage;
+                },
+
+                subtotal() {
+                    return this.cartItems().reduce((sum, item) => sum + (item.harga * item.qty), 0);
+                },
+
+                isDiscountEligible(item) {
+                    const discount = this.discountConfig;
+                    if (!discount || discount.scope === 'global') return true;
+
+                    return (discount.items || []).some((rule) => {
+                        const modelType = String(rule.model_type || '');
+                        return (modelType.includes('Menu') && Number(rule.model_id) === Number(item.id))
+                            || (modelType.includes('Category') && Number(rule.model_id) === Number(item.category_id));
+                    });
+                },
+
+                itemDiscount(item) {
+                    const discount = this.discountConfig;
+                    if (!discount || discount.scope === 'global' || !this.isDiscountEligible(item)) return 0;
+
+                    if (discount.jenis === 'persentase') {
+                        let amount = Math.round(item.harga * item.qty * (Number(discount.nilai || 0) / 100));
+                        if (Number(discount.maksimum || 0) > 0) {
+                            amount = Math.min(amount, Number(discount.maksimum));
+                        }
+                        return amount;
+                    }
+
+                    return Number(discount.nilai || 0) * item.qty;
+                },
+
+                discountAmount() {
+                    const discount = this.discountConfig;
+                    if (!discount || !this.discountCode) return 0;
+
+                    const subtotal = this.subtotal();
+                    if (discount.scope === 'global') {
+                        if (Number(discount.minimum || 0) > subtotal) return 0;
+
+                        let amount = discount.jenis === 'persentase'
+                            ? Math.round(subtotal * (Number(discount.nilai || 0) / 100))
+                            : Number(discount.nilai || 0);
+
+                        if (Number(discount.maksimum || 0) > 0) {
+                            amount = Math.min(amount, Number(discount.maksimum));
+                        }
+
+                        return Math.min(amount, subtotal);
+                    }
+
+                    return Math.min(
+                        this.cartItems().reduce((sum, item) => sum + this.itemDiscount(item), 0),
+                        subtotal,
+                    );
+                },
+
+                totalAfterDiscount() {
+                    return Math.max(0, this.subtotal() - this.discountAmount());
+                },
+
+                emitTotal() {
+                    window.dispatchEvent(new CustomEvent('order-preview-total-updated', {
+                        detail: { total: this.totalAfterDiscount() },
+                    }));
+                },
+
+                addMenu(menu) {
+                    if (this.status === 'selesai') return;
+
+                    if ((menu.variantGroups || []).length > 0) {
+                        this.variantMenu = menu;
+                        this.selectedOptions = {};
+                        this.variantOpen = true;
+                        return;
+                    }
+
+                    this.upsertMenu(menu, [], []);
+                },
+
+                upsertMenu(menu, optionIds, displayOptions) {
+                    const ids = [...optionIds].map(Number).sort((a, b) => a - b);
+                    const key = ids.length ? `${menu.id}_${ids.join('-')}` : String(menu.id);
+
+                    if (this.cart[key]) {
+                        this.cart[key].qty++;
+                    } else {
+                        this.cart[key] = {
+                            key,
+                            id: Number(menu.id),
+                            nama_menu: menu.nama_menu,
+                            harga: Number(menu.harga || 0) + ids.reduce((sum, id) => {
+                                const option = (menu.variantGroups || []).flatMap((group) => group.options || [])
+                                    .find((candidate) => Number(candidate.id) === id);
+                                return sum + Number(option?.extra_price || 0);
+                            }, 0),
+                            gambar: menu.gambar || '',
+                            image_url: menu.image_url || '',
+                            category_id: Number(menu.category_id || 0),
+                            qty: 1,
+                            selected_options: ids,
+                            display_options: displayOptions,
+                        };
+                    }
+
+                    this.syncCartToLivewire();
+                    this.emitTotal();
+                },
+
+                changeQty(key, delta) {
+                    if (this.status === 'selesai' || !this.cart[key]) return;
+
+                    this.cart[key].qty += delta;
+                    if (this.cart[key].qty <= 0) delete this.cart[key];
+
+                    this.syncCartToLivewire();
+                    this.emitTotal();
+                },
+
+                toggleOption(group, option) {
+                    const groupKey = String(group.id);
+                    const current = this.selectedOptions[groupKey] || [];
+
+                    if (group.selection_type === 'single') {
+                        this.selectedOptions[groupKey] = [Number(option.id)];
+                    } else if (current.includes(Number(option.id))) {
+                        this.selectedOptions[groupKey] = current.filter((id) => id !== Number(option.id));
+                    } else {
+                        this.selectedOptions[groupKey] = [...current, Number(option.id)];
+                    }
+                },
+
+                isOptionSelected(groupId, optionId) {
+                    return (this.selectedOptions[String(groupId)] || []).includes(Number(optionId));
+                },
+
+                variantExtra() {
+                    return Object.values(this.selectedOptions).flat().reduce((sum, optionId) => {
+                        const option = (this.variantMenu?.variantGroups || []).flatMap((group) => group.options || [])
+                            .find((candidate) => Number(candidate.id) === Number(optionId));
+                        return sum + Number(option?.extra_price || 0);
+                    }, 0);
+                },
+
+                missingRequiredGroup() {
+                    return (this.variantMenu?.variantGroups || []).find((group) => {
+                        return group.is_required && !(this.selectedOptions[String(group.id)] || []).length;
+                    });
+                },
+
+                confirmVariant() {
+                    const missing = this.missingRequiredGroup();
+                    if (missing) {
+                        this.showToast(`Pilih ${missing.nama_group} terlebih dahulu`, 'warning');
+                        return;
+                    }
+
+                    const optionIds = Object.values(this.selectedOptions).flat().map(Number);
+                    const displayOptions = optionIds.map((optionId) => {
+                        const option = (this.variantMenu?.variantGroups || []).flatMap((group) => group.options || [])
+                            .find((candidate) => Number(candidate.id) === Number(optionId));
+                        return option?.nama_opsi || '';
+                    }).filter(Boolean);
+
+                    this.upsertMenu(this.variantMenu, optionIds, displayOptions);
+                    this.closeVariant();
+                },
+
+                closeVariant() {
+                    this.variantOpen = false;
+                    this.variantMenu = null;
+                    this.selectedOptions = {};
+                },
+
+                showToast(message, type = 'info') {
+                    window.dispatchEvent(new CustomEvent('showToast', {
+                        detail: { message, type, title: 'Pesanan' },
+                    }));
+                },
+
+                applyServerState(detail) {
+                    if (!detail) return;
+
+                    if (detail.cart) this.cart = this.normalizeCart(detail.cart);
+                    this.discountConfig = detail.discount || null;
+                    this.discountCode = detail.discountCode || '';
+                    this.serverDiscountAmount = Number(detail.discountAmount || 0);
+                    this.syncing = false;
+                    this.emitTotal();
+                },
+
+                isSubmitDisabled(wire) {
+                    if (this.syncing || this.cartItems().length === 0) return true;
+                    if (!wire.nama_costumer || !wire.metode_pembayaran) return true;
+
+                    return Number(wire.metode_pembayaran) === Number(wire.cashMethodId)
+                        && (!wire.uang_tunai || Number(wire.uang_tunai) < this.totalAfterDiscount());
+                },
+
+                async submitOrder(wire, event, method) {
+                    event.preventDefault();
+                    if (this.isSubmitDisabled(wire)) return;
+
+                    this.syncing = true;
+                    this.syncCartToLivewire();
+
+                    try {
+                        await wire.call(method);
+                    } finally {
+                        this.syncing = false;
+                    }
+                },
+            };
+        };
+    </script>
+
     <style>
         .order-create-page {
             width: 100%;
             min-width: 0;
+        }
+
+        .order-success-check {
+            display: inline-flex;
+            width: 4.5rem;
+            height: 4.5rem;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(74, 222, 128, .35);
+            border-radius: 9999px;
+            background: rgba(34, 197, 94, .14);
+            box-shadow: 0 0 0 8px rgba(34, 197, 94, .06), 0 14px 28px rgba(34, 197, 94, .16);
+            animation: order-success-pop .45s cubic-bezier(.34, 1.56, .64, 1) both;
+        }
+
+        .order-success-check svg {
+            width: 2.75rem;
+            height: 2.75rem;
+        }
+
+        .order-success-check circle {
+            fill: none;
+            stroke: #4ade80;
+            stroke-width: 2.5;
+            stroke-dasharray: 138;
+            stroke-dashoffset: 138;
+            animation: order-success-circle .55s ease-out .08s forwards;
+        }
+
+        .order-success-check path {
+            fill: none;
+            stroke: #bbf7d0;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 3.5;
+            stroke-dasharray: 38;
+            stroke-dashoffset: 38;
+            animation: order-success-checkmark .35s ease-out .45s forwards;
+        }
+
+        @keyframes order-success-pop {
+            from { opacity: 0; transform: scale(.55); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes order-success-circle {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @keyframes order-success-checkmark {
+            to { stroke-dashoffset: 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .order-success-check,
+            .order-success-check circle,
+            .order-success-check path {
+                animation: none;
+                stroke-dashoffset: 0;
+            }
         }
 
         /* Mobile/tablet only: ancestor .dashboard-main is a column flex with flex-wrap that sizes the
@@ -49,6 +407,32 @@
         .order-create-page .order-category-scroll {
             max-width: 100%;
             overflow-x: auto;
+        }
+
+        .order-create-page .order-category-options-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(148, 163, 184, .65) transparent;
+        }
+
+        .order-create-page .order-category-options-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .order-create-page .order-category-options-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .order-create-page .order-category-options-scroll::-webkit-scrollbar-thumb {
+            border-radius: 9999px;
+            background: rgba(148, 163, 184, .65);
+        }
+
+        :is(.dark .order-create-page .order-category-options-scroll) {
+            scrollbar-color: rgba(148, 163, 184, .55) transparent;
+        }
+
+        :is(.dark .order-create-page .order-category-options-scroll::-webkit-scrollbar-thumb) {
+            background: rgba(148, 163, 184, .55);
         }
 
         /* Search row: single column on mobile */
@@ -198,7 +582,7 @@
 
             <div class="order-desktop-only order-category-dropdown">
                 <x-ui.select-modern model="selectedCategoryId" :options="$categories" :activeValue="$selectedCategoryId"
-                    placeholder="Semua Menu" />
+                    placeholder="Semua Menu" scrollClass="order-category-options-scroll" />
             </div>
         </div>
 
@@ -242,8 +626,27 @@
                                         : ($item->h_promo == 0 ? $item->harga : $item->h_promo);
                                     $hasVariants = $item->variantGroups && $item->variantGroups->count() > 0;
                                     $isPromo = $tieredPrice ? ($tieredPrice->h_promo > 0) : ($item->h_promo > 0);
+                                    $menuPayload = [
+                                        'id' => (int) $item->id,
+                                        'nama_menu' => $item->nama_menu,
+                                        'harga' => (int) $harga,
+                                        'gambar' => $item->gambar,
+                                        'image_url' => $item->gambar ? asset('storage/' . $item->gambar) : asset('images/default-menu.png'),
+                                        'category_id' => (int) $item->categories_id,
+                                        'variantGroups' => $item->variantGroups->map(fn ($group) => [
+                                            'id' => (int) $group->id,
+                                            'nama_group' => $group->nama_group,
+                                            'is_required' => (bool) $group->is_required,
+                                            'selection_type' => $group->selection_type,
+                                            'options' => $group->options->map(fn ($option) => [
+                                                'id' => (int) $option->id,
+                                                'nama_opsi' => $option->nama_opsi,
+                                                'extra_price' => (int) ($option->variantPrices->first()?->extra_price ?? 0),
+                                            ])->values()->all(),
+                                        ])->values()->all(),
+                                    ];
                                 @endphp
-                                <article wire:click="addPesanan({{ $item->id }})"
+                                <article @click="addMenu(@js($menuPayload))"
                                     class="group relative flex flex-col rounded-2xl border border-neutral-100 bg-white shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer overflow-hidden dark:border-neutral-700 dark:bg-neutral-800">
 
                                     <div class="aspect-[16/11] overflow-hidden relative">
@@ -303,160 +706,97 @@
 </div>
 
     {{-- MODAL VARIAN --}}
-    <x-mdal name="variant-modal">
-        @if ($selectedMenuForVariant)
-            <div class="p-6" x-data="{
-                selectedOptions: {},
-                optionPrices: {{ json_encode($selectedMenuForVariant['option_prices']) }},
-                totalExtra: 0,
-                toggle(groupId, optionId, type) {
-                    if (type === 'single') {
-                        this.selectedOptions[groupId] = [optionId];
-                    } else {
-                        if (!this.selectedOptions[groupId]) this.selectedOptions[groupId] = [];
-                        const idx = this.selectedOptions[groupId].indexOf(optionId);
-                        if (idx > -1) this.selectedOptions[groupId].splice(idx, 1);
-                        else this.selectedOptions[groupId].push(optionId);
-                    }
-                    this.calculate();
-                },
-                calculate() {
-                    let sum = 0;
-                    for (let g in this.selectedOptions) {
-                        this.selectedOptions[g].forEach(id => {
-                            sum += (this.optionPrices[id] || 0);
-                        });
-                    }
-                    this.totalExtra = sum;
-                },
-                isSelected(groupId, optionId) {
-                    return this.selectedOptions[groupId] && this.selectedOptions[groupId].includes(optionId);
-                }
-            }">
-                {{-- Header Detail --}}
-                <div class="flex items-center gap-5 mb-8 pb-6 border-b border-neutral-100 dark:border-neutral-700">
-                    <img src="{{ asset('storage/' . $selectedMenuForVariant['gambar']) }}"
-                        class="w-20 h-20 rounded-[1.5rem] object-cover shadow-lg border-2 border-white dark:border-neutral-800">
-                    <div>
-                        <h3 class="font-black text-xl text-neutral-900 dark:text-white mb-1">
-                            {{ $selectedMenuForVariant['nama_menu'] }}
-                        </h3>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs font-bold text-neutral-400 uppercase tracking-widest">Base
-                                Price:</span>
-                            <p class="text-lg font-black text-blue-600 dark:text-blue-400">
-                                Rp {{ number_format($selectedMenuForVariant['harga_base'], 0, ',', '.') }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Info Wajib Dipilih --}}
-                @php
-                    $hasRequiredGroups = collect($selectedMenuForVariant['groups'])->some(fn($g) => $g->is_required);
-                @endphp
-                @if ($hasRequiredGroups)
-                    <div
-                        class="mb-6 p-4 bg-amber-50 border border-amber-100 rounded-2xl dark:bg-amber-900/20 dark:border-amber-900/50 flex gap-3 items-center">
-                        <iconify-icon icon="mingcute:warning-line" class="text-amber-500 text-xl"></iconify-icon>
-                        <p class="text-xs font-bold text-amber-700 dark:text-amber-300">
-                            Pilih opsi wajib yang bertanda bintang (*)
-                        </p>
-                    </div>
-                @endif
-
-                <div class="space-y-8">
-                    @foreach ($selectedMenuForVariant['groups'] as $group)
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <label
-                                    class="text-[10px] font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                                    {{ $group->nama_group }}
-                                    @if ($group->is_required)
-                                        <span class="text-red-500 font-black text-lg -mt-1">*</span>
-                                    @endif
-                                </label>
-                                @if ($group->selection_type == 'multiple')
-                                    <span
-                                        class="text-[10px] font-bold text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-lg border border-blue-100 dark:border-blue-800">Bisa
-                                        pilih banyak</span>
-                                @endif
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                @foreach ($group->options as $option)
-                                    @php
-                                        $optionPrice = (int) ($selectedMenuForVariant['option_prices'][$option->id] ?? 0);
-                                    @endphp
-                                    <button type="button"
-                                        @click="toggle({{ $group->id }}, {{ $option->id }}, '{{ $group->selection_type }}')"
-                                        class="relative flex flex-col p-4 rounded-[1.5rem] border-2 transition-all text-left overflow-hidden group"
-                                        :class="isSelected({{ $group->id }}, {{ $option->id }})
-                                            ? 'bg-blue-600 border-blue-600 shadow-lg shadow-blue-500/20 text-white'
-                                            : 'bg-white border-neutral-100 hover:border-blue-300 dark:bg-neutral-800 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300'">
-
-                                        <div class="flex items-center justify-between mb-1">
-                                            <span class="text-sm font-black leading-tight">
-                                                {{ $option->nama_opsi }}
-                                            </span>
-                                            <template x-if="isSelected({{ $group->id }}, {{ $option->id }})">
-                                                <iconify-icon icon="mingcute:check-circle-fill"
-                                                    class="text-xl text-white"></iconify-icon>
-                                            </template>
-                                        </div>
-
-                                        @if ($optionPrice > 0)
-                                            <span class="text-[11px] font-bold"
-                                                :class="isSelected({{ $group->id }}, {{ $option->id }}) ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'">
-                                                +Rp {{ number_format($optionPrice, 0, ',', '.') }}
-                                            </span>
-                                        @else
-                                            <span class="text-[11px] font-medium"
-                                                :class="isSelected({{ $group->id }}, {{ $option->id }}) ? 'text-blue-100' : 'text-neutral-400'">Gratis</span>
-                                        @endif
-                                    </button>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-
-                {{-- Footer Action --}}
-                <div class="mt-10 pt-8 border-t border-neutral-100 dark:border-neutral-700">
-                    <div class="flex items-center justify-between mb-6">
-                        <span class="text-xs font-black text-neutral-400 uppercase tracking-widest">Estimasi
-                            Total:</span>
-                        <span class="text-2xl font-black text-neutral-900 dark:text-white">
-                            Rp
-                            <span
-                                x-text="new Intl.NumberFormat('id-ID').format({{ $selectedMenuForVariant['harga_base'] }} + totalExtra)"></span>
-                        </span>
-                    </div>
-                    <div class="flex gap-4">
-                        <button type="button" x-on:click="$dispatch('close-modal', { name: 'variant-modal' })"
-                            class="flex-1 px-6 py-4 rounded-2xl border border-neutral-200 dark:border-neutral-700 text-sm font-bold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-700 transition">
-                            Batal
-                        </button>
-                        <x-ui.button type="button" @click="$wire.confirmVariant(JSON.stringify(selectedOptions))"
-                            color="blue" class="flex-[2] !py-4 shadow-xl" wire:loading.attr="disabled">
-                            <span wire:loading.remove>Tambahkan ke Pesanan</span>
-                            <span wire:loading.flex class="items-center justify-center gap-2">
-                                <iconify-icon icon="mingcute:loading-fill" class="animate-spin text-xl"></iconify-icon>
-                                <span>Memproses...</span>
-                            </span>
-                        </x-ui.button>
+    <template x-teleport="body">
+    <div x-show="variantOpen" x-cloak
+        class="fixed inset-0 z-[999999] flex items-center justify-center overflow-y-auto bg-black/60 p-4 backdrop-blur-sm"
+        x-transition.opacity @click.self="closeVariant()" @keydown.escape.window="closeVariant()">
+        <div x-show="variantOpen" x-transition
+            class="my-auto w-full max-w-xl rounded-[2rem] border border-neutral-200 bg-white p-6 shadow-2xl dark:border-neutral-700 dark:bg-neutral-800 sm:p-8"
+            @click.stop>
+            <div class="mb-8 flex items-center gap-5 border-b border-neutral-100 pb-6 dark:border-neutral-700">
+                <img :src="variantMenu ? imageUrl(variantMenu) : defaultImage" alt=""
+                    class="h-20 w-20 rounded-[1.5rem] border-2 border-white object-cover shadow-lg dark:border-neutral-800">
+                <div class="min-w-0">
+                    <h3 class="truncate text-xl font-black text-neutral-900 dark:text-white" x-text="variantMenu?.nama_menu"></h3>
+                    <div class="mt-1 flex items-center gap-2">
+                        <span class="text-xs font-bold uppercase tracking-widest text-neutral-400">Harga Dasar:</span>
+                        <span class="text-lg font-black text-blue-600 dark:text-blue-400"
+                            x-text="'Rp ' + formatMoney(variantMenu?.harga)"></span>
                     </div>
                 </div>
             </div>
-        @endif
-    </x-mdal>
+
+            <div x-show="variantMenu && variantMenu.variantGroups.some(group => group.is_required)"
+                class="mb-6 flex items-center gap-3 rounded-2xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/50 dark:bg-amber-900/20">
+                <iconify-icon icon="mingcute:warning-line" class="text-xl text-amber-500"></iconify-icon>
+                <p class="text-xs font-bold text-amber-700 dark:text-amber-300">Pilih opsi wajib bertanda bintang (*).</p>
+            </div>
+
+            <div class="space-y-8">
+                <template x-for="group in (variantMenu?.variantGroups || [])" :key="group.id">
+                    <div>
+                        <div class="mb-4 flex items-center justify-between">
+                            <label class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                                <span x-text="group.nama_group"></span>
+                                <span x-show="group.is_required" class="-mt-1 text-lg font-black text-red-500">*</span>
+                            </label>
+                            <span x-show="group.selection_type === 'multiple'"
+                                class="rounded-lg border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-500 dark:border-blue-800 dark:bg-blue-900/30">Bisa pilih banyak</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <template x-for="option in group.options" :key="option.id">
+                                <button type="button" @click="toggleOption(group, option)"
+                                    class="relative flex flex-col overflow-hidden rounded-[1.5rem] border-2 p-4 text-left transition-all"
+                                    :class="isOptionSelected(group.id, option.id)
+                                        ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                        : 'border-neutral-100 bg-white text-neutral-700 hover:border-blue-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'">
+                                    <div class="mb-1 flex items-center justify-between">
+                                        <span class="text-sm font-black leading-tight" x-text="option.nama_opsi"></span>
+                                        <iconify-icon x-show="isOptionSelected(group.id, option.id)"
+                                            icon="mingcute:check-circle-fill" class="text-xl text-white"></iconify-icon>
+                                    </div>
+                                    <span class="text-[11px] font-bold"
+                                        :class="isOptionSelected(group.id, option.id) ? 'text-blue-100' : 'text-blue-600 dark:text-blue-400'"
+                                        x-text="Number(option.extra_price || 0) > 0 ? '+Rp ' + formatMoney(option.extra_price) : 'Gratis'"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="mt-10 border-t border-neutral-100 pt-8 dark:border-neutral-700">
+                <div class="mb-6 flex items-center justify-between">
+                    <span class="text-xs font-black uppercase tracking-widest text-neutral-400">Estimasi Total:</span>
+                    <span class="text-2xl font-black text-neutral-900 dark:text-white"
+                        x-text="'Rp ' + formatMoney(Number(variantMenu?.harga || 0) + variantExtra())"></span>
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" @click="closeVariant()"
+                        class="flex-1 rounded-2xl border border-neutral-200 px-6 py-4 text-sm font-bold text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700">Batal</button>
+                    <button type="button" @click="confirmVariant()" :disabled="missingRequiredGroup()"
+                        class="flex-[2] rounded-2xl bg-blue-600 px-6 py-4 text-sm font-bold text-white shadow-xl shadow-blue-500/20 transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50">Tambahkan ke Pesanan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </template>
 
     {{-- MODAL SUCCESS / DETAIL PESANAN --}}
-    <x-mdal name="order-success">
+    <x-mdal name="order-success" wireModel="showOrderSuccess">
         <div class="px-6 pb-6" x-data="{ printing: false }">
+            <div class="flex justify-center pb-4" aria-label="Pesanan berhasil" role="img">
+                <span class="order-success-check">
+                    <svg viewBox="0 0 52 52" aria-hidden="true">
+                        <circle cx="26" cy="26" r="22"></circle>
+                        <path d="M15 27.5 22.5 35 38 18"></path>
+                    </svg>
+                </span>
+            </div>
             <div class="flex items-start justify-between gap-4 border-b border-neutral-100 pb-5 dark:border-neutral-700">
                 <div>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-neutral-400">Detail Pesanan</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-neutral-400">Pesanan Berhasil Diproses</span>
                     <h3 class="mt-1 text-xl font-black text-neutral-900 dark:text-neutral-100">
                         #{{ $lastKodePesanan ?: '-' }}
                     </h3>
@@ -464,8 +804,10 @@
                 </div>
                 @php
                     $lastStatusClass = $lastStatusPesanan === 'selesai'
-                        ? 'bg-green-100 text-green-700 border-green-200'
-                        : 'bg-amber-100 text-amber-700 border-amber-200';
+                        ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+                        : ($lastStatusPesanan === 'dibatalkan'
+                            ? 'border-rose-400/30 bg-rose-500/15 text-rose-300'
+                            : 'border-amber-400/30 bg-amber-500/15 text-amber-200');
                 @endphp
                 <span class="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest {{ $lastStatusClass }}">
                     {{ $lastStatusPesanan ? ucwords($lastStatusPesanan) : 'Diproses' }}
@@ -548,7 +890,7 @@
 
                         const printWindow = window.open('', '_blank');
 
-                        $wire.completeLastOrderAndPrint()
+                        $wire.printLastOrder()
                             .then((url) => {
                                 if (url) {
                                     if (printWindow) {
@@ -568,7 +910,7 @@
                     class="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition hover:bg-blue-700 disabled:cursor-wait disabled:opacity-70">
                     <iconify-icon x-show="!printing" icon="lucide:printer" class="text-base"></iconify-icon>
                     <iconify-icon x-show="printing" x-cloak icon="mingcute:loading-fill" class="animate-spin text-lg"></iconify-icon>
-                    <span x-text="printing ? 'Memproses...' : 'Selesai & Print Struk'"></span>
+                    <span x-text="printing ? 'Membuka Printer...' : 'Cetak Struk'"></span>
                 </button>
             </div>
         </div>

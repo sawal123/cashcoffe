@@ -1,4 +1,4 @@
-<div class=" min-h-screen max-w-full overflow-x-hidden">
+<div class="min-h-screen max-w-full overflow-x-hidden" x-data="{ bulkActionOpen: false }">
     <!-- Header -->
     <div class="flex items-center justify-between mb-8 border-b border-gray-200 dark:border-white/5 pb-6">
         <div>
@@ -234,40 +234,76 @@
         </div>
     </div>
 
-    <!-- Floating Bulk Action Bar (Modal-like) -->
+    <!-- Compact Bulk Action Control -->
     @if(count($selectedDates) > 0)
-        <div class="fixed bottom-12 left-1/2 -translate-x-1/2 w-[90%] max-w-[800px] z-[100] animate-in fade-in zoom-in-95 slide-in-from-bottom-12 duration-500">
-            <div class="bg-slate-900/95 backdrop-blur-2xl text-white p-3 rounded-[2.5rem] shadow-[0_30px_100px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden ring-8 ring-black/5">
-                <div class="flex flex-col md:flex-row items-center gap-4 p-2">
-                    <div class="flex items-center gap-4 bg-white/10 px-6 py-4 rounded-[1.8rem] border border-white/5 shadow-inner">
-                        <span class="text-3xl font-black text-indigo-400 tabular-nums">{{ count($selectedDates) }}</span>
-                        <div class="h-8 w-px bg-white/10"></div>
-                        <span class="text-[10px] uppercase tracking-[0.2em] font-black text-slate-400 leading-tight">Tanggal<br>Terpilih</span>
-                    </div>
+        <div class="fixed right-5 bottom-5 z-[100]">
+            <button
+                type="button"
+                x-show="!bulkActionOpen"
+                x-cloak
+                @click="bulkActionOpen = true"
+                class="relative flex h-14 w-14 items-center justify-center rounded-2xl border border-indigo-300/40 bg-[#4f46e5] text-white shadow-[0_12px_30px_rgba(79,70,229,0.45)] transition hover:bg-[#6366f1] hover:-translate-y-1 active:scale-95"
+                title="Buka pengaturan shift"
+                aria-label="Buka pengaturan shift"
+            >
+                <span class="material-symbols-outlined">bolt</span>
+                <span class="absolute -right-2 -top-2 flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-slate-900 bg-amber-400 px-1 text-[10px] font-black text-slate-900">
+                    {{ count($selectedDates) }}
+                </span>
+            </button>
 
-                    <div class="flex-1 w-full flex items-center gap-3 bg-white/5 p-2 rounded-[1.8rem] border border-white/5 shadow-inner">
-                        <div class="flex-1 relative">
-                            <select wire:model="targetShiftId" class="w-full bg-transparent border-none focus:ring-0 text-xs font-black py-3.5 pl-6 pr-10 appearance-none bg-none cursor-pointer uppercase tracking-widest text-white">
-                                <option value="" class="bg-slate-900 text-slate-500 italic">-- Pilih Shift Kerja --</option>
-                                @foreach($shifts as $shift)
-                                    <option value="{{ $shift->id }}" class="bg-slate-900 text-white font-bold">
-                                        {{ $shift->nama_shift }} ({{ \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i') }} - {{ \Carbon\Carbon::parse($shift->jam_keluar)->format('H:i') }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <span class="absolute right-5 top-1/2 -translate-y-1/2 material-symbols-outlined text-indigo-400 pointer-events-none">expand_more</span>
+            <div
+                x-show="bulkActionOpen"
+                x-cloak
+                x-transition:enter="transition ease-out duration-200"
+                x-transition:enter-start="opacity-0 translate-y-3 scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                class="w-[calc(100vw-2.5rem)] max-w-[420px] overflow-hidden rounded-3xl border border-white/10 bg-slate-900/95 p-4 text-white shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-2xl"
+                style="display: none;"
+            >
+                <div class="mb-3 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-300">
+                            <span class="material-symbols-outlined">event_available</span>
+                        </div>
+                        <div>
+                            <p class="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Tanggal terpilih</p>
+                            <p class="text-lg font-black leading-none">{{ count($selectedDates) }} hari</p>
                         </div>
                     </div>
+                    <button
+                        type="button"
+                        @click="bulkActionOpen = false"
+                        class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-white/10 hover:text-white"
+                        title="Tutup"
+                        aria-label="Tutup pengaturan shift"
+                    >
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
 
-                    <div class="flex items-center gap-2 w-full md:w-auto">
-                        <button wire:click="saveBulkSchedule" class="flex-1 md:flex-none bg-white hover:bg-indigo-600 hover:text-white text-slate-900 font-black px-10 py-5 rounded-[1.8rem] text-xs uppercase tracking-[0.2em] transition-all active:scale-95 shadow-2xl flex items-center justify-center gap-3 group">
-                            <span class="material-symbols-outlined text-[20px] group-hover:rotate-12 transition-transform">bolt</span>
-                            Terapkan
-                        </button>
-                        <button wire:click="$set('selectedDates', [])" class="p-5 text-slate-500 hover:text-white hover:bg-white/10 rounded-[1.8rem] transition-all group" title="Batalkan Semua Pilihan">
-                            <span class="material-symbols-outlined text-[24px] group-hover:rotate-90 transition-transform">close</span>
-                        </button>
-                    </div>
+                <label for="bulk-shift-select" class="mb-2 block px-1 text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
+                    Shift kerja
+                </label>
+                <div class="relative overflow-hidden rounded-2xl border border-slate-600 bg-slate-800 shadow-inner transition focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/30">
+                    <select id="bulk-shift-select" wire:model="targetShiftId" class="block h-14 w-full cursor-pointer appearance-none bg-slate-800 px-4 pr-12 text-sm font-black uppercase tracking-wide text-white outline-none transition focus:bg-slate-700 focus:ring-0">
+                        <option value="" class="bg-slate-900 text-slate-500 italic">-- Pilih Shift Kerja --</option>
+                        @foreach($shifts as $shift)
+                            <option value="{{ $shift->id }}" class="bg-slate-900 text-white font-bold">
+                                {{ $shift->nama_shift }} ({{ \Carbon\Carbon::parse($shift->jam_masuk)->format('H:i') }} - {{ \Carbon\Carbon::parse($shift->jam_keluar)->format('H:i') }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <span class="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-indigo-300">expand_more</span>
+                </div>
+
+                <div class="mt-3 flex gap-2">
+                    <button wire:click="saveBulkSchedule" class="flex-1 rounded-2xl bg-indigo-600 px-4 py-3 text-xs font-black uppercase tracking-wider text-white transition hover:bg-indigo-500 active:scale-95">
+                        Terapkan
+                    </button>
+                    <button wire:click="$set('selectedDates', [])" @click="bulkActionOpen = false" class="rounded-2xl border border-white/10 px-4 py-3 text-xs font-black uppercase tracking-wider text-slate-300 transition hover:bg-white/10 hover:text-white" title="Batalkan semua pilihan">
+                        Batal
+                    </button>
                 </div>
             </div>
         </div>

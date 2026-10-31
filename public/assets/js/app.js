@@ -82,8 +82,11 @@ function highlightActiveMenu() {
     sidebarMenu.querySelectorAll("." + activeClass).forEach(el => {
         el.classList.remove(activeClass);
     });
-    sidebarMenu.querySelectorAll(".show, .open").forEach(el => {
-        el.classList.remove("show", "open");
+    sidebarMenu.querySelectorAll(".show, .open, .dropdown-open").forEach(el => {
+        el.classList.remove("show", "open", "dropdown-open");
+    });
+    sidebarMenu.querySelectorAll(".sidebar-submenu").forEach(submenu => {
+        submenu.style.removeProperty("display");
     });
 
     // --- Step 2: Tandai menu yang sesuai URL saat ini ---
@@ -145,6 +148,39 @@ function highlightActiveMenu() {
 // ===================================
 //  MOBILE SIDEBAR
 // ===================================
+function closeSidebarState() {
+    const sidebar = document.querySelector(".sidebar");
+    const sidebarToggle = document.querySelector(".sidebar-toggle");
+    const dashboardMain = document.querySelector(".dashboard-main");
+
+    sidebar?.classList.remove("sidebar-open");
+
+    // Hapus semua lock/overlay yang mungkin tertinggal dari halaman sebelumnya.
+    document.body.classList.remove("overlay-active", "overflow-hidden");
+    document.documentElement.classList.remove("overflow-hidden");
+
+    if (window.matchMedia("(min-width: 1200px)").matches) {
+        sidebar?.classList.add("active");
+        sidebarToggle?.classList.add("active");
+        dashboardMain?.classList.add("active");
+    } else {
+        sidebar?.classList.remove("active");
+        sidebarToggle?.classList.remove("active");
+        dashboardMain?.classList.remove("active");
+    }
+
+    sidebar?.querySelectorAll(".sidebar-submenu").forEach(submenu => {
+        submenu.style.removeProperty("display");
+    });
+}
+
+function bindSidebarNavigationCleanup() {
+    if (window.__sidebarNavigationCleanupBound) return;
+
+    document.addEventListener("livewire:navigating", closeSidebarState);
+    window.__sidebarNavigationCleanupBound = true;
+}
+
 function initMobileSidebar() {
     const openBtn = document.querySelector(".sidebar-mobile-toggle");
     const closeBtn = document.querySelector(".sidebar-close-btn");
@@ -235,6 +271,8 @@ function initSidebarScroll() {
 //  EVENT: SETELAH NAVIGASI
 // ===================================
 document.addEventListener("livewire:navigated", function () {
+    bindSidebarNavigationCleanup();
+    closeSidebarState();
     initSidebarDropdown();
     initSidebarToggle();
     initMobileSidebar();
@@ -245,6 +283,8 @@ document.addEventListener("livewire:navigated", function () {
 });
 
 document.addEventListener("DOMContentLoaded", function () {
+    bindSidebarNavigationCleanup();
+    closeSidebarState();
     initSidebarDropdown();
     initSidebarToggle();
     initMobileSidebar();

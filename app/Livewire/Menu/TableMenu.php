@@ -64,6 +64,8 @@ class TableMenu extends Component
 
     public function deletemenu($id)
     {
+        abort_unless(auth()->user()?->can('manage menu'), 403, 'Anda tidak memiliki akses untuk menghapus menu.');
+
         $menu = Menu::where('id', base64_decode($id))->first();
         if ($menu) {
             if ($menu->gambar) {
@@ -89,6 +91,11 @@ class TableMenu extends Component
                     $p->where('status', 'selesai');
                 });
             }], 'qty')
+            ->withSum(['pesananItems as total_penjualan' => function ($q) {
+                $q->whereHas('pesanan', function ($p) {
+                    $p->where('status', 'selesai');
+                });
+            }], 'subtotal')
             ->with(['category', 'menuPrices' => function($q) use ($priceTierId) {
                 $q->where('price_tier_id', $priceTierId);
             }])

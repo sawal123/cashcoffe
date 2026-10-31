@@ -75,6 +75,7 @@ trait HandlesOrderSubmit
                     'nama_menu' => $item->menu->nama_menu ?? '',
                     'harga' => (int) $item->harga_satuan,
                     'gambar' => $item->menu->gambar ?? '',
+                    'category_id' => (int) ($item->menu->categories_id ?? 0),
                     'qty' => $item->qty,
                     'catatan' => $item->catatan_item,
                     'status' => $item->status,
@@ -839,9 +840,8 @@ trait HandlesOrderSubmit
             // Authorization private single-use: reset HANYA setelah transaksi berhasil.
             $this->resetDiscountAuthorization();
 
-            if ($this->metode_pembayaran) {
-                $this->dispatch('open-modal', name: 'order-success');
-            }
+            $this->showOrderSuccess = true;
+            $this->dispatch('open-modal', name: 'order-success');
         } catch (\Exception $e) {
             $this->dispatch('showToast', type: 'error', message: 'Gagal simpan pesanan: ' . $e->getMessage());
         }
@@ -863,6 +863,20 @@ trait HandlesOrderSubmit
     public function completeLastOrder()
     {
         $this->finishLastOrder();
+    }
+
+    /**
+     * Mengambil URL struk tanpa mengubah status order.
+     * Aksi cetak harus tetap terpisah dari penyelesaian order.
+     */
+    public function printLastOrder()
+    {
+        if (! $this->lastPesananId) {
+            $this->dispatch('showToast', message: 'Pesanan belum tersedia.', type: 'error', title: 'Error');
+            return null;
+        }
+
+        return route('struk.print', base64_encode($this->lastPesananId));
     }
 
     public function completeLastOrderAndPrint()

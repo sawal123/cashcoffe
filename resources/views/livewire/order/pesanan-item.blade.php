@@ -73,18 +73,15 @@
                 <div class="min-w-0 flex-1">
                     <span class="text-[10px] font-black text-neutral-400 uppercase tracking-widest leading-none mb-1">Total
                         Pembayaran</span>
-                    <span class="block truncate text-lg font-black text-blue-600 dark:text-blue-400">Rp
-                        {{ number_format($totalAfterDiscount, 0, ',', '.') }}</span>
+                    <span class="block truncate text-lg font-black text-blue-600 dark:text-blue-400">Rp <span x-text="formatMoney(totalAfterDiscount())"></span></span>
                 </div>
 
                 <button type="button" @click="showCartMobile = true"
                     class="flex h-12 shrink-0 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition-all active:scale-95 min-[390px]:px-5">
                     <iconify-icon icon="mingcute:shopping-cart-2-line" class="text-xl"></iconify-icon>
                     <span class="text-sm">Keranjang</span>
-                    @if (count($pesanan) > 0)
-                        <span
-                            class="bg-white text-blue-600 font-black text-[10px] px-2 py-0.5 rounded-full">{{ count($pesanan) }}</span>
-                    @endif
+                    <span x-show="cartItems().length > 0" x-text="cartItems().length"
+                        class="rounded-full bg-white px-2 py-0.5 text-[10px] font-black text-blue-600"></span>
                 </button>
             </div>
         </div>
@@ -139,63 +136,47 @@
             </div>
 
             <ul class="max-h-[300px] space-y-3 overflow-y-auto pr-1 custom-scrollbar lg:max-h-[300px]">
-                @forelse ($pesanan as $index => $p)
-                    <li
-                        class="group flex items-center gap-4 bg-neutral-50/50 dark:bg-neutral-900/50 rounded-3xl p-3 border border-neutral-100/50 dark:border-neutral-700/50 hover:border-blue-200 dark:hover:border-blue-900 transition-colors">
-                        <img src="{{ asset('storage/' . $p['gambar']) }}" alt="{{ $p['nama_menu'] }}"
-                            class="shrink-0 rounded-2xl w-14 h-14 object-cover border border-white dark:border-neutral-800 shadow-sm">
+                <template x-for="item in cartItems()" :key="item.key">
+                    <li class="group flex items-center gap-4 rounded-3xl border border-neutral-100/50 bg-neutral-50/50 p-3 transition-colors hover:border-blue-200 dark:border-neutral-700/50 dark:bg-neutral-900/50 dark:hover:border-blue-900">
+                        <img :src="imageUrl(item)" :alt="item.nama_menu"
+                            class="h-14 w-14 shrink-0 rounded-2xl border border-white object-cover shadow-sm dark:border-neutral-800">
 
-                        <div class="flex-1 min-w-0">
-                            <h4
-                                class="text-sm font-bold text-neutral-900 dark:text-white line-clamp-1 leading-tight mb-0.5">
-                                {{ $p['nama_menu'] }}
-                            </h4>
-                            @if (!empty($p['display_options']))
-                                <p class="text-[10px] text-neutral-400 font-medium italic mb-1">
-                                    {{ implode(', ', $p['display_options']) }}
-                                </p>
-                            @endif
+                        <div class="min-w-0 flex-1">
+                            <h4 class="mb-0.5 line-clamp-1 text-sm font-bold leading-tight text-neutral-900 dark:text-white" x-text="item.nama_menu"></h4>
+                            <p x-show="item.display_options.length" class="mb-1 text-[10px] font-medium italic text-neutral-400"
+                                x-text="item.display_options.join(', ')"></p>
 
                             <div class="flex items-center gap-2">
-                                @if (isset($itemDiscounts[$index]) && $itemDiscounts[$index] > 0)
-                                    @php
-                                        $hargaItemAsli = $p['harga'];
-                                        $hargaDiscounted = round($hargaItemAsli - $itemDiscounts[$index] / $p['qty']);
-                                    @endphp
-                                    <span
-                                        class="text-[10px] text-neutral-400 line-through">Rp{{ number_format($hargaItemAsli, 0, ',', '.') }}</span>
-                                    <span
-                                        class="text-sm font-black text-blue-600 dark:text-blue-400">Rp{{ number_format($hargaDiscounted, 0, ',', '.') }}</span>
-                                @else
-                                    <span
-                                        class="text-sm font-black text-blue-600 dark:text-blue-400">Rp{{ number_format($p['harga'], 0, ',', '.') }}</span>
-                                @endif
-                                <span class="text-[10px] font-black text-neutral-300">x{{ $p['qty'] }}</span>
+                                <template x-if="itemDiscount(item) > 0">
+                                    <span class="text-[10px] text-neutral-400 line-through" x-text="'Rp' + formatMoney(item.harga)"></span>
+                                </template>
+                                <span class="text-sm font-black text-blue-600 dark:text-blue-400"
+                                    x-text="'Rp' + formatMoney(itemDiscount(item) > 0 ? item.harga - (itemDiscount(item) / item.qty) : item.harga)"></span>
+                                <span class="text-[10px] font-black text-neutral-300" x-text="'x' + item.qty"></span>
                             </div>
                         </div>
 
                         <div class="flex flex-col items-center gap-1">
-                            <button wire:click="increment('{{ $index }}')" @if ($status === 'selesai') disabled @endif
-                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition shadow-sm active:scale-90">
+                            <button type="button" @click.stop="changeQty(item.key, 1)" :disabled="status === 'selesai'"
+                                class="flex h-8 w-8 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 shadow-sm transition hover:border-blue-600 hover:bg-blue-600 hover:text-white active:scale-90 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 <iconify-icon icon="mingcute:add-line" class="text-sm"></iconify-icon>
                             </button>
-                            <button wire:click="decrement('{{ $index }}')" @if ($status === 'selesai') disabled @endif
-                                class="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-red-600 hover:text-white hover:border-red-600 transition shadow-sm active:scale-90">
+                            <button type="button" @click.stop="changeQty(item.key, -1)" :disabled="status === 'selesai'"
+                                class="flex h-8 w-8 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-600 shadow-sm transition hover:border-red-600 hover:bg-red-600 hover:text-white active:scale-90 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 <iconify-icon icon="mingcute:minimize-line" class="text-sm"></iconify-icon>
                             </button>
                         </div>
                     </li>
-                @empty
-                    <li
-                        class="flex flex-col items-center justify-center gap-3 py-12 bg-neutral-50 dark:bg-neutral-900/50 rounded-[2rem] border-2 border-dashed border-neutral-200 dark:border-neutral-700">
-                        <div
-                            class="w-16 h-16 rounded-full bg-white dark:bg-neutral-800 flex items-center justify-center text-neutral-300 border border-neutral-100 dark:border-neutral-700">
+                </template>
+
+                <template x-if="cartItems().length === 0">
+                    <li class="flex flex-col items-center justify-center gap-3 rounded-[2rem] border-2 border-dashed border-neutral-200 bg-neutral-50 py-12 dark:border-neutral-700 dark:bg-neutral-900/50">
+                        <div class="flex h-16 w-16 items-center justify-center rounded-full border border-neutral-100 bg-white text-neutral-300 dark:border-neutral-700 dark:bg-neutral-800">
                             <iconify-icon icon="mingcute:shopping-cart-2-line" class="text-3xl"></iconify-icon>
                         </div>
-                        <span class="text-xs font-bold text-neutral-400 uppercase tracking-widest">Keranjang
-                            Kosong</span>
+                        <span class="text-xs font-bold uppercase tracking-widest text-neutral-400">Keranjang Kosong</span>
                     </li>
-                @endforelse
+                </template>
             </ul>
         </div>
 
@@ -427,7 +408,7 @@
             <div x-data="{
                     open: false,
                     uang: '{{ $uang_tunai ? $uang_tunai : '' }}',
-                    minTunai: {{ $totalAfterDiscount }},
+                    minTunai: totalAfterDiscount(),
                     sync() {
                         let clean = this.uang.replace(/\D/g, '');
                         clean = clean.replace(/^0+/, '');
@@ -435,7 +416,7 @@
                         $wire.set('uang_tunai', clean === '' ? null : parseInt(clean));
                     },
                     get isValid() { return this.uang && parseInt(this.uang) >= this.minTunai; }
-                }" x-init="
+                }" @order-preview-total-updated.window="minTunai = $event.detail.total" x-init="
                     $watch('open', value => {
                         window.dispatchEvent(new CustomEvent('toggle-blur', { detail: !!value }));
                         document.body.classList.toggle('overflow-hidden', !!value);
@@ -464,7 +445,7 @@
                         <div class="mt-4 min-h-[20px] mb-6">
                             <template x-if="!isValid">
                                 <span class="text-[11px] font-bold text-red-500 italic block">
-                                    *Masih kurang Rp {{ number_format($totalAfterDiscount, 0, ',', '.') }}
+                                    *Masih kurang <span x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(minTunai)"></span>
                                 </span>
                             </template>
                         </div>
@@ -495,13 +476,12 @@
         <div class="mt-6 pt-6 border-t-2 border-dashed border-neutral-100 dark:border-neutral-700 space-y-4">
             <div class="flex justify-between items-center text-sm">
                 <span class="font-bold text-neutral-400 uppercase tracking-widest text-[10px]">Subtotal</span>
-                <span class="font-bold text-neutral-800 dark:text-neutral-200">Rp
-                    {{ number_format($total, 0, ',', '.') }}</span>
+                <span class="font-bold text-neutral-800 dark:text-neutral-200">Rp <span x-text="formatMoney(subtotal())"></span></span>
             </div>
 
             <div class="flex justify-between items-center text-sm">
                 <span class="font-bold text-neutral-400 uppercase tracking-widest text-[10px]">Voucher/Diskon</span>
-                <span class="font-bold text-green-600">-Rp {{ number_format($discountValue, 0, ',', '.') }}</span>
+                <span class="font-bold text-green-600">-Rp <span x-text="formatMoney(discountAmount())"></span></span>
             </div>
 
             <div class="flex justify-between items-center text-sm">
@@ -512,8 +492,7 @@
 
             <div class="flex justify-between items-center pt-4 border-t border-neutral-50 dark:border-neutral-700">
                 <span class="font-black text-neutral-700 dark:text-neutral-300">TOTAL AKHIR</span>
-                <span class="text-2xl font-black text-blue-700 dark:text-blue-400">Rp
-                    {{ number_format($totalAfterDiscount, 0, ',', '.') }}</span>
+                <span class="text-2xl font-black text-blue-700 dark:text-blue-400">Rp <span x-text="formatMoney(totalAfterDiscount())"></span></span>
             </div>
 
             @if ($this->isCash)
@@ -521,8 +500,7 @@
                     class="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/20 rounded-2xl border border-green-100 dark:border-green-800">
                     <span
                         class="text-xs font-black text-green-700 dark:text-green-400 uppercase tracking-widest">Kembalian</span>
-                    <span class="text-lg font-black text-green-800 dark:text-green-300">Rp
-                        {{ number_format($kembalian, 0, ',', '.') }}</span>
+                    <span class="text-lg font-black text-green-800 dark:text-green-300">Rp <span x-text="formatMoney(Math.max(0, Number($wire.uang_tunai || 0) - totalAfterDiscount()))"></span></span>
                 </div>
             @endif
 
@@ -530,11 +508,9 @@
                 @if ($status !== 'dibatalkan' && $status !== 'selesai')
                     <button type="button" wire:click="{{ $submit }}" wire:loading.attr="disabled"
                         wire:target="{{ $submit }}"
-                        class="w-full px-8 py-4 text-lg bg-blue-600 text-white rounded-2xl shadow-lg shadow-blue-500/30 font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
-                        :disabled="!$wire.nama_costumer || !$wire.metode_pembayaran || {{ count($pesanan) }} === 0 || ($wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
-                                {{ $totalAfterDiscount }}))" :class="(!$wire.nama_costumer || !$wire.metode_pembayaran || {{ count($pesanan) }} === 0 || ($wire.metode_pembayaran == $wire.cashMethodId && (!$wire.uang_tunai || $wire.uang_tunai <
-                                {{ $totalAfterDiscount }}))) ? 'opacity-50 grayscale cursor-not-allowed' :
-                            'hover:bg-blue-700 animate-pulse-slow'">
+                        class="flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-8 py-4 text-lg font-bold text-white shadow-lg shadow-blue-500/30 transition-all active:scale-95"
+                        :disabled="isSubmitDisabled($wire)"
+                        :class="isSubmitDisabled($wire) ? 'cursor-not-allowed opacity-50 grayscale' : 'hover:bg-blue-700 animate-pulse-slow'">
                         <span wire:loading.remove wire:target="{{ $submit }}">{{ $teks }} Pesanan</span>
                         <span wire:loading.flex wire:target="{{ $submit }}" class="items-center justify-center gap-2">
                             <iconify-icon icon="mingcute:loading-fill" class="animate-spin text-xl"></iconify-icon>

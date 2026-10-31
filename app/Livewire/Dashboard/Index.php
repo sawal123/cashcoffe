@@ -87,10 +87,24 @@ class Index extends Component
             ->orderBy('tanggal', 'asc')
             ->get();
 
+        $isKasir = auth()->user()?->hasRole('kasir') ?? false;
         $menuTerlaris = Menu::withSum([
-            'pesananItems as jumlah_terjual' => function ($q) {
-                $q->whereHas('pesanan', function ($p) {
-                    $p->where('status', 'selesai');
+            'pesananItems as jumlah_terjual' => function ($q) use ($isKasir) {
+                $q->when($isKasir, function ($query) {
+                    $query->where('qty', '>', 0)
+                        ->whereHas('pesanan', function ($p) {
+                            $p->where('status', 'selesai')
+                                ->whereDate('created_at', Carbon::today())
+                                ->where(function ($query) {
+                                    $query->whereHas('paymentMethod', function ($paymentMethod) {
+                                        $paymentMethod->where('kode_metode', '!=', 'komplemen');
+                                    })->orWhereNull('payment_method_id');
+                                });
+                        });
+                }, function ($query) {
+                    $query->whereHas('pesanan', function ($p) {
+                        $p->where('status', 'selesai');
+                    });
                 });
             }
         ], 'qty')

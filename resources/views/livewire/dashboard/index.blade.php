@@ -37,8 +37,11 @@
         <div class="xl:col-span-12 2xl:col-span-6">
             <div class="my-6">
                 <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                    🔥 Menu Paling Laris
+                    🔥 Menu Paling Laris{{ auth()->user()->hasRole('kasir') ? ' Hari Ini' : '' }}
                 </h2>
+                @if(auth()->user()->hasRole('kasir'))
+                    <p class="text-xs text-neutral-500 dark:text-neutral-400 -mt-2 mb-4">Berdasarkan transaksi selesai hari ini</p>
+                @endif
                 <style>
                     .menu-swiper::part(pagination) {
                         position: relative;

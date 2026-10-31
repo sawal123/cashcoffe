@@ -5,6 +5,24 @@
     </div>
     <x-toast />
 
+    @php
+        $canManageMenu = auth()->user()->can('manage menu');
+        $menuHeaders = [
+            ['name' => '#', 'align' => 'center'],
+            'Menu Item',
+            'Kategori',
+            ['name' => 'Harga Jual', 'align' => 'right'],
+            ['name' => 'Terjual', 'align' => 'center'],
+            ['name' => 'Total Penjualan', 'align' => 'right'],
+            ['name' => 'Status', 'align' => 'center'],
+        ];
+
+        if ($canManageMenu) {
+            array_unshift($menuHeaders, ['name' => '', 'align' => 'center']);
+            $menuHeaders[] = ['name' => 'Action', 'align' => 'center'];
+        }
+    @endphp
+
     {{-- Header Controls --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <div class="flex flex-wrap items-center gap-2">
@@ -88,22 +106,15 @@
         $allCurrentPageSelected = count($currentPageMenuIds) > 0 && empty(array_diff($currentPageMenuIds, $selectedIds));
     @endphp
 
-    <x-ui.table :headers="[
-        ['name' => '', 'align' => 'center'],
-        ['name' => '#', 'align' => 'center'],
-        'Menu Item',
-        'Kategori',
-        'Harga',
-        ['name' => 'Terjual', 'align' => 'center'],
-        ['name' => 'Status', 'align' => 'center'],
-        ['name' => 'Action', 'align' => 'center'],
-    ]">
+    <x-ui.table :headers="$menuHeaders">
         @forelse ($menu as $item)
             <tr wire:key="menu-row-{{ $item->id }}" class="hover:bg-neutral-50/50 dark:hover:bg-neutral-900/50 transition">
-                <td data-label="Pilih" class="px-4 sm:px-6 py-4 text-center">
-                    <input type="checkbox" wire:model.live="selectedMenuIds" value="{{ $item->id }}"
-                        class="h-4 w-4 rounded border-neutral-300 text-red-600 focus:ring-red-500">
-                </td>
+                @if ($canManageMenu)
+                    <td data-label="Pilih" class="px-4 sm:px-6 py-4 text-center">
+                        <input type="checkbox" wire:model.live="selectedMenuIds" value="{{ $item->id }}"
+                            class="h-4 w-4 rounded border-neutral-300 text-red-600 focus:ring-red-500">
+                    </td>
+                @endif
                 <td data-label="#" class="px-4 sm:px-6 py-4 text-center text-sm text-neutral-500">
                     {{ ($menu->currentPage() - 1) * $menu->perPage() + $loop->iteration }}
                 </td>
@@ -124,7 +135,7 @@
                         {{ $item->category->nama ?? '-' }}
                     </span>
                 </td>
-                <td data-label="Harga" class="px-4 sm:px-6 py-4">
+                <td data-label="Harga Jual" class="px-4 sm:px-6 py-4 text-right">
                     @php
                         $tieredPrice = $item->menuPrices->first();
                         $hargaDisplay = $tieredPrice
@@ -141,13 +152,18 @@
                 <td data-label="Terjual" class="px-4 sm:px-6 py-4 text-center text-sm font-medium text-blue-600 dark:text-blue-400">
                     {{ number_format($item->jumlah_terjual ?? 0, 0, ',', '.') }}
                 </td>
+                <td data-label="Total Penjualan" class="px-4 sm:px-6 py-4 text-right">
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400">Rp
+                        {{ number_format($item->total_penjualan ?? 0, 0, ',', '.') }}</span>
+                </td>
                 <td data-label="Status" class="px-4 sm:px-6 py-4 text-center">
                     <span
                         class="px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-full border {{ $item->is_active ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400' }}">
                         {{ $item->is_active ? 'Active' : 'Inactive' }}
                     </span>
                 </td>
-                <td data-label="Aksi" class="px-4 sm:px-6 py-4 text-center">
+                @if ($canManageMenu)
+                    <td data-label="Aksi" class="px-4 sm:px-6 py-4 text-center">
                     <div class="flex justify-center gap-2">
                         @hasrole('superadmin')
                             <a wire:key="ingredient-{{ $item->id }}"
@@ -176,11 +192,12 @@
                                 class="text-[10px] text-neutral-400 font-bold uppercase tracking-tighter">Centralized</span>
                         @endhasrole
                     </div>
-                </td>
+                    </td>
+                @endif
             </tr>
         @empty
             <tr>
-                <td colspan="8" class="text-center py-12 text-neutral-500">
+                <td colspan="{{ count($menuHeaders) }}" class="text-center py-12 text-neutral-500">
                     <div class="flex flex-col items-center justify-center gap-3">
                         <i class="ri-inbox-line text-4xl leading-none"></i>
                         <span class="text-sm">Tidak ada menu ditemukan.</span>

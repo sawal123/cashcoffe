@@ -7,136 +7,159 @@
     <div
         class="p-6 bg-white dark:bg-neutral-800 rounded-3xl shadow-sm border border-neutral-100 dark:border-neutral-700">
         <x-toast />
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">Manajemen Grup Varian</h1>
-                <p class="text-slate-500">Kelola pilihan tambahan untuk menu Anda</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300">
+                        <iconify-icon icon="lucide:layers-3" class="text-base"></iconify-icon>
+                    </span>
+                    <h1 class="text-2xl font-bold text-slate-800 dark:text-white">Manajemen Grup Varian</h1>
+                </div>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Kelola pilihan tambahan dan harga varian untuk menu Anda</p>
             </div>
-            <x-ui.button wire:click="openCreateModal">
-                + Grup Baru
+            <x-ui.button wire:click="openCreateModal" class="shrink-0">
+                <span class="inline-flex items-center gap-2">
+                    <iconify-icon icon="lucide:plus" class="text-base"></iconify-icon>
+                    Grup Baru
+                </span>
             </x-ui.button>
         </div>
 
-        <div
-            class="bg-white dark:bg-neutral-800 rounded-3xl shadow-sm border border-neutral-100 dark:border-neutral-700 overflow-hidden">
+        <div class="space-y-4">
             <div
-                class="p-6 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/50">
-                <x-ui.input wire:model.live="search" placeholder="Cari grup..." class="max-w-xs" />
+                class="rounded-2xl border border-neutral-100 bg-neutral-50/70 p-4 dark:border-neutral-700 dark:bg-neutral-900/30 sm:p-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <p class="text-sm font-bold text-slate-700 dark:text-slate-200">Daftar grup varian</p>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">Atur opsi seperti topping, level gula, dan tambahan lainnya.</p>
+                    </div>
+                    <x-ui.input wire:model.live="search" placeholder="Cari grup..." class="w-full sm:max-w-xs" />
+                </div>
             </div>
 
-            <x-ui.table :headers="['Nama Grup', 'Tipe Seleksi', 'Wajib?', 'Jumlah Opsi', ['name' => 'Aksi', 'align' => 'right']]">
+            <div class="grid grid-cols-1 items-start gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                 @forelse ($groups as $group)
-                    {{-- Row Grup Utama --}}
-                    <tr class="hover:bg-slate-50 dark:hover:bg-neutral-900/30 transition">
-                        <td data-label="Nama Grup" class="px-6 py-4 text-slate-800 dark:text-neutral-200 font-bold">
-                            {{ $group->nama_group }}
-                        </td>
-                        <td data-label="Tipe Seleksi" class="px-6 py-4">
-                            <span
-                                class="px-2 py-1 rounded-full text-xs font-bold {{ $group->selection_type === 'single' ? 'bg-blue-50 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-purple-50 dark:bg-purple-900/30 dark:text-purple-400' }}">
-                                {{ ucfirst($group->selection_type) }}
-                            </span>
-                        </td>
-                        <td data-label="Wajib?" class="px-6 py-4">
-                            @if($group->is_required)
-                                <span class="text-emerald-600 flex items-center gap-1 text-sm">
-                                    <iconify-icon icon="lucide:check-circle"></iconify-icon> Ya
-                                </span>
-                            @else
-                                <span class="text-slate-400 text-sm">Tidak</span>
-                            @endif
-                        </td>
-                        <td data-label="Jumlah Opsi" class="px-6 py-4 text-slate-600 dark:text-neutral-400">
-                            {{ $group->options_count }} Opsi
-                        </td>
-                        <td data-label="Aksi" class="px-6 py-4 text-right space-x-2">
-                            <button wire:click="edit({{ $group->id }})"
-                                class="text-blue-600 hover:text-blue-800 font-bold text-sm">Edit Grup</button>
-                            <button wire:click="delete({{ $group->id }})" wire:confirm="Yakin ingin menghapus grup ini?"
-                                class="text-red-500 hover:text-red-700 font-bold text-sm">Hapus</button>
-                        </td>
-                    </tr>
-                    {{-- Sub-rows: Opsi Varian dengan tombol Resep Bahan --}}
-                    @foreach ($group->options as $option)
-                        <tr class="bg-neutral-50/70 dark:bg-neutral-900/20 border-l-4 border-l-amber-300">
-                            <td data-label="Opsi" class="px-6 py-3 pl-10" colspan="1">
-                                <div class="flex items-center gap-2">
-                                    <iconify-icon icon="lucide:corner-down-right"
-                                        class="text-neutral-400 text-sm"></iconify-icon>
-                                    <span
-                                        class="text-sm font-semibold text-neutral-700 dark:text-neutral-300">{{ $option->nama_opsi }}</span>
+                    <article wire:key="variant-group-{{ $group->id }}" x-data="{ expanded: false }"
+                        class="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm transition hover:border-indigo-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900/70 dark:hover:border-indigo-400/40">
+                        <div class="border-b border-slate-200 p-4 dark:border-slate-700 sm:p-5">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300">
+                                        <iconify-icon icon="lucide:layers-3" class="text-lg"></iconify-icon>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="mb-0.5 text-[9px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Grup varian</p>
+                                        <h2 class="truncate text-base font-black text-slate-800 dark:text-white">{{ $group->nama_group }}</h2>
+                                    </div>
                                 </div>
-                            </td>
-                            <td data-label="Harga Tambahan" class="px-6 py-3" colspan="2">
-                                @php
-                                    $variantPrices = $option->variantPrices
-                                        ->pluck('extra_price')
-                                        ->map(fn ($price) => (int) $price);
+                                <div class="flex shrink-0 items-center gap-1">
+                                    <button type="button" @click="expanded = !expanded" class="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-indigo-600 dark:hover:bg-slate-800 dark:hover:text-indigo-300" :title="expanded ? 'Sembunyikan opsi' : 'Tampilkan opsi'">
+                                        <iconify-icon icon="lucide:chevron-down" class="text-base transition-transform duration-200" :class="expanded ? 'rotate-180' : ''"></iconify-icon>
+                                    </button>
+                                    <button type="button" wire:click="edit({{ $group->id }})" class="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-500" title="Edit grup">
+                                        <iconify-icon icon="lucide:pencil" class="text-[13px]"></iconify-icon>
+                                    </button>
+                                    <button type="button" wire:click="delete({{ $group->id }})" wire:confirm="Yakin ingin menghapus grup ini?" class="flex h-8 w-8 items-center justify-center rounded-lg border border-rose-300/40 bg-rose-500/10 text-rose-600 transition hover:bg-rose-500 hover:text-white dark:text-rose-300" title="Hapus grup">
+                                        <iconify-icon icon="lucide:trash-2" class="text-[13px]"></iconify-icon>
+                                    </button>
+                                </div>
+                            </div>
 
-                                    if ($variantPrices->isEmpty()) {
-                                        $priceLabel = '+ Rp 0';
-                                    } elseif ($variantPrices->unique()->count() === 1) {
-                                        $priceLabel = '+ Rp ' . number_format($variantPrices->first(), 0, ',', '.');
-                                    } else {
-                                        $priceLabel = 'Rp ' . number_format($variantPrices->min(), 0, ',', '.')
-                                            . ' - Rp ' . number_format($variantPrices->max(), 0, ',', '.');
-                                    }
-                                @endphp
-                                <span class="text-xs text-neutral-500">
-                                    {{ $priceLabel }}
+                            <div class="mt-3 flex flex-wrap items-center gap-1.5">
+                                <span class="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[9px] font-black uppercase tracking-wider {{ $group->selection_type === 'single' ? 'border-blue-500/50 bg-blue-600 text-white dark:bg-blue-500' : 'border-purple-500/50 bg-purple-600 text-white dark:bg-purple-500' }}">
+                                    <iconify-icon icon="{{ $group->selection_type === 'single' ? 'lucide:circle-dot' : 'lucide:check-check' }}"></iconify-icon>
+                                    {{ $group->selection_type === 'single' ? 'Pilih satu' : 'Pilih banyak' }}
                                 </span>
-                            </td>
-                            <td data-label="Bahan" class="px-6 py-3 text-xs text-neutral-400">
-                                {{ $option->ingredients_count ?? 0 }} bahan
-                            </td>
-                            <td data-label="Aksi" class="px-6 py-3 text-right">
-                                <a href="{{ route('variant-option.ingredients', base64_encode($option->id)) }}" wire:navigate
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 dark:text-amber-400 text-amber-700 border border-amber-200 text-xs font-bold transition">
-                                    <iconify-icon icon="lucide:flask-conical" class="text-sm"></iconify-icon>
-                                    Resep Bahan
-                                </a>
-                            </td>
-                        </tr>
-                    @endforeach
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-slate-400 italic">Belum ada grup varian.</td>
-                    </tr>
-                @endforelse
-            </x-ui.table>
+                                @if($group->is_required)
+                                    <span class="inline-flex items-center gap-1 rounded-lg border border-emerald-400/50 bg-emerald-500 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white"><iconify-icon icon="lucide:check-circle"></iconify-icon> Wajib</span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-600 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200">Opsional</span>
+                                @endif
+                                <span class="text-[11px] font-bold text-slate-500 dark:text-slate-400">{{ $group->options_count }} pilihan</span>
+                            </div>
+                        </div>
 
-            <div class="p-4 border-t border-slate-200">
+                        <div x-show="expanded" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" class="p-3 sm:p-4">
+                            <div class="mb-2 flex items-center justify-between gap-3 px-1">
+                                <div>
+                                    <p class="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Pilihan tersedia</p>
+                                    <p class="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Harga tambahan dan bahan</p>
+                                </div>
+                                <span class="rounded-lg bg-slate-200 px-2 py-1 text-[9px] font-black text-slate-700 dark:bg-slate-700 dark:text-slate-200">{{ $group->options_count }} opsi</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-3">
+                                @foreach ($group->options as $option)
+                                    @php
+                                        $variantPrices = $option->variantPrices->pluck('extra_price')->map(fn ($price) => (int) $price);
+                                        if ($variantPrices->isEmpty()) {
+                                            $priceLabel = '+ Rp 0';
+                                        } elseif ($variantPrices->unique()->count() === 1) {
+                                            $priceLabel = '+ Rp ' . number_format($variantPrices->first(), 0, ',', '.');
+                                        } else {
+                                            $priceLabel = 'Rp ' . number_format($variantPrices->min(), 0, ',', '.') . ' - Rp ' . number_format($variantPrices->max(), 0, ',', '.');
+                                        }
+                                    @endphp
+                                    <div class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/70 p-3 transition hover:border-indigo-200 hover:bg-indigo-50/40 dark:border-slate-700 dark:bg-slate-950/40 dark:hover:border-indigo-400/30 dark:hover:bg-indigo-500/5">
+                                        <div class="flex min-w-0 items-center gap-3">
+                                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-indigo-500 shadow-sm dark:bg-slate-800 dark:text-indigo-300"><span class="text-[11px] font-black">{{ $loop->iteration }}</span></div>
+                                            <div class="min-w-0">
+                                                <p class="mb-0.5 text-[8px] font-black uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Pilihan</p>
+                                                <p class="truncate text-[13px] font-bold text-slate-700 dark:text-slate-200">{{ $option->nama_opsi }}</p>
+                                                <span class="mt-1 inline-flex rounded-md bg-emerald-500 px-1.5 py-0.5 text-[9px] font-black text-white">{{ $priceLabel }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex shrink-0 items-center gap-2">
+                                            <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400"><iconify-icon icon="lucide:package" class="mr-1 align-[-2px]"></iconify-icon>{{ $option->ingredients_count ?? 0 }} bahan</span>
+                                            <a href="{{ route('variant-option.ingredients', base64_encode($option->id)) }}" wire:navigate class="inline-flex items-center gap-1 rounded-lg border border-amber-400/60 bg-amber-500/10 px-2.5 py-1.5 text-[10px] font-black text-amber-700 transition hover:bg-amber-500 hover:text-white dark:text-amber-300" title="Atur resep bahan">
+                                                <iconify-icon icon="lucide:flask-conical" class="text-xs"></iconify-icon>
+                                                <span>Resep</span>
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </article>
+                @empty
+                    <div class="col-span-full rounded-3xl border border-dashed border-slate-300 bg-slate-50/70 px-6 py-16 text-center dark:border-slate-700 dark:bg-slate-900/40">
+                        <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"><iconify-icon icon="lucide:layers-3" class="text-2xl"></iconify-icon></div>
+                        <p class="font-bold text-slate-700 dark:text-slate-200">Belum ada grup varian</p>
+                        <p class="mt-1 text-sm text-slate-400 dark:text-slate-500">Buat grup seperti Topping atau Sugar untuk mulai mengatur pilihan menu.</p>
+                    </div>
+                @endforelse
+            </div>
+
+            <div class="pt-1">
                 {{ $groups->links() }}
             </div>
         </div>
 
         {{-- MODAL CRUD --}}
         @if($showModal)
-            <div class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+            <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/70 p-3 backdrop-blur-sm sm:p-5">
                 <div
-                    class="bg-white dark:bg-neutral-800 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                    class="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:rounded-3xl">
 
                     {{-- Modal Header --}}
                     <div
-                        class="px-8 py-6 border-b border-neutral-100 dark:border-neutral-700 flex justify-between items-center bg-white dark:bg-neutral-800">
+                        class="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-900 sm:px-6">
                         <div>
-                            <h3 class="text-2xl font-bold text-neutral-800 dark:text-neutral-100">
+                            <h3 class="text-xl font-black text-slate-800 dark:text-white">
                                 {{ $isEdit ? 'Edit' : 'Tambah' }} Grup Varian
                             </h3>
-                            <p class="text-neutral-500 dark:text-neutral-400 mt-1">
-                                Configure options and pricing for product variations.
-                            </p>
+                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Atur pilihan dan harga tambahan untuk produk.</p>
                         </div>
                         <button wire:click="$set('showModal', false)"
-                            class="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 transition-colors">
-                            <iconify-icon icon="lucide:x" class="text-2xl"></iconify-icon>
+                            class="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white">
+                            <iconify-icon icon="lucide:x" class="text-xl"></iconify-icon>
                         </button>
                     </div>
 
                     {{-- Modal Body --}}
-                    <div class="p-8 overflow-y-auto space-y-8 flex-1 bg-white dark:bg-neutral-800">
+                    <div class="custom-scrollbar flex-1 space-y-5 overflow-y-auto bg-slate-50/70 p-5 dark:bg-slate-950/30 sm:p-6">
                         {{-- Form Fields --}}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <x-ui.input label="Nama Grup" wire:model="nama_group" placeholder="Contoh: Ukuran, Warna" />
 
                             <x-ui.select label="Tipe Seleksi" wire:model="selection_type">
@@ -146,46 +169,49 @@
                         </div>
 
                         {{-- Required Checkbox --}}
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900">
                             <input type="checkbox" wire:model="is_required" id="is_req"
-                                class="w-6 h-6 rounded-lg border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer">
+                                class="h-5 w-5 cursor-pointer rounded-md border-slate-300 text-blue-600 transition-all focus:ring-blue-500 dark:border-slate-600">
                             <label for="is_req"
-                                class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 cursor-pointer">
+                                class="cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-200">
                                 Wajib dipilih oleh pelanggan?
                             </label>
                         </div>
 
                         {{-- Options Section --}}
-                        <div class="space-y-6">
-                            <div class="flex justify-between items-center">
-                                <h4 class="text-xs font-bold text-neutral-400 uppercase tracking-widest">OPSI PILIHAN</h4>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <h4 class="text-xs font-black uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">Opsi pilihan</h4>
+                                    <p class="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">Tambahkan pilihan dan atur harga per channel.</p>
+                                </div>
                                 <button wire:click="addOption"
-                                    class="flex items-center gap-2 text-sm text-blue-600 font-bold hover:text-blue-700 transition-all">
-                                    <iconify-icon icon="lucide:plus-circle" class="text-lg"></iconify-icon>
-                                    Tambah Opsi
+                                    class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-black text-white shadow-sm shadow-blue-600/20 transition hover:bg-blue-500">
+                                    <iconify-icon icon="lucide:plus" class="text-sm"></iconify-icon>
+                                    Tambah
                                 </button>
                             </div>
 
-                            <div class="space-y-6">
+                            <div class="space-y-4">
                                 @foreach($options as $index => $option)
-                                    <div class="flex flex-col gap-3 p-4 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl animate-in fade-in slide-in-from-top-2 duration-300">
-                                        <div class="flex justify-between items-center gap-4">
+                                    <div class="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 animate-in fade-in slide-in-from-top-2 duration-300">
+                                        <div class="flex items-center justify-between gap-3">
                                             <div class="flex-1">
                                                 <x-ui.input wire:model="options.{{ $index }}.nama_opsi" placeholder="Nama Opsi" />
                                             </div>
                                             <button wire:click="removeOption({{ $index }})"
-                                                class="p-2 text-neutral-400 hover:text-red-500 transition-colors rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20">
-                                                <iconify-icon icon="lucide:trash-2" class="text-xl"></iconify-icon>
+                                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10 dark:hover:text-rose-300" title="Hapus opsi">
+                                                <iconify-icon icon="lucide:trash-2" class="text-base"></iconify-icon>
                                             </button>
                                         </div>
                                         
                                         {{-- Matrix Pricing --}}
-                                        <div class="mt-2 space-y-3">
-                                            <h5 class="text-xs font-bold text-neutral-500 uppercase tracking-widest border-b border-neutral-100 dark:border-neutral-800 pb-2">Harga Tambahan (Berdasarkan Tier & Channel)</h5>
+                                        <div class="space-y-3">
+                                            <h5 class="border-b border-slate-200 pb-2 text-[10px] font-black uppercase tracking-[0.16em] text-slate-500 dark:border-slate-700 dark:text-slate-400">Harga tambahan per tier & channel</h5>
                                             @foreach($tiers as $tier)
-                                                <div class="bg-neutral-50 dark:bg-neutral-800 p-3 rounded-xl">
-                                                    <div class="text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Tier: {{ $tier->nama_tier }}</div>
-                                                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                                                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
+                                                    <div class="mb-2 text-xs font-black text-slate-700 dark:text-slate-200">{{ $tier->nama_tier }}</div>
+                                                    <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                                                         @foreach($salesChannels as $channel)
                                                             <x-ui.input type="number" label="{{ $channel->nama_channel }}" wire:model.lazy="options.{{ $index }}.prices.tier_{{ $tier->id }}.channel_{{ $channel->id }}" prefix="Rp" placeholder="0" />
                                                         @endforeach
@@ -201,12 +227,12 @@
 
                     {{-- Modal Footer --}}
                     <div
-                        class="px-8 py-6 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50/30 dark:bg-neutral-800 flex justify-end items-center gap-8">
+                        class="flex items-center justify-end gap-3 border-t border-slate-200 bg-white px-5 py-4 dark:border-slate-700 dark:bg-slate-900 sm:px-6">
                         <button wire:click="$set('showModal', false)"
-                            class="text-sm font-bold text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 transition-colors">
+                            class="rounded-xl px-4 py-2.5 text-xs font-black text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white">
                             Batal
                         </button>
-                        <x-ui.button wire:click="save">
+                        <x-ui.button wire:click="save" class="!rounded-xl !px-5 !py-2.5 !text-xs">
                             Simpan Grup
                         </x-ui.button>
                     </div>

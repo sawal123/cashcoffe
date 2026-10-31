@@ -94,56 +94,121 @@
     </x-mdal>
 
     {{-- Modal Detail Member --}}
-    <x-mdal name="detail-member-modal">
-        <div class="px-6 py-6 border-b border-neutral-100 dark:border-neutral-700 flex justify-between items-center bg-neutral-50 rounded-t-[2.5rem]">
-            <h3 class="text-xl font-black text-neutral-900 dark:text-neutral-100 flex items-center gap-2">
-                <iconify-icon icon="mingcute:user-star-line" class="text-blue-600 text-2xl"></iconify-icon>
-                Detail & Poin Member
+    <style>
+        .member-detail-modal-overlay {
+            background: rgb(2 6 23 / 82%);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .member-detail-modal-panel {
+            max-height: 82vh;
+            overflow: hidden;
+            background: #202c3d !important;
+            border-color: #3b4759 !important;
+            color: #f8fafc;
+        }
+
+        .member-detail-scroll {
+            overscroll-behavior: contain;
+            scrollbar-color: #7f8da0 transparent;
+            scrollbar-width: thin;
+        }
+
+        .member-detail-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .member-detail-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .member-detail-scroll::-webkit-scrollbar-thumb {
+            background: #7f8da0;
+            border: 1px solid transparent;
+            background-clip: padding-box;
+            border-radius: 999px;
+        }
+
+        .member-detail-scroll::-webkit-scrollbar-thumb:hover {
+            background: #a8b3c2;
+            background-clip: padding-box;
+        }
+
+        @media (max-width: 640px) {
+            .member-detail-modal-panel {
+                max-height: 88vh;
+            }
+
+            .member-detail-scroll {
+                max-height: calc(88vh - 78px);
+            }
+        }
+    </style>
+
+    <x-mdal name="detail-member-modal" :show-close="false" max-width="max-w-xl"
+        panel-class="member-detail-modal-panel" overlay-class="member-detail-modal-overlay">
+        <div class="flex items-center justify-between gap-4 border-b border-slate-700 bg-[#202c3d] px-7 py-5">
+            <h3 class="flex min-w-0 items-center gap-3 text-xl font-black tracking-tight text-slate-100 sm:text-2xl">
+                <iconify-icon icon="mingcute:user-star-line" class="shrink-0 text-2xl text-blue-500"></iconify-icon>
+                <span class="truncate">Detail &amp; Poin Member</span>
             </h3>
-            <button type="button" x-on:click="$dispatch('close-modal', { name: 'detail-member-modal' })" class="text-neutral-400 hover:text-rose-500 transition">
-                <iconify-icon icon="mingcute:close-line" class="text-2xl"></iconify-icon>
+            <button type="button" x-on:click="$dispatch('close-modal', { name: 'detail-member-modal' })"
+                aria-label="Tutup detail member"
+                class="shrink-0 text-slate-400 transition hover:text-white">
+                <iconify-icon icon="mingcute:close-line" class="text-3xl"></iconify-icon>
             </button>
         </div>
 
-        <div class="p-6 max-h-[60vh] overflow-y-auto">
+        <div class="member-detail-scroll max-h-[calc(82vh-78px)] overflow-y-auto bg-[#202c3d] px-7 py-7 sm:px-8">
             @if($selectedMemberDetail)
-                <!-- Stats Row -->
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-blue-50 dark:bg-neutral-800 p-4 rounded-2xl border border-blue-100 dark:border-neutral-700 flex flex-col items-center justify-center">
-                        <span class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-1">Total Poin</span>
-                        <span class="text-3xl font-black text-blue-700">{{ $selectedMemberDetail->points }}</span>
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div class="flex min-h-[110px] flex-col items-center justify-center rounded-2xl border border-slate-600 bg-[#202c3d] px-4 py-5 text-center">
+                        <span class="mb-1 text-xs font-extrabold uppercase tracking-[0.12em] text-slate-100">Total Poin</span>
+                        <span class="text-4xl font-black leading-none text-blue-300">{{ $selectedMemberDetail->points }}</span>
                     </div>
-                    <div class="bg-green-50 dark:bg-neutral-800 p-4 rounded-2xl border border-green-100 dark:border-neutral-700 flex flex-col items-center justify-center text-center">
-                        <span class="text-xs font-bold text-green-500 uppercase tracking-widest mb-1">Pengeluaran</span>
-                        <span class="text-lg font-black text-green-700">Rp {{ number_format($selectedMemberDetail->total_pengeluaran, 0, ',', '.') }}</span>
+                    <div class="flex min-h-[110px] flex-col items-center justify-center rounded-2xl border border-slate-600 bg-[#202c3d] px-4 py-5 text-center">
+                        <span class="mb-1 text-xs font-extrabold uppercase tracking-[0.12em] text-slate-100">Pengeluaran</span>
+                        <span class="text-xl font-black leading-none text-emerald-300">Rp {{ number_format($selectedMemberDetail->total_pengeluaran, 0, ',', '.') }}</span>
                     </div>
                 </div>
 
-                <div class="mb-4">
-                    <h4 class="text-sm font-bold text-neutral-800 dark:text-neutral-200 uppercase tracking-widest border-b pb-2 mb-3 border-neutral-100">10 Transaksi Terakhir</h4>
+                <div class="mt-8">
+                    <h4 class="mb-3 border-b border-slate-200 pb-3 text-base font-extrabold uppercase tracking-[0.08em] text-slate-100">
+                        10 Transaksi Terakhir
+                    </h4>
+
                     @if(count($memberTransactions) > 0)
-                        <div class="space-y-3">
+                        <div class="space-y-4">
                             @foreach($memberTransactions as $trx)
-                                <div class="flex flex-col p-3 rounded-xl border border-neutral-100 bg-white shadow-sm gap-2">
-                                    <div class="flex justify-between items-center border-b border-neutral-50 pb-2">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[10px] font-bold text-neutral-400 bg-neutral-100 px-2 rounded">{{ \Carbon\Carbon::parse($trx->created_at)->format('d M Y') }}</span>
-                                            <span class="text-xs font-bold text-blue-600">ID: {{ $trx->kode }}</span>
+                                <div class="rounded-2xl border border-slate-600 bg-[#3b4759] px-4 py-4 shadow-sm">
+                                    <div class="flex items-center justify-between gap-3 border-b border-slate-500 pb-3">
+                                        <div class="flex min-w-0 items-center gap-2">
+                                            <span class="shrink-0 rounded bg-slate-500/70 px-2 py-0.5 text-[11px] font-extrabold text-slate-100">
+                                                {{ \Carbon\Carbon::parse($trx->created_at)->format('d M Y') }}
+                                            </span>
+                                            <span class="truncate text-sm font-extrabold text-blue-300">ID: {{ $trx->kode }}</span>
                                         </div>
-                                        <span class="text-xs font-black text-emerald-600">Rp {{ number_format($trx->total - $trx->discount_value, 0, ',', '.') }}</span>
+                                        <span class="shrink-0 text-sm font-black text-emerald-300">
+                                            Rp {{ number_format($trx->total - $trx->discount_value, 0, ',', '.') }}
+                                        </span>
                                     </div>
-                                    <div class="text-[11px] text-neutral-500">
+                                    <div class="pt-3 text-sm font-medium text-slate-100">
                                         {{ $trx->items->pluck('menu.nama_menu')->join(', ') }}
                                     </div>
                                 </div>
                             @endforeach
                         </div>
                     @else
-                        <div class="p-6 text-center text-neutral-400 italic bg-neutral-50 rounded-xl border border-neutral-100 shadow-inner">Belum ada riwayat transaksi.</div>
+                        <div class="rounded-2xl border border-slate-600 bg-[#3b4759] p-8 text-center text-sm italic text-slate-300">
+                            Belum ada riwayat transaksi.
+                        </div>
                     @endif
                 </div>
             @else
-                <div class="p-10 text-center"><iconify-icon icon="line-md:loading-twotone-loop" class="text-3xl text-neutral-400"></iconify-icon></div>
+                <div class="p-10 text-center">
+                    <iconify-icon icon="line-md:loading-twotone-loop" class="text-3xl text-slate-300"></iconify-icon>
+                </div>
             @endif
         </div>
     </x-mdal>

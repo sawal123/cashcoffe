@@ -849,6 +849,7 @@
             appendText('*** Terima Kasih ***', {
                 align: 'center'
             });
+            appendCommand(0x1B, 0x70, 0x00, 0x19, 0xFA); // open cash drawer
             appendCommand(0x0A, 0x0A, 0x0A);
             appendCommand(0x1D, 0x56, 0x42, 0x00); // partial cut, ignored by printers without cutter
 

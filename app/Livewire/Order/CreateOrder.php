@@ -105,6 +105,8 @@ class CreateOrder extends Component
 
     public $lastOrderItems = [];
 
+    public $showOrderSuccess = false;
+
     public $selectedCategoryId = null;
 
     public $total1;
@@ -412,6 +414,32 @@ class CreateOrder extends Component
         $totalAfterDiscount = round(max(0, $total - $discountValue));
         $this->total1 = $totalAfterDiscount;
 
+        $frontendDiscount = null;
+        $isDiscountBypassed = $disc && $disc->type === 'private' && $cekMember;
+        $isSameExistingDiscount = $disc && $this->orderId && (int) $disc->id === (int) $this->persistedDiscountId;
+        $isDiscountLimitReached = $disc
+            && ! $isSameExistingDiscount
+            && ! is_null($disc->limit)
+            && $disc->reconciledUsage() >= (int) $disc->limit;
+
+        if ($disc
+            && $disc->canBeUsedBy($cekMember)
+            && ($disc->type !== 'private' || $this->isDiscountVerified || $isDiscountBypassed)
+            && ! $isDiscountLimitReached) {
+            $disc->loadMissing('discountItems');
+            $frontendDiscount = [
+                'scope' => $disc->scope,
+                'jenis' => $disc->jenis_diskon,
+                'nilai' => (float) $disc->nilai_diskon,
+                'minimum' => (float) ($disc->minimum_transaksi ?? 0),
+                'maksimum' => (float) ($disc->maksimum_diskon ?? 0),
+                'items' => $disc->discountItems->map(fn ($item) => [
+                    'model_type' => $item->model_type,
+                    'model_id' => (int) $item->model_id,
+                ])->values()->all(),
+            ];
+        }
+
         $user = auth()->user();
         $priceTierId = $user->branch ? $user->branch->price_tier_id : (\App\Models\PriceTier::first()?->id ?? 1);
 
@@ -439,10 +467,16 @@ class CreateOrder extends Component
                                 ->where('is_available', false);
                         });
                     })
-                    ->with(['variantGroups', 'menuPrices' => function ($q) use ($priceTierId) {
+                    ->with([
+                        'variantGroups.options.variantPrices' => function ($q) use ($priceTierId) {
+                            $q->where('price_tier_id', $priceTierId)
+                                ->where('sales_channel_id', $this->sales_channel_id);
+                        },
+                        'menuPrices' => function ($q) use ($priceTierId) {
                         $q->where('price_tier_id', $priceTierId)
                             ->where('sales_channel_id', $this->sales_channel_id);
-                    }]);
+                        },
+                    ]);
             },
         ])->get();
 
@@ -463,6 +497,14 @@ class CreateOrder extends Component
             })
             ->get();
 
+        $this->dispatch(
+            'order-cart-state-updated',
+            cart: $this->pesanan,
+            discount: $frontendDiscount,
+            discountAmount: (int) $discountValue,
+            discountCode: (string) $this->discount,
+        );
+
         return view('livewire.order.create-order', [
             'orderId' => $this->orderId,
             'status' => $this->status,
@@ -472,6 +514,7 @@ class CreateOrder extends Component
             'categories' => $categories,
             'discountValue' => $discountValue,
             'totalAfterDiscount' => $totalAfterDiscount,
+            'frontendDiscount' => $frontendDiscount,
             'memMessage' => $memMessage ?? null,
             'kembalian' => $this->kembalian,
             'itemDiscounts' => $itemDiscounts,

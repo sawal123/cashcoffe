@@ -83,10 +83,10 @@
                         <td class="px-6 py-4 text-center">
                             @if($req->status == 'pending')
                                 <div class="flex items-center justify-center gap-2">
-                                    <button wire:click="approveLeave({{ $req->id }})" class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm shadow-emerald-600/10" title="Setujui">
+                                    <button wire:click="approveLeave({{ $req->id }})" class="w-8 h-8 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition-all shadow-sm shadow-emerald-600/10 hover:bg-emerald-600 hover:text-white dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500 dark:hover:text-white" title="Setujui">
                                         <iconify-icon icon="lucide:check" class="text-sm"></iconify-icon>
                                     </button>
-                                    <button wire:click="rejectLeave({{ $req->id }})" class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm shadow-rose-600/10" title="Tolak">
+                                    <button wire:click="rejectLeave({{ $req->id }})" class="w-8 h-8 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition-all shadow-sm shadow-rose-600/10 hover:bg-rose-600 hover:text-white dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500 dark:hover:text-white" title="Tolak">
                                         <iconify-icon icon="lucide:x" class="text-sm"></iconify-icon>
                                     </button>
                                 </div>
@@ -99,13 +99,13 @@
                                         'date' => \Carbon\Carbon::parse($req->tanggal_mulai)->toDateString(),
                                     ]) }}"
                                         wire:navigate
-                                        class="inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white">
+                                        class="inline-flex items-center gap-1 rounded-lg border border-blue-400/30 bg-blue-600 px-3 py-1.5 text-[10px] font-bold text-white shadow-sm shadow-blue-600/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 dark:bg-blue-500 dark:hover:bg-blue-400">
                                         <iconify-icon icon="lucide:calendar-search"></iconify-icon>
                                         Lihat Absensi
                                     </a>
                                     <button type="button"
                                         @click="$dispatch('open-modal', { name: 'confirm-cancel-leave', id: {{ $req->id }} })"
-                                        class="inline-flex items-center gap-1 rounded-lg border border-amber-100 bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-600 shadow-sm transition-all hover:bg-amber-600 hover:text-white">
+                                        class="inline-flex items-center gap-1 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-700 shadow-sm transition-all hover:bg-amber-600 hover:text-white dark:border-amber-400/30 dark:bg-amber-500/15 dark:text-amber-300 dark:hover:bg-amber-500 dark:hover:text-white">
                                         <iconify-icon icon="lucide:undo-2"></iconify-icon>
                                         Batalkan
                                     </button>
@@ -169,10 +169,10 @@
                         <td class="px-6 py-4 text-center">
                             @if($cor->status == 'pending')
                                 <div class="flex items-center justify-center gap-2">
-                                    <button wire:click="approveCorrection({{ $cor->id }})" class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white transition-all shadow-sm shadow-emerald-600/10">
+                                    <button wire:click="approveCorrection({{ $cor->id }})" class="w-8 h-8 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition-all shadow-sm shadow-emerald-600/10 hover:bg-emerald-600 hover:text-white dark:border-emerald-400/30 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500 dark:hover:text-white">
                                         <iconify-icon icon="lucide:check" class="text-sm"></iconify-icon>
                                     </button>
-                                    <button wire:click="rejectCorrection({{ $cor->id }})" class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white transition-all shadow-sm shadow-rose-600/10">
+                                    <button wire:click="rejectCorrection({{ $cor->id }})" class="w-8 h-8 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 transition-all shadow-sm shadow-rose-600/10 hover:bg-rose-600 hover:text-white dark:border-rose-400/30 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500 dark:hover:text-white">
                                         <iconify-icon icon="lucide:x" class="text-sm"></iconify-icon>
                                     </button>
                                 </div>
@@ -185,7 +185,7 @@
                                         'date' => \Carbon\Carbon::parse($cor->tanggal)->toDateString(),
                                     ]) }}"
                                         wire:navigate
-                                        class="mx-auto inline-flex items-center gap-1 rounded-lg bg-blue-50 px-3 py-1.5 text-[10px] font-bold text-blue-600 transition-all hover:bg-blue-600 hover:text-white">
+                                        class="mx-auto inline-flex items-center gap-1 rounded-lg border border-blue-400/30 bg-blue-600 px-3 py-1.5 text-[10px] font-bold text-white shadow-sm shadow-blue-600/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 dark:bg-blue-500 dark:hover:bg-blue-400">
                                         <iconify-icon icon="lucide:calendar-search"></iconify-icon>
                                         Lihat Absensi
                                     </a>
