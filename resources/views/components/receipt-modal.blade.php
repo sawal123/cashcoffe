@@ -19,10 +19,10 @@
     x-on:keydown.escape.window="close()"
     x-cloak>
 
-    <template x-teleport="body">
+    @teleport('body')
         <div x-show="isOpen"
             x-transition.opacity.duration.200ms
-            class="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4"
+            class="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto"
             role="dialog"
             aria-modal="true"
             @click.self="close()">
@@ -34,7 +34,9 @@
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
-                class="relative flex flex-col w-full max-w-4xl max-h-[94vh] bg-white dark:bg-neutral-800 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                class="relative flex flex-col w-full max-w-4xl bg-white dark:bg-neutral-800 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden my-auto"
+                style="height: 86vh; max-height: 92vh;"
+                @click.stop>
 
                 {{-- Header Modal --}}
                 <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/80 shrink-0">
@@ -57,15 +59,16 @@
                 </div>
 
                 {{-- Body (Iframe Cetak) --}}
-                <div class="flex-1 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                <div class="flex-1 w-full overflow-hidden bg-neutral-100 dark:bg-neutral-900 flex flex-col" style="min-height: 0;">
                     <iframe x-show="receiptUrl"
                         :src="receiptUrl"
                         allow="bluetooth"
-                        class="w-full h-[75vh] sm:h-[80vh] border-0"
+                        class="w-full flex-1 border-0"
+                        style="width: 100%; height: 100%; min-height: 480px; display: block; border: none;"
                         title="Struk Pesanan"></iframe>
                 </div>
             </div>
         </div>
-    </template>
+    @endteleport
 </div>
 

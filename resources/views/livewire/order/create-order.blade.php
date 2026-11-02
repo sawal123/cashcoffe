@@ -895,6 +895,7 @@
                         $wire.printLastOrder()
                             .then((url) => {
                                 if (url) {
+                                    $dispatch('close-modal', { name: 'order-success' });
                                     window.dispatchEvent(new CustomEvent('open-receipt-modal', { detail: { url: url } }));
                                 }
                             })

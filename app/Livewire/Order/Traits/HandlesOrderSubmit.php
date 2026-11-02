@@ -876,6 +876,8 @@ trait HandlesOrderSubmit
             return null;
         }
 
+        $this->showOrderSuccess = false;
+
         return route('struk.print', base64_encode($this->lastPesananId));
     }
 
