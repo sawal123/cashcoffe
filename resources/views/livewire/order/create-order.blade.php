@@ -784,100 +784,104 @@
     </template>
 
     {{-- MODAL SUCCESS / DETAIL PESANAN --}}
-    <x-mdal name="order-success" wireModel="showOrderSuccess">
-        <div class="px-6 pb-6" x-data="{ printing: false }">
-            <div class="flex justify-center pb-4" aria-label="Pesanan berhasil" role="img">
-                <span class="order-success-check">
-                    <svg viewBox="0 0 52 52" aria-hidden="true">
-                        <circle cx="26" cy="26" r="22"></circle>
-                        <path d="M15 27.5 22.5 35 38 18"></path>
-                    </svg>
-                </span>
-            </div>
-            <div class="flex items-start justify-between gap-4 border-b border-neutral-100 pb-5 dark:border-neutral-700">
-                <div>
-                    <span class="text-[10px] font-black uppercase tracking-widest text-neutral-400">Pesanan Berhasil Diproses</span>
-                    <h3 class="mt-1 text-xl font-black text-neutral-900 dark:text-neutral-100">
-                        #{{ $lastKodePesanan ?: '-' }}
-                    </h3>
-                    <p class="mt-1 text-xs font-medium text-neutral-400">{{ $lastCreatedAt ?: now()->format('d M Y H:i') }}</p>
+    <x-mdal name="order-success" wireModel="showOrderSuccess" maxWidth="max-w-xl">
+        <div class="flex flex-col max-h-[86vh] p-6" x-data="{ printing: false }">
+            {{-- Bagian Konten yang Dapat Di-scroll --}}
+            <div class="flex-1 overflow-y-auto pr-1 custom-scrollbar">
+                <div class="flex justify-center pb-4" aria-label="Pesanan berhasil" role="img">
+                    <span class="order-success-check">
+                        <svg viewBox="0 0 52 52" aria-hidden="true">
+                            <circle cx="26" cy="26" r="22"></circle>
+                            <path d="M15 27.5 22.5 35 38 18"></path>
+                        </svg>
+                    </span>
                 </div>
-                @php
-                    $lastStatusClass = $lastStatusPesanan === 'selesai'
-                        ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
-                        : ($lastStatusPesanan === 'dibatalkan'
-                            ? 'border-rose-400/30 bg-rose-500/15 text-rose-300'
-                            : 'border-amber-400/30 bg-amber-500/15 text-amber-200');
-                @endphp
-                <span class="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest {{ $lastStatusClass }}">
-                    {{ $lastStatusPesanan ? ucwords($lastStatusPesanan) : 'Diproses' }}
-                </span>
-            </div>
+                <div class="flex items-start justify-between gap-4 border-b border-neutral-100 pb-5 dark:border-neutral-700">
+                    <div>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-neutral-400">Pesanan Berhasil Diproses</span>
+                        <h3 class="mt-1 text-xl font-black text-neutral-900 dark:text-neutral-100">
+                            #{{ $lastKodePesanan ?: '-' }}
+                        </h3>
+                        <p class="mt-1 text-xs font-medium text-neutral-400">{{ $lastCreatedAt ?: now()->format('d M Y H:i') }}</p>
+                    </div>
+                    @php
+                        $lastStatusClass = $lastStatusPesanan === 'selesai'
+                            ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-300'
+                            : ($lastStatusPesanan === 'dibatalkan'
+                                ? 'border-rose-400/30 bg-rose-500/15 text-rose-300'
+                                : 'border-amber-400/30 bg-amber-500/15 text-amber-200');
+                    @endphp
+                    <span class="rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-widest {{ $lastStatusClass }}">
+                        {{ $lastStatusPesanan ? ucwords($lastStatusPesanan) : 'Diproses' }}
+                    </span>
+                </div>
 
-            <div class="mt-5 grid grid-cols-2 gap-3">
-                <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
-                    <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Pelanggan</span>
-                    <span class="mt-1 block text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $lastNamaCostumer ?: '-' }}</span>
+                <div class="mt-5 grid grid-cols-2 gap-3">
+                    <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
+                        <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Pelanggan</span>
+                        <span class="mt-1 block text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $lastNamaCostumer ?: '-' }}</span>
+                    </div>
+                    <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
+                        <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Tipe Order</span>
+                        <span class="mt-1 block text-sm font-bold text-indigo-600">{{ $lastSalesChannelName ?: 'Dine In' }}</span>
+                    </div>
+                    <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
+                        <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Metode</span>
+                        <span class="mt-1 block text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $lastPaymentMethodName ?: '-' }}</span>
+                    </div>
+                    <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
+                        <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Item</span>
+                        <span class="mt-1 block text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ count($lastOrderItems) }} menu</span>
+                    </div>
                 </div>
-                <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
-                    <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Tipe Order</span>
-                    <span class="mt-1 block text-sm font-bold text-indigo-600">{{ $lastSalesChannelName ?: 'Dine In' }}</span>
-                </div>
-                <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
-                    <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Metode</span>
-                    <span class="mt-1 block text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $lastPaymentMethodName ?: '-' }}</span>
-                </div>
-                <div class="rounded-2xl bg-neutral-50 p-3 dark:bg-neutral-900">
-                    <span class="block text-[10px] font-bold uppercase tracking-widest text-neutral-400">Item</span>
-                    <span class="mt-1 block text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ count($lastOrderItems) }} menu</span>
-                </div>
-            </div>
 
-            <div class="mt-5">
-                <h4 class="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-neutral-400">
-                    <iconify-icon icon="mingcute:list-check-line" class="text-base text-blue-600"></iconify-icon>
-                    Item Pesanan
-                </h4>
-                <div class="max-h-[240px] space-y-2 overflow-y-auto pr-1 custom-scrollbar">
-                    @forelse ($lastOrderItems as $item)
-                        <div class="flex items-center justify-between gap-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
-                            <div class="min-w-0 flex-1">
-                                <p class="line-clamp-1 text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $item['name'] }}</p>
-                                @if (!empty($item['variants']))
-                                    <p class="text-[10px] italic text-neutral-400">{{ implode(', ', $item['variants']) }}</p>
-                                @endif
-                                <p class="mt-0.5 text-xs text-neutral-400">
-                                    Rp{{ number_format($item['price'], 0, ',', '.') }} x {{ $item['qty'] }}
-                                </p>
+                <div class="mt-5">
+                    <h4 class="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-neutral-400">
+                        <iconify-icon icon="mingcute:list-check-line" class="text-base text-blue-600"></iconify-icon>
+                        Item Pesanan
+                    </h4>
+                    <div class="max-h-[220px] space-y-2 overflow-y-auto pr-1 custom-scrollbar">
+                        @forelse ($lastOrderItems as $item)
+                            <div class="flex items-center justify-between gap-3 rounded-2xl border border-neutral-100 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900">
+                                <div class="min-w-0 flex-1">
+                                    <p class="line-clamp-1 text-sm font-bold text-neutral-800 dark:text-neutral-200">{{ $item['name'] }}</p>
+                                    @if (!empty($item['variants']))
+                                        <p class="text-[10px] italic text-neutral-400">{{ implode(', ', $item['variants']) }}</p>
+                                    @endif
+                                    <p class="mt-0.5 text-xs text-neutral-400">
+                                        Rp{{ number_format($item['price'], 0, ',', '.') }} x {{ $item['qty'] }}
+                                    </p>
+                                </div>
+                                <span class="text-sm font-black text-neutral-900 dark:text-white">
+                                    Rp{{ number_format($item['subtotal'], 0, ',', '.') }}
+                                </span>
                             </div>
-                            <span class="text-sm font-black text-neutral-900 dark:text-white">
-                                Rp{{ number_format($item['subtotal'], 0, ',', '.') }}
-                            </span>
-                        </div>
-                    @empty
-                        <div class="rounded-2xl border border-dashed border-neutral-200 p-6 text-center text-sm font-bold text-neutral-400">
-                            Detail item belum tersedia.
-                        </div>
-                    @endforelse
+                        @empty
+                            <div class="rounded-2xl border border-dashed border-neutral-200 p-6 text-center text-sm font-bold text-neutral-400">
+                                Detail item belum tersedia.
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                <div class="mt-5 space-y-2 border-t-2 border-dashed border-neutral-100 pt-4 dark:border-neutral-700">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Subtotal</span>
+                        <span class="font-bold text-neutral-700 dark:text-neutral-300">Rp{{ number_format($lastTotalPesanan ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Diskon</span>
+                        <span class="font-bold text-green-600">-Rp{{ number_format($lastDiscountPesanan ?? 0, 0, ',', '.') }}</span>
+                    </div>
+                    <div class="flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-700">
+                        <span class="text-sm font-black uppercase text-neutral-700 dark:text-neutral-300">Total Akhir</span>
+                        <span class="text-xl font-black text-blue-700 dark:text-blue-400">Rp{{ number_format($lastFinalTotalPesanan ?? 0, 0, ',', '.') }}</span>
+                    </div>
                 </div>
             </div>
 
-            <div class="mt-5 space-y-2 border-t-2 border-dashed border-neutral-100 pt-4 dark:border-neutral-700">
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Subtotal</span>
-                    <span class="font-bold text-neutral-700 dark:text-neutral-300">Rp{{ number_format($lastTotalPesanan ?? 0, 0, ',', '.') }}</span>
-                </div>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Diskon</span>
-                    <span class="font-bold text-green-600">-Rp{{ number_format($lastDiscountPesanan ?? 0, 0, ',', '.') }}</span>
-                </div>
-                <div class="flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-700">
-                    <span class="text-sm font-black uppercase text-neutral-700 dark:text-neutral-300">Total Akhir</span>
-                    <span class="text-xl font-black text-blue-700 dark:text-blue-400">Rp{{ number_format($lastFinalTotalPesanan ?? 0, 0, ',', '.') }}</span>
-                </div>
-            </div>
-
-            <div class="mt-6 flex gap-3 border-t border-neutral-100 pt-4 dark:border-neutral-700">
+            {{-- Tombol Aksi di Bawah (Selalu Terlihat / Tidak Terpotong) --}}
+            <div class="mt-4 flex gap-3 border-t border-neutral-100 pt-4 dark:border-neutral-700 shrink-0">
                 <button type="button" x-on:click="$dispatch('close-modal', { name: 'order-success' })"
                     class="flex-1 rounded-2xl border border-neutral-300 bg-white px-5 py-3 text-sm font-bold text-neutral-700 transition hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                     Kembali

@@ -34,25 +34,25 @@
                 x-transition:leave="transition ease-in duration-150"
                 x-transition:leave-start="opacity-100 scale-100"
                 x-transition:leave-end="opacity-0 scale-95"
-                class="relative flex flex-col w-full max-w-xl max-h-[92vh] bg-white dark:bg-neutral-800 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                class="relative flex flex-col w-full max-w-4xl max-h-[94vh] bg-white dark:bg-neutral-800 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-700 overflow-hidden">
 
                 {{-- Header Modal --}}
-                <div class="flex items-center justify-between px-5 py-3.5 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/70 dark:bg-neutral-800/70">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-                            <iconify-icon icon="lucide:printer" class="text-base"></iconify-icon>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-neutral-700 bg-neutral-50/80 dark:bg-neutral-800/80 shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                            <iconify-icon icon="lucide:printer" class="text-lg"></iconify-icon>
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-neutral-800 dark:text-neutral-100 leading-tight">Cetak Struk</h3>
-                            <p class="text-[10px] text-neutral-400 font-medium">Pratinjau & Kontrol Cetak Thermal</p>
+                            <h3 class="text-base font-bold text-neutral-800 dark:text-neutral-100 leading-tight">Cetak Struk</h3>
+                            <p class="text-xs text-neutral-400 font-medium">Pratinjau & Kontrol Cetak Thermal</p>
                         </div>
                     </div>
 
                     <button type="button"
                         @click="close()"
-                        class="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-neutral-700 text-neutral-500 hover:text-neutral-800 dark:hover:text-white flex items-center justify-center transition"
+                        class="w-9 h-9 rounded-xl bg-neutral-100 dark:bg-neutral-700 text-neutral-500 hover:text-neutral-800 dark:hover:text-white flex items-center justify-center transition"
                         title="Tutup">
-                        <iconify-icon icon="mingcute:close-line" class="text-lg"></iconify-icon>
+                        <iconify-icon icon="mingcute:close-line" class="text-xl"></iconify-icon>
                     </button>
                 </div>
 
@@ -61,17 +61,8 @@
                     <iframe x-show="receiptUrl"
                         :src="receiptUrl"
                         allow="bluetooth"
-                        class="w-full h-[65vh] border-0"
+                        class="w-full h-[75vh] sm:h-[80vh] border-0"
                         title="Struk Pesanan"></iframe>
-                </div>
-
-                {{-- Footer Modal --}}
-                <div class="flex items-center justify-end px-5 py-3 border-t border-neutral-100 dark:border-neutral-700 bg-neutral-50/70 dark:bg-neutral-800/70">
-                    <button type="button"
-                        @click="close()"
-                        class="px-5 py-2.5 text-xs font-bold rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition">
-                        Tutup
-                    </button>
                 </div>
             </div>
         </div>
