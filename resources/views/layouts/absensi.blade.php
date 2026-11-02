@@ -13,7 +13,7 @@
     <title>{{ $title ?? $seoTitle }}</title>
     <meta name="description" content="{{ $seoDescription }}">
     <link rel="icon" type="image/png" href="{{ asset($siteIcon) }}" sizes="16x16">
-    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}?v=3">
     <meta name="theme-color" content="#18181b">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">

@@ -1,6 +1,5 @@
-const CACHE_NAME = 'cash-coffee-cache-v2';
+const CACHE_NAME = 'cash-coffee-cache-v3';
 const ASSETS_TO_CACHE = [
-    '/',
     '/favicon.ico',
     '/logo/logo.png',
     '/logo/logow.png',

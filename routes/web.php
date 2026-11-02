@@ -16,7 +16,11 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 
-Route::view('/', 'welcome');
+Route::get('/', function () {
+    return Auth::check() ? redirect()->route('dashboard.index') : redirect()->route('login');
+})->name('home.redirect');
+
+Route::view('/landing', 'welcome')->name('landing');
 
 Route::get('/jadi-member', App\Livewire\Member\JadiMember::class)->name('jadi-member');
 
