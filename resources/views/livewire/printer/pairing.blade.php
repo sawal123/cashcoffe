@@ -148,7 +148,7 @@
             testBtn.classList.add('opacity-60', 'cursor-not-allowed');
         }
 
-        function checkSupport() {
+        async function checkSupport() {
             const savedPrinter = localStorage.getItem(storageKey);
             printerName.textContent = savedPrinter || 'Belum dipilih';
 
@@ -167,6 +167,29 @@
             }
 
             supportText.textContent = 'Browser siap untuk pairing printer.';
+
+            // Periksa apakah sudah ada perangkat yang pernah diizinkan sebelumnya
+            if (navigator.bluetooth.getDevices) {
+                try {
+                    const devices = await navigator.bluetooth.getDevices();
+                    const savedPrinterId = localStorage.getItem('cashcoffe_printer_id');
+                    const savedPrinterName = localStorage.getItem(storageKey);
+
+                    const found = devices.find((d) => d.id === savedPrinterId) ||
+                                  devices.find((d) => d.name && d.name === savedPrinterName) ||
+                                  (devices.length === 1 ? devices[0] : null);
+
+                    if (found) {
+                        bluetoothDevice = found;
+                        window.__cashcoffe_bluetooth_device = found;
+                        printerName.textContent = found.name || savedPrinterName || 'Printer Bluetooth';
+                        setConnectionState(found.gatt && found.gatt.connected ? 'Terhubung' : 'Tersandingkan', found.name);
+                        setMessage('Printer sudah tersandingkan. Klik Test Print atau hubungkan kembali.');
+                    }
+                } catch (e) {
+                    console.warn(e);
+                }
+            }
         }
 
         async function findWritableCharacteristic(server) {
@@ -203,10 +226,22 @@
         }
 
         async function pickDevice(forcePicker = false) {
-            if (!forcePicker && navigator.bluetooth.getDevices) {
-                const devices = await navigator.bluetooth.getDevices();
-                const savedPrinterName = localStorage.getItem(storageKey);
-                bluetoothDevice = devices.find((device) => device.name === savedPrinterName) || devices[0] || null;
+            if (!forcePicker && !bluetoothDevice) {
+                if (window.__cashcoffe_bluetooth_device) {
+                    bluetoothDevice = window.__cashcoffe_bluetooth_device;
+                } else if (navigator.bluetooth.getDevices) {
+                    try {
+                        const devices = await navigator.bluetooth.getDevices();
+                        const savedPrinterId = localStorage.getItem('cashcoffe_printer_id');
+                        const savedPrinterName = localStorage.getItem(storageKey);
+
+                        bluetoothDevice = devices.find((device) => device.id === savedPrinterId) ||
+                                          devices.find((device) => device.name && device.name === savedPrinterName) ||
+                                          (devices.length === 1 ? devices[0] : null);
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                }
             }
 
             if (!bluetoothDevice || forcePicker) {
@@ -220,7 +255,11 @@
                 throw new Error('Perangkat ini tidak menyediakan koneksi GATT Bluetooth.');
             }
 
+            if (bluetoothDevice.id) {
+                localStorage.setItem('cashcoffe_printer_id', bluetoothDevice.id);
+            }
             localStorage.setItem(storageKey, bluetoothDevice.name || 'Printer Bluetooth');
+            window.__cashcoffe_bluetooth_device = bluetoothDevice;
             setConnectionState('Belum terhubung', bluetoothDevice.name || 'Printer Bluetooth');
         }
 
@@ -326,7 +365,9 @@
 
             bluetoothDevice = null;
             bluetoothCharacteristic = null;
+            delete window.__cashcoffe_bluetooth_device;
             localStorage.removeItem(storageKey);
+            localStorage.removeItem('cashcoffe_printer_id');
             setConnectionState('Belum terhubung', 'Belum dipilih');
             setMessage('Pilihan printer direset.');
         });

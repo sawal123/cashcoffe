@@ -41,6 +41,8 @@
 
     </div>
 
+    <x-receipt-modal />
+
     <x-script :script="$script ?? ''" />
 
     <script>

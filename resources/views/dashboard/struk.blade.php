@@ -387,9 +387,13 @@
                     <span class="print-btn-icon" aria-hidden="true">PR</span>
                     Cetak Bluetooth
                 </button>
-                <button type="button" class="print-btn secondary wide" id="printBrowserBtn">
+                <button type="button" class="print-btn secondary" id="printBrowserBtn">
                     <span class="print-btn-icon" aria-hidden="true">WB</span>
                     Cetak Browser
+                </button>
+                <button type="button" class="print-btn secondary" id="closePrintBtn" onclick="if (window.parent && window.parent !== window) { window.parent.dispatchEvent(new CustomEvent('close-receipt-modal')); } else { window.history.back(); }">
+                    <span class="print-btn-icon" aria-hidden="true">✕</span>
+                    Tutup
                 </button>
             </div>
         </section>
@@ -890,6 +894,15 @@
             throw new Error('Service Bluetooth printer belum dikenali.');
         }
 
+        function onGattDisconnected() {
+            bluetoothCharacteristic = null;
+            if (window.parent && window.parent !== window) {
+                window.parent.__cashcoffe_bluetooth_characteristic = null;
+            }
+            const name = bluetoothDevice?.name || localStorage.getItem('cashcoffe_printer_name') || 'Printer Bluetooth';
+            setStatus(`Koneksi terputus: ${name}. Klik Cetak Bluetooth untuk menghubungkan kembali.`);
+        }
+
         async function connectBluetoothPrinter(forcePair = false) {
             if (!navigator.bluetooth) {
                 throw new Error(
@@ -901,31 +914,83 @@
                 throw new Error('Web Bluetooth wajib memakai HTTPS atau localhost.');
             }
 
+            // 1. Coba ambil instance perangkat yang sudah tersimpan di memori (window / window.parent / window.top)
+            if (!forcePair && !bluetoothDevice) {
+                if (window.parent && window.parent !== window && window.parent.__cashcoffe_bluetooth_device) {
+                    bluetoothDevice = window.parent.__cashcoffe_bluetooth_device;
+                } else if (window.top && window.top !== window && window.top.__cashcoffe_bluetooth_device) {
+                    bluetoothDevice = window.top.__cashcoffe_bluetooth_device;
+                } else if (window.__cashcoffe_bluetooth_device) {
+                    bluetoothDevice = window.__cashcoffe_bluetooth_device;
+                }
+            }
+
+            // 2. Jika belum ada di memori, cari dari daftar perangkat yang telah diizinkan browser (getDevices)
+            if (!forcePair && !bluetoothDevice) {
+                const bt = (window.top && window.top.navigator && window.top.navigator.bluetooth) ||
+                           (window.parent && window.parent.navigator && window.parent.navigator.bluetooth) ||
+                           navigator.bluetooth;
+
+                if (bt && bt.getDevices) {
+                    try {
+                        const devices = await bt.getDevices();
+                        const savedPrinterId = localStorage.getItem('cashcoffe_printer_id');
+                        const savedPrinterName = localStorage.getItem('cashcoffe_printer_name');
+
+                        bluetoothDevice = devices.find((device) => device.id === savedPrinterId) ||
+                                          devices.find((device) => device.name && device.name === savedPrinterName) ||
+                                          (devices.length === 1 ? devices[0] : null);
+                    } catch (e) {
+                        console.warn('Gagal membaca getDevices():', e);
+                    }
+                }
+            }
+
+            // 3. Hanya tampilkan popup dialog sandingkan (requestDevice) jika forcePair ATAU memang belum pernah disandingkan sama sekali
             if (!bluetoothDevice || forcePair) {
-                if (!forcePair && navigator.bluetooth.getDevices) {
-                    const devices = await navigator.bluetooth.getDevices();
-                    const savedPrinterName = localStorage.getItem('cashcoffe_printer_name');
-                    bluetoothDevice = devices.find((device) => device.name === savedPrinterName) || devices[0] || null;
-                }
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: printerProfiles.map((profile) => profile.service),
+                });
 
-                if (!bluetoothDevice) {
-                    bluetoothDevice = await navigator.bluetooth.requestDevice({
-                        acceptAllDevices: true,
-                        optionalServices: printerProfiles.map((profile) => profile.service),
-                    });
+                if (bluetoothDevice.id) {
+                    localStorage.setItem('cashcoffe_printer_id', bluetoothDevice.id);
                 }
-
                 localStorage.setItem('cashcoffe_printer_name', bluetoothDevice.name || 'Printer Bluetooth');
+            }
+
+            // Simpan referensi ke window global & parent agar tetap aktif antar pencetakan struk
+            window.__cashcoffe_bluetooth_device = bluetoothDevice;
+            if (window.parent && window.parent !== window) {
+                window.parent.__cashcoffe_bluetooth_device = bluetoothDevice;
+            }
+            if (window.top && window.top !== window) {
+                window.top.__cashcoffe_bluetooth_device = bluetoothDevice;
             }
 
             if (!bluetoothDevice.gatt) {
                 throw new Error('Perangkat ini tidak menyediakan koneksi GATT Bluetooth.');
             }
 
+            bluetoothDevice.removeEventListener('gattserverdisconnected', onGattDisconnected);
+            bluetoothDevice.addEventListener('gattserverdisconnected', onGattDisconnected);
+
+            // 4. Hubungkan ke GATT jika belum terhubung
             if (!bluetoothDevice.gatt.connected) {
                 setStatus('Menghubungkan ke printer...');
                 const server = await bluetoothDevice.gatt.connect();
                 bluetoothCharacteristic = await findWritableCharacteristic(server);
+            } else {
+                if (!bluetoothCharacteristic && window.parent && window.parent.__cashcoffe_bluetooth_characteristic) {
+                    bluetoothCharacteristic = window.parent.__cashcoffe_bluetooth_characteristic;
+                }
+                if (!bluetoothCharacteristic) {
+                    bluetoothCharacteristic = await findWritableCharacteristic(bluetoothDevice.gatt);
+                }
+            }
+
+            if (window.parent && window.parent !== window) {
+                window.parent.__cashcoffe_bluetooth_characteristic = bluetoothCharacteristic;
             }
 
             setStatus(`Terhubung: ${bluetoothDevice.name || 'Printer Bluetooth'}`);
@@ -987,11 +1052,48 @@
         printBluetoothBtn.addEventListener('click', printBluetoothReceipt);
         printBrowserBtn.addEventListener('click', printWithBrowser);
 
-        window.onload = function() {
-            const savedPrinterName = localStorage.getItem('cashcoffe_printer_name');
+        window.onload = async function() {
+            // Cek apakah ada printer yang masih aktif di memori atau tersimpan di browser
+            let existingDevice = (window.parent && window.parent.__cashcoffe_bluetooth_device) ||
+                                 (window.top && window.top.__cashcoffe_bluetooth_device) ||
+                                 bluetoothDevice;
 
-            if (savedPrinterName) {
-                setStatus(`Printer terakhir: ${savedPrinterName}. Tekan Cetak Bluetooth untuk menghubungkan kembali.`);
+            if (!existingDevice) {
+                const bt = (window.top && window.top.navigator && window.top.navigator.bluetooth) ||
+                           (window.parent && window.parent.navigator && window.parent.navigator.bluetooth) ||
+                           navigator.bluetooth;
+
+                if (bt && bt.getDevices) {
+                    try {
+                        const devices = await bt.getDevices();
+                        const savedPrinterId = localStorage.getItem('cashcoffe_printer_id');
+                        const savedPrinterName = localStorage.getItem('cashcoffe_printer_name');
+
+                        existingDevice = devices.find((device) => device.id === savedPrinterId) ||
+                                         devices.find((device) => device.name && device.name === savedPrinterName) ||
+                                         (devices.length === 1 ? devices[0] : null);
+
+                        if (existingDevice) {
+                            bluetoothDevice = existingDevice;
+                            if (window.parent && window.parent !== window) {
+                                window.parent.__cashcoffe_bluetooth_device = existingDevice;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn(e);
+                    }
+                }
+            } else {
+                bluetoothDevice = existingDevice;
+            }
+
+            const displayName = bluetoothDevice?.name || localStorage.getItem('cashcoffe_printer_name');
+            if (displayName) {
+                if (bluetoothDevice && bluetoothDevice.gatt && bluetoothDevice.gatt.connected) {
+                    setStatus(`Terhubung: ${displayName} (Siap Cetak)`);
+                } else {
+                    setStatus(`Printer tersanding: ${displayName}. Klik Cetak Bluetooth untuk langsung mencetak.`);
+                }
             }
 
             const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || window.matchMedia(

@@ -589,6 +589,7 @@
 
                 @if ($teks == 'Update' && $status !== 'dibatalkan')
                     <a href="{{ route('struk.print', base64_encode($orderId)) }}"
+                        @click.prevent="$dispatch('open-receipt-modal', { url: '{{ route('struk.print', base64_encode($orderId)) }}' })"
                         class="block w-full py-4 text-center bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 font-bold rounded-2xl hover:bg-neutral-200 transition-colors">
                         Cetak Struk
                     </a>

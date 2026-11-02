@@ -888,18 +888,10 @@
                         if (printing) return;
                         printing = true;
 
-                        const printWindow = window.open('', '_blank');
-
                         $wire.printLastOrder()
                             .then((url) => {
                                 if (url) {
-                                    if (printWindow) {
-                                        printWindow.location.href = url;
-                                    } else {
-                                        window.location.href = url;
-                                    }
-                                } else if (printWindow) {
-                                    printWindow.close();
+                                    window.dispatchEvent(new CustomEvent('open-receipt-modal', { detail: { url: url } }));
                                 }
                             })
                             .finally(() => {

@@ -107,7 +107,8 @@
                             </button>
 
                             {{-- Semua role bisa: Print --}}
-                            <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
+                            <a href="{{ route('struk.print', base64_encode($item->id)) }}"
+                                @click.prevent="$dispatch('open-receipt-modal', { url: '{{ route('struk.print', base64_encode($item->id)) }}' })"
                                 title="Print Struk"
                                 class="shrink-0 w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
                                 <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
@@ -142,7 +143,8 @@
                             </button>
 
                             {{-- Semua role bisa: Print --}}
-                            <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
+                            <a href="{{ route('struk.print', base64_encode($item->id)) }}"
+                                @click.prevent="$dispatch('open-receipt-modal', { url: '{{ route('struk.print', base64_encode($item->id)) }}' })"
                                 title="Print Struk"
                                 class="shrink-0 w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
                                 <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
@@ -179,7 +181,8 @@
 
                             {{-- Hanya Superadmin: Delete, Print --}}
                             @hasrole('superadmin')
-                                <a href="{{ route('struk.print', base64_encode($item->id)) }}" target="_blank"
+                                <a href="{{ route('struk.print', base64_encode($item->id)) }}"
+                                    @click.prevent="$dispatch('open-receipt-modal', { url: '{{ route('struk.print', base64_encode($item->id)) }}' })"
                                     title="Print Struk"
                                     class="shrink-0 w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
                                     <iconify-icon icon="lucide:printer" class="text-sm"></iconify-icon>
@@ -320,7 +323,8 @@
                         class="flex-1 px-5 py-3 rounded-2xl border border-neutral-300 bg-white dark:bg-neutral-800 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 text-sm font-bold transition">
                         Tutup
                     </button>
-                    <a href="{{ route('struk.print', base64_encode($detailOrder->id)) }}" target="_blank"
+                    <a href="{{ route('struk.print', base64_encode($detailOrder->id)) }}"
+                        @click.prevent="$dispatch('open-receipt-modal', { url: '{{ route('struk.print', base64_encode($detailOrder->id)) }}' })"
                         class="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-blue-600 text-white text-sm font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/20">
                         <iconify-icon icon="lucide:printer" class="text-base"></iconify-icon>
                         Print Struk
